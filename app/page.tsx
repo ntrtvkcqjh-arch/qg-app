@@ -2,6 +2,7 @@ import Link from "next/link";
 import Cadre from "@/components/Cadre";
 import { requireUser } from "@/lib/auth";
 import { agentInfo, dateLongue } from "@/lib/agents";
+import { collecterTout } from "@/lib/missions/collecter";
 
 type LigneRapport = {
   id: string;
@@ -12,14 +13,29 @@ type LigneRapport = {
   statut: "en_cours" | "publie" | "echec";
 };
 
-export default async function Kiosque() {
-  const { supabase } = await requireUser();
-  const { data, error } = await supabase
+async function lireRapports(supabase: Awaited<ReturnType<typeof requireUser>>["supabase"]) {
+  return supabase
     .from("rapports")
     .select("id, agent, type, date, titre, statut")
     .order("date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(60);
+}
+
+export default async function Kiosque() {
+  const { supabase } = await requireUser();
+  let { data, error } = await lireRapports(supabase);
+
+  // Une édition en cours ? On demande à Anthropic où elle en est
+  // (filet de sécurité en plus du webhook), puis on relit.
+  if (data?.some((r) => r.statut === "en_cours")) {
+    try {
+      await collecterTout();
+      ({ data, error } = await lireRapports(supabase));
+    } catch {
+      /* la page s'affiche quand même */
+    }
+  }
 
   const rapports = (data ?? []) as LigneRapport[];
   const parJour = new Map<string, LigneRapport[]>();
@@ -29,6 +45,7 @@ export default async function Kiosque() {
     <Cadre>
       <p className="k">Kiosque</p>
       <h1>Les éditions</h1>
+      <Link href="/missions" className="lien petit">Missions des agents →</Link>
       <div className="double" />
 
       {error && <p className="erreur">Impossible de charger les rapports.</p>}
