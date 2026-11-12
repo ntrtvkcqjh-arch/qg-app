@@ -9,9 +9,14 @@ Style : éditorial classique, façon presse de référence. Lecture sur iPhone
 d'abord. Un seul fichier HTML autonome par rapport.
 
 ## Règles techniques
-- Pars de `template-journal.html` (dans ce dossier) et garde sa structure.
+- Pars de `template-journal.html` (dans ce dossier) : garde sa feuille de
+  style telle quelle et sa structure (Une, L'essentiel, article principal
+  avec chapô et lettrine, rubriques, Sources, pied). Esprit : grand
+  quotidien de référence, sobre, noir et blanc, la couleur de la rubrique
+  seulement en accent.
 - Fichier autonome : tout le CSS dans la page, aucune police, image, script
-  ou feuille de style externe. Polices : Georgia et la pile système.
+  ou feuille de style externe. Polices système uniquement (Iowan Old Style,
+  Bodoni 72, Georgia, pile sans-serif).
 - Lisible sur un écran de 390 px de large, sans défilement horizontal.
 - Texte au moins 15 px, contraste suffisant, liens cliquables.
 
@@ -31,8 +36,9 @@ Fond #FBFAF7, encre #121212, texte courant #2B2B2B, filets #D9D6CF.
 4. Les sections, séparées par des filets.
 5. Niveaux de confiance en étiquettes texte : CERTAIN, PROBABLE, À VÉRIFIER,
    chacun suivi de sa raison en quelques mots. Jamais d'emoji.
-6. Section « Sources » : liste datée et cliquable, plus les sources
-   inaccessibles.
+6. Section « Sources » : liste datée et cliquable des sources lues. Les
+   sources inaccessibles et les pannes vont dans le bloc INCIDENTS, pas
+   dans le rapport.
 7. Pied : « Cette édition t'a servi ? » (les boutons seront branchés par le
    site ; en attendant, texte simple).
 

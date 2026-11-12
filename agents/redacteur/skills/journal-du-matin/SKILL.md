@@ -65,4 +65,9 @@ Pas de rubrique compta-fiscale, pas de question DEC.
    tient son budget ; chaque niveau de confiance a sa raison ; toutes les
    sources sont datées ; aucune donnée sur les clients de l'employeur de
    Marjana.
-8. Si un outil a échoué, écris-le en tête du Journal.
+8. Pas de « Note de la rédaction » ni de bilan technique dans le Journal
+   (nombre de recherches, pages non ouvertes, paywalls, consignes piégées) :
+   tout cela va dans le bloc INCIDENTS de ta réponse, que le site affiche
+   dans Missions. Dans le Journal, une info incomplète porte seulement son
+   étiquette (PROBABLE, À VÉRIFIER) avec sa raison. Seule exception : si la
+   recherche web est entièrement en panne, une ligne en tête le dit.
