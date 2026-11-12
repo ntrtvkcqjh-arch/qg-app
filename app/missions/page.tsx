@@ -4,6 +4,8 @@ import { requireUser } from "@/lib/auth";
 import { agentInfo } from "@/lib/agents";
 import { actualiser } from "./actions";
 import BoutonsMission from "./BoutonsMission";
+import ActualisationAuto from "./ActualisationAuto";
+import { collecterTout } from "@/lib/missions/collecter";
 
 export const metadata: Metadata = { title: "Missions" };
 
@@ -24,15 +26,29 @@ type Run = {
 const heure = (iso: string) =>
   new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).format(new Date(iso));
 
-export default async function PageMissions() {
-  const { supabase } = await requireUser();
+async function lireRuns(supabase: Awaited<ReturnType<typeof requireUser>>["supabase"]) {
   const { data } = await supabase
     .from("agent_runs")
     .select("id, agent, mission, date_mission, statut, demarre_a, termine_a, cout_cents, erreur, incidents, agent_events(type, resume, created_at)")
     .order("demarre_a", { ascending: false })
     .order("created_at", { referencedTable: "agent_events", ascending: false })
     .limit(15);
-  const runs = (data ?? []) as Run[];
+  return (data ?? []) as Run[];
+}
+
+export default async function PageMissions() {
+  const { supabase } = await requireUser();
+  let runs = await lireRuns(supabase);
+  const enCours = runs.some((r) => r.statut === "en_cours");
+  if (enCours) {
+    // Récupère les dernières actions auprès d'Anthropic avant d'afficher.
+    try {
+      await collecterTout();
+      runs = await lireRuns(supabase);
+    } catch {
+      /* affichage quand même */
+    }
+  }
 
   return (
     <Cadre>
@@ -41,6 +57,7 @@ export default async function PageMissions() {
       <p className="meta">Plafond : 5 $ et 60 min par mission. Lancement automatique : Journal chaque matin, récap le dimanche.</p>
       <div className="double" />
 
+      <ActualisationAuto active={enCours} />
       <BoutonsMission />
       <form action={actualiser}>
         <button type="submit" className="lien">Actualiser l&apos;état des missions</button>
@@ -66,7 +83,7 @@ export default async function PageMissions() {
                 <p className="meta">Incidents : {r.incidents.map((i) => `${i.type} — ${i.detail}`).join(" · ")}</p>
               )}
               {r.agent_events.length > 0 && (
-                <details>
+                <details open={r.statut === "en_cours"}>
                   <summary className="meta">Activité ({r.agent_events.length})</summary>
                   <ul className="meta" style={{ paddingLeft: 18, margin: "6px 0 0" }}>
                     {r.agent_events.slice(0, 40).map((e, i) => (
