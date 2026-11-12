@@ -1,49 +1,195 @@
+/* Charte rapport-design : éditorial classique, iPhone d'abord. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --fond: #fbfaf7;
+  --encre: #121212;
+  --texte: #2b2b2b;
+  --doux: #4a4a4a;
+  --filet: #d9d6cf;
+  --blanc: #ffffff;
+  --journal: #1f3a5f;
+  --recap: #4b3a6b;
+  --erreur: #8a1c2b;
+  --ok: #1e5e3a;
+  --sans: -apple-system, "Segoe UI", system-ui, sans-serif;
+  --serif: Georgia, "Times New Roman", serif;
+  --onglets: calc(56px + env(safe-area-inset-bottom));
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-html {
-  height: 100%;
-}
-
-html,
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
 body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  box-sizing: border-box;
-  padding: 0;
   margin: 0;
+  background: var(--fond);
+  color: var(--encre);
+  font-family: var(--serif);
+  min-height: 100dvh;
 }
+a { color: var(--journal); }
 
-a {
+/* --- Typographie --- */
+h1 { font-size: 30px; line-height: 1.1; margin: 4px 0 10px; }
+h2 { font-size: 20px; line-height: 1.25; margin: 0 0 6px; }
+p { font-size: 16px; line-height: 1.55; color: var(--texte); margin: 0 0 10px; }
+.k {
+  font: 600 11px/1.3 var(--sans);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--journal);
+  margin: 0 0 6px;
+}
+.meta { font: 500 13px/1.45 var(--sans); color: var(--doux); }
+.double { border-top: 3px double var(--encre); margin: 8px 0 18px; }
+.filet { border-top: 1px solid var(--filet); margin: 18px 0; }
+.vide { font-style: italic; color: var(--doux); }
+
+/* --- Structure --- */
+.entete {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background: var(--fond);
+  border-bottom: 1px solid var(--encre);
+}
+.marque { font: 700 18px/1 var(--serif); letter-spacing: 0.02em; }
+.colonne {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 18px 16px calc(var(--onglets) + 24px);
+}
+.connexion { padding-top: calc(48px + env(safe-area-inset-top)); }
+
+.onglets {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  height: var(--onglets);
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--blanc);
+  border-top: 1px solid var(--encre);
+}
+.onglets a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 13px/1 var(--sans);
+  color: var(--doux);
+  text-decoration: none;
+}
+.onglets a[aria-current="page"] { color: var(--encre); box-shadow: inset 0 3px 0 var(--encre); }
+
+/* --- Formulaires --- */
+.pile { display: flex; flex-direction: column; gap: 10px; }
+.ligne { display: flex; gap: 8px; align-items: stretch; }
+.ligne > input[type="text"], .ligne > textarea { flex: 1; min-width: 0; }
+label { font: 600 13px/1.3 var(--sans); }
+input[type="text"], input[type="email"], textarea, select {
+  font: 16px/1.4 var(--sans); /* 16 px : évite le zoom auto d'iOS */
+  color: var(--encre);
+  background: var(--blanc);
+  border: 1px solid var(--encre);
+  border-radius: 0;
+  padding: 11px 12px;
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+textarea { resize: vertical; min-height: 64px; }
+select { width: auto; padding-right: 28px; background-image: linear-gradient(45deg, transparent 50%, var(--encre) 50%), linear-gradient(135deg, var(--encre) 50%, transparent 50%); background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%; background-size: 5px 5px; background-repeat: no-repeat; }
+.bouton {
+  font: 600 15px/1 var(--sans);
+  color: var(--blanc);
+  background: var(--encre);
+  border: 1px solid var(--encre);
+  border-radius: 0;
+  padding: 13px 16px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.bouton.secondaire { color: var(--encre); background: var(--blanc); }
+.bouton:disabled { opacity: 0.5; }
+.lien {
+  font: 500 14px/1.3 var(--sans);
+  color: var(--journal);
+  background: none;
+  border: 0;
+  padding: 8px 0;
+  text-decoration: underline;
+  cursor: pointer;
+  text-align: left;
+}
+.lien.petit { font-size: 13px; padding: 4px 0; }
+.erreur { font: 500 14px/1.4 var(--sans); color: var(--erreur); margin: 0; }
+.succes { font: 500 14px/1.4 var(--sans); color: var(--ok); margin: 0; }
+
+/* --- Étiquettes --- */
+.tag {
+  display: inline-block;
+  font: 600 10px/1 var(--sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 6px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.tag.attente { color: #8a4f0f; border-style: dashed; }
+.tag.echec { color: var(--erreur); border-style: dotted; }
+
+/* --- Kiosque --- */
+.jour { margin: 22px 0 8px; font: 600 12px/1.3 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--doux); }
+.jour:first-of-type { margin-top: 0; }
+.cartes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.carte {
+  display: block;
+  background: var(--blanc);
+  border: 1px solid var(--filet);
+  border-left: 5px solid var(--couleur, var(--journal));
+  padding: 12px 14px;
   color: inherit;
   text-decoration: none;
 }
+.carte .k { color: var(--couleur, var(--journal)); display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.carte h2 { font-size: 19px; margin: 2px 0 0; }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+/* --- Lecture d'un rapport --- */
+.lecture { display: flex; flex-direction: column; height: 100dvh; }
+.lecture-haut { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: calc(8px + env(safe-area-inset-top)) 16px 8px; border-bottom: 1px solid var(--encre); background: var(--fond); }
+.rapport-cadre { flex: 1; width: 100%; border: 0; background: var(--blanc); display: block; }
+.retour-barre {
+  border-top: 1px solid var(--encre);
+  background: var(--blanc);
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
 }
+.retour-barre .trois { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.retour-barre details summary { font: 500 13px/1.3 var(--sans); color: var(--doux); cursor: pointer; padding: 8px 0 0; }
+.retour-barre textarea { margin-top: 8px; min-height: 56px; }
+
+/* --- Listes (to-do, décisions, idées) --- */
+.liste { list-style: none; margin: 0; padding: 0; }
+.liste > li { padding: 12px 0; border-bottom: 1px solid var(--filet); }
+.todo { display: flex; align-items: center; gap: 10px; }
+.todo form { margin: 0; }
+.todo .texte { flex: 1; min-width: 0; font-size: 16px; line-height: 1.4; overflow-wrap: anywhere; }
+.todo.fait .texte { text-decoration: line-through; color: var(--doux); }
+.case {
+  width: 28px; height: 28px; flex: none;
+  border: 1.5px solid var(--encre); background: var(--blanc);
+  font: 700 16px/1 var(--sans); color: var(--encre); cursor: pointer; padding: 0;
+}
+.prio {
+  flex: none; min-width: 44px; min-height: 32px;
+  font: 700 11px/1 var(--sans); letter-spacing: 0.06em;
+  border: 1px solid var(--encre); background: var(--blanc); color: var(--encre); cursor: pointer;
+}
+.prio.p1 { background: var(--encre); color: var(--blanc); }
+.prio.p3 { border-style: dashed; color: var(--doux); }
+.croix { flex: none; background: none; border: 0; font: 400 22px/1 var(--sans); color: var(--doux); padding: 4px 6px; cursor: pointer; }
+
+.decision.annulee h2, .decision.annulee p:not(.meta) { text-decoration: line-through; color: var(--doux); }
+.decision .actions { margin-top: 6px; }
+.pastille { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--couleur); margin-right: 6px; vertical-align: 1px; }

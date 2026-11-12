@@ -1,69 +1,67 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import Link from "next/link";
+import Cadre from "@/components/Cadre";
+import { requireUser } from "@/lib/auth";
+import { agentInfo, dateLongue } from "@/lib/agents";
 
-export default function Home() {
+type LigneRapport = {
+  id: string;
+  agent: string;
+  type: string;
+  date: string;
+  titre: string | null;
+  statut: "en_cours" | "publie" | "echec";
+};
+
+export default async function Kiosque() {
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase
+    .from("rapports")
+    .select("id, agent, type, date, titre, statut")
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(60);
+
+  const rapports = (data ?? []) as LigneRapport[];
+  const parJour = new Map<string, LigneRapport[]>();
+  for (const r of rapports) parJour.set(r.date, [...(parJour.get(r.date) ?? []), r]);
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>
-            To get started, edit the{" "}
-            <code className={styles.code}>page.tsx</code> file.
-          </h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <Cadre>
+      <p className="k">Kiosque</p>
+      <h1>Les éditions</h1>
+      <div className="double" />
+
+      {error && <p className="erreur">Impossible de charger les rapports.</p>}
+      {!error && rapports.length === 0 && (
+        <p className="vide">Aucun rapport pour l&apos;instant. Le premier Journal arrivera ici.</p>
+      )}
+
+      {[...parJour].map(([jour, liste]) => (
+        <section key={jour}>
+          <h2 className="jour">{dateLongue(jour)}</h2>
+          <ul className="cartes">
+            {liste.map((r) => {
+              const a = agentInfo(r.agent);
+              return (
+                <li key={r.id}>
+                  <Link
+                    href={`/rapports/${r.id}`}
+                    className="carte"
+                    style={{ "--couleur": a.couleur } as React.CSSProperties}
+                  >
+                    <p className="k">
+                      <span>{a.rubrique} · {a.nom}</span>
+                      {r.statut === "en_cours" && <span className="tag attente">En cours</span>}
+                      {r.statut === "echec" && <span className="tag echec">Échec</span>}
+                    </p>
+                    <h2>{r.titre ?? (r.type === "recap" ? "Récap de la semaine" : "Journal du matin")}</h2>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+    </Cadre>
   );
 }
