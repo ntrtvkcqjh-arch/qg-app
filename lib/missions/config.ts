@@ -29,3 +29,6 @@ export const MISSIONS: Record<
 // Garde-fous de coût, fixés avec Marjana.
 export const BUDGET_CENTS_USD = "500"; // 5 $ par mission (plafond appliqué par Anthropic)
 export const DUREE_MAX_MINUTES = 60; // au-delà : interruption et échec
+
+// Édition du week-end (plus courte) : même modèle, effort de réflexion moyen.
+export const MODELE_WEEKEND = { id: "claude-sonnet-5-5", effort: "medium" } as const;

@@ -1,4 +1,5 @@
 import "server-only";
+import { after } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DUREE_MAX_MINUTES } from "./config";
@@ -172,4 +173,19 @@ export async function collecterTout(opts: { sessionId?: string } = {}): Promise<
     }
   }
   return bilans;
+}
+
+/**
+ * Pour les pages : la page s'affiche tout de suite avec ce qu'on sait, et la
+ * récupération auprès d'Anthropic se fait juste après, en arrière-plan.
+ * L'actualisation automatique de la page montre le résultat 20 s plus tard.
+ */
+export function collecterApresAffichage() {
+  after(async () => {
+    try {
+      await collecterTout();
+    } catch {
+      /* la prochaine actualisation réessaiera */
+    }
+  });
 }

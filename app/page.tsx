@@ -2,7 +2,8 @@ import Link from "next/link";
 import Cadre from "@/components/Cadre";
 import { requireUser } from "@/lib/auth";
 import { agentInfo, dateLongue } from "@/lib/agents";
-import { collecterTout } from "@/lib/missions/collecter";
+import { collecterApresAffichage } from "@/lib/missions/collecter";
+import ActualisationAuto from "@/app/missions/ActualisationAuto";
 
 type LigneRapport = {
   id: string;
@@ -24,18 +25,12 @@ async function lireRapports(supabase: Awaited<ReturnType<typeof requireUser>>["s
 
 export default async function Kiosque() {
   const { supabase } = await requireUser();
-  let { data, error } = await lireRapports(supabase);
+  const { data, error } = await lireRapports(supabase);
 
-  // Une édition en cours ? On demande à Anthropic où elle en est
-  // (filet de sécurité en plus du webhook), puis on relit.
-  if (data?.some((r) => r.statut === "en_cours")) {
-    try {
-      await collecterTout();
-      ({ data, error } = await lireRapports(supabase));
-    } catch {
-      /* la page s'affiche quand même */
-    }
-  }
+  // Une édition en cours ? La page s'affiche tout de suite ; on demande à
+  // Anthropic où elle en est juste après, et la page se rafraîchit seule.
+  const enCours = Boolean(data?.some((r) => r.statut === "en_cours"));
+  if (enCours) collecterApresAffichage();
 
   const rapports = (data ?? []) as LigneRapport[];
   const parJour = new Map<string, LigneRapport[]>();
@@ -45,8 +40,12 @@ export default async function Kiosque() {
     <Cadre>
       <p className="k">Kiosque</p>
       <h1>Les éditions</h1>
-      <Link href="/missions" className="lien petit">Missions des agents →</Link>
+      <p style={{ display: "flex", gap: 16, flexWrap: "wrap", margin: 0 }}>
+        <Link href="/missions" className="lien petit">Missions des agents →</Link>
+        <Link href="/recherche" className="lien petit">Rechercher dans les archives →</Link>
+      </p>
       <div className="double" />
+      <ActualisationAuto active={enCours} />
 
       {error && <p className="erreur">Impossible de charger les rapports.</p>}
       {!error && rapports.length === 0 && (

@@ -1,7 +1,7 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { BUDGET_CENTS_USD, MISSIONS, type Mission } from "./config";
+import { BUDGET_CENTS_USD, MISSIONS, MODELE_WEEKEND, type Mission } from "./config";
 import { dateLongueParis, decalerJours, maintenantParis } from "./temps";
 
 type Db = ReturnType<typeof createAdminClient>;
@@ -168,7 +168,11 @@ export async function lancerMission(mission: Mission): Promise<ResultatLancement
   try {
     const client = new Anthropic();
     const session = await client.beta.sessions.create({
-      agent: agentId,
+      // Journal du week-end : mêmes consignes, effort de réflexion moyen (moins cher).
+      agent:
+        mission === "journal" && jourSemaine >= 6
+          ? { type: "agent_with_overrides", id: agentId, model: { ...MODELE_WEEKEND } }
+          : agentId,
       environment_id: environmentId,
       title: `${cfg.titre} — ${date}`,
       budget: { type: "limit", max_list_cost: { amount: BUDGET_CENTS_USD, currency: "USD" } },

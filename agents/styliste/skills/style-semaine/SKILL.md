@@ -20,6 +20,10 @@ au dimanche suivant (à la demande : les 7 jours qui suivent).
 - Prix : la page officielle de la marque ou d'un distributeur reconnu,
   ouverte et lue, avec la date. Jamais un prix tiré d'un extrait de
   recherche.
+- L'outil de lecture n'ouvre qu'une adresse déjà apparue dans tes résultats
+  de recherche : cherche la page précise (nom du site dans la requête),
+  puis ouvre l'adresse exacte. Page refusée : ne réessaie pas, prends une
+  source équivalente.
 
 ## Structure
 1. En bref : 3 lignes (la météo de la semaine en une phrase, la tenue clé,

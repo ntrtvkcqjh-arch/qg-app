@@ -193,3 +193,6 @@ select { width: auto; padding-right: 28px; background-image: linear-gradient(45d
 .decision.annulee h2, .decision.annulee p:not(.meta) { text-decoration: line-through; color: var(--doux); }
 .decision .actions { margin-top: 6px; }
 .pastille { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--couleur); margin-right: 6px; vertical-align: 1px; }
+
+/* --- Recherche --- */
+mark { background: #f3e2a9; color: inherit; padding: 0 1px; }

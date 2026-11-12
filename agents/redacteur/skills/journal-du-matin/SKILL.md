@@ -56,6 +56,13 @@ Pas de rubrique compta-fiscale, pas de question DEC.
 2. Recherche rubrique par rubrique, sources primaires d'abord
    (voir `sources.md`), en ajoutant la date du jour aux requêtes d'actualité.
 3. Ouvre et lis chaque page retenue. Jamais d'extrait de recherche seul.
+   L'outil de lecture n'ouvre qu'une adresse déjà apparue dans tes résultats
+   de recherche. Pour une source officielle (BCE, AMF, Légifrance, ANC…),
+   cherche d'abord la page précise avec le nom du site dans la requête
+   (ex. « BCE décision de politique monétaire 29 octobre 2026
+   ecb.europa.eu »), puis ouvre l'adresse exacte du résultat. Page refusée
+   ou inaccessible : ne réessaie pas, prends une source équivalente
+   (communiqué officiel, version PDF, autre média de référence).
 4. Pour chaque fait important : deux sources concordantes, dont une primaire
    si elle existe. Sinon : PROBABLE ou À VÉRIFIER, avec la raison.
 5. Rédige avec tes mots. Pas plus d'une citation courte par source.

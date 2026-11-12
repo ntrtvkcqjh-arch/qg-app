@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Cadre from "@/components/Cadre";
 import { requireUser } from "@/lib/auth";
 import { lireBureau } from "@/lib/bureau";
-import { collecterTout } from "@/lib/missions/collecter";
+import { collecterApresAffichage } from "@/lib/missions/collecter";
 import ActualisationAuto from "@/app/missions/ActualisationAuto";
 import Piece from "./Piece";
 
@@ -11,16 +11,8 @@ export const dynamic = "force-dynamic";
 
 export default async function PageBureau() {
   const { supabase } = await requireUser();
-  let bureau = await lireBureau(supabase);
-  if (bureau.enCours) {
-    // Récupère les dernières actions auprès d'Anthropic avant d'afficher.
-    try {
-      await collecterTout();
-      bureau = await lireBureau(supabase);
-    } catch {
-      /* affichage quand même */
-    }
-  }
+  const bureau = await lireBureau(supabase);
+  if (bureau.enCours) collecterApresAffichage(); // en arrière-plan, après l'affichage
 
   return (
     <Cadre>

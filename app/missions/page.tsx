@@ -5,7 +5,7 @@ import { agentInfo } from "@/lib/agents";
 import { actualiser } from "./actions";
 import BoutonsMission from "./BoutonsMission";
 import ActualisationAuto from "./ActualisationAuto";
-import { collecterTout } from "@/lib/missions/collecter";
+import { collecterApresAffichage } from "@/lib/missions/collecter";
 
 export const metadata: Metadata = { title: "Missions" };
 
@@ -38,17 +38,9 @@ async function lireRuns(supabase: Awaited<ReturnType<typeof requireUser>>["supab
 
 export default async function PageMissions() {
   const { supabase } = await requireUser();
-  let runs = await lireRuns(supabase);
+  const runs = await lireRuns(supabase);
   const enCours = runs.some((r) => r.statut === "en_cours");
-  if (enCours) {
-    // Récupère les dernières actions auprès d'Anthropic avant d'afficher.
-    try {
-      await collecterTout();
-      runs = await lireRuns(supabase);
-    } catch {
-      /* affichage quand même */
-    }
-  }
+  if (enCours) collecterApresAffichage(); // en arrière-plan, après l'affichage
 
   return (
     <Cadre>
