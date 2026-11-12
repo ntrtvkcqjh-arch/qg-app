@@ -36,6 +36,17 @@ export async function envoyerCode(
     },
   });
 
+  // Trace serveur uniquement (jamais l'adresse) pour diagnostiquer les envois.
+  if (error) console.warn("[connexion] envoi refusé :", error.status, error.code);
+
+  if (error?.status === 429) {
+    return {
+      etape: "email",
+      erreur:
+        "Trop d'e-mails envoyés récemment : le quota d'envoi est atteint. Réessaie dans une heure, ou utilise le dernier code reçu.",
+    };
+  }
+
   // Même réponse que le compte existe ou non : on ne révèle rien.
   if (error && error.status !== 400 && error.status !== 422) {
     return { etape: "email", erreur: "Envoi impossible pour le moment. Réessaie dans une minute." };
