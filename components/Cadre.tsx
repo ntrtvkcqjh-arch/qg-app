@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Navigation from "./Navigation";
 import { seDeconnecter } from "@/app/connexion/actions";
 
@@ -7,9 +8,12 @@ export default function Cadre({ children }: { children: React.ReactNode }) {
     <>
       <header className="entete">
         <span className="marque">Le QG</span>
-        <form action={seDeconnecter}>
-          <button type="submit" className="lien petit">Se déconnecter</button>
-        </form>
+        <span style={{ display: "flex", gap: 14, alignItems: "center" }}>
+          <Link href="/compte" className="lien petit">Mon compte</Link>
+          <form action={seDeconnecter}>
+            <button type="submit" className="lien petit">Se déconnecter</button>
+          </form>
+        </span>
       </header>
       <main className="colonne">{children}</main>
       <Navigation />

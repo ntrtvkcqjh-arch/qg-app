@@ -16,7 +16,7 @@ export default async function Connexion({
       <div className="double" />
       {erreur && (
         <p className="erreur" role="alert">
-          Le lien a expiré ou a déjà servi. Demande un nouveau code.
+          Le lien a expiré ou a déjà servi.
         </p>
       )}
       <FormulaireConnexion />
