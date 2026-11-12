@@ -48,8 +48,9 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // Tout sauf les fichiers statiques et les routes serveur protégées par leur
-  // propre secret (/api/cron : CRON_SECRET ; /api/webhooks : signature HMAC).
+  // propre secret (/api/cron : CRON_SECRET ; /api/webhooks : signature HMAC),
+  // et /essais/ : pages publiques et inoffensives du jeu de tests.
   matcher: [
-    "/((?!_next/static|_next/image|api/cron|api/webhooks|favicon.ico|manifest.webmanifest|icon|apple-icon|.*\\.(?:svg|png|jpg|jpeg|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|api/cron|api/webhooks|essais/|favicon.ico|manifest.webmanifest|icon|apple-icon|.*\\.(?:svg|png|jpg|jpeg|webp|ico)$).*)",
   ],
 };
