@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { memo, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AgentBureau } from "@/lib/bureau";
 import styles from "./Bureau.module.css";
 
@@ -63,15 +63,26 @@ const TEINTES: Record<string, { h: string; s: string; p: string }> = {
 };
 const PX = 2;
 
-function Sprite({ agent, couleur, dort }: { agent: string; couleur: string; dort: boolean }) {
-  const lignes = SPRITES[agent] ?? SPRITES.redacteur;
+
+type Pas = 0 | 1 | 2; // 0 debout, 1 et 2 : jambe gauche ou droite levée
+
+/** Personnage en pixels. `pas` anime les jambes, `yeuxFermes` sert au clignement et au sommeil. */
+const Sprite = memo(function Sprite({ agent, couleur, yeuxFermes, pas }: { agent: string; couleur: string; yeuxFermes: boolean; pas: Pas }) {
+  const lignes = [...(SPRITES[agent] ?? SPRITES.redacteur)].map((l) => [...l]);
+  if (pas) {
+    const [a, b] = pas === 1 ? [1, 2] : [5, 6];
+    for (const x of [a, b]) {
+      lignes[12][x] = "k";
+      lignes[13][x] = ".";
+    }
+  }
   const t = TEINTES[agent] ?? TEINTES.redacteur;
   const pal: Record<string, string> = { h: t.h, s: t.s, c: couleur, w: "#f4f1ea", p: t.p, k: "#151515", g: "#151515", e: "#151515" };
   const rects: ReactNode[] = [];
   lignes.forEach((ligne, y) =>
-    [...ligne].forEach((ch, x) => {
+    ligne.forEach((ch, x) => {
       if (ch === ".") return;
-      if (ch === "e" && dort) {
+      if (ch === "e" && yeuxFermes) {
         rects.push(<rect key={`${x}-${y}`} x={x * PX} y={y * PX} width={PX} height={PX} fill={t.s} />);
         rects.push(<rect key={`${x}-${y}z`} x={x * PX} y={y * PX + 1.2} width={PX} height={0.8} fill="#151515" />);
         return;
@@ -80,25 +91,54 @@ function Sprite({ agent, couleur, dort }: { agent: string; couleur: string; dort
     }),
   );
   return <g shapeRendering="crispEdges">{rects}</g>;
-}
+});
 
 // Décalage horizontal des bulles, pour que deux bulles voisines ne se chevauchent pas.
 const DECALAGE: Record<string, number> = { redacteur: -26, "chef-cabinet": 26, styliste: 0 };
 
 const COURT: Record<string, string> = { redacteur: "Rédacteur", "chef-cabinet": "Chef", styliste: "Styliste" };
 
-// Postes de travail et coins de repos de chaque agent (en cases).
-const POSTES: Record<string, { travail: [number, number]; repos: [number, number]; bureau: [number, number] }> = {
-  redacteur: { travail: [1.75, 3.55], repos: [1.95, 6.95], bureau: [1, 4] },
-  "chef-cabinet": { travail: [3.75, 0.85], repos: [6.1, 1.5], bureau: [3, 1.3] },
-  styliste: { travail: [5.75, 3.55], repos: [5.75, 7.2], bureau: [5, 4] },
+// Poste de travail (chaise) et bureau de chaque agent (en cases).
+const POSTES: Record<string, { travail: [number, number]; bureau: [number, number] }> = {
+  redacteur: { travail: [1.75, 3.55], bureau: [1, 4] },
+  "chef-cabinet": { travail: [3.75, 0.85], bureau: [3, 1.3] },
+  styliste: { travail: [5.75, 3.55], bureau: [5, 4] },
 };
+
+// Promenades au repos : des allées dégagées, qui contournent les meubles.
+// pause = secondes passées sur place (café, fenêtre, portant, canapé…).
+type Etape = { i: number; j: number; pause: number };
+const ROUTES: Record<string, Etape[]> = {
+  redacteur: [
+    { i: 1.95, j: 6.95, pause: 6 }, // coin café
+    { i: 2.8, j: 5.6, pause: 0 },
+    { i: 3.7, j: 3.1, pause: 4 }, // passe voir la bibliothèque
+    { i: 2.8, j: 5.6, pause: 0 },
+  ],
+  "chef-cabinet": [
+    { i: 6.1, j: 1.5, pause: 5 }, // près de la plante
+    { i: 6.3, j: 3.1, pause: 0 },
+    { i: 4.8, j: 3.1, pause: 4 }, // fait le tour des bureaux
+    { i: 6.3, j: 3.1, pause: 0 },
+  ],
+  styliste: [
+    { i: 5.75, j: 7.2, pause: 8 }, // assise sur le canapé
+    { i: 5.75, j: 7.9, pause: 0 },
+    { i: 7.5, j: 7.9, pause: 0 },
+    { i: 7.5, j: 3.4, pause: 5 }, // devant le portant
+    { i: 7.5, j: 7.9, pause: 0 },
+    { i: 5.75, j: 7.9, pause: 0 },
+  ],
+};
+const VITESSE = 0.75; // cases par seconde
+
+type Pose = { i: number; j: number; pas: Pas; face: 1 | -1; yeuxFermes: boolean };
 
 function Bulle({ x, y, texte, alerte, dx = 0 }: { x: number; y: number; texte: string; alerte?: boolean; dx?: number }) {
   const l = Math.max(30, texte.length * 4.7 + 12);
   const gauche = Math.max(-l + 8, Math.min(-8, -l / 2 + dx));
   return (
-    <g transform={`translate(${x} ${y})`} aria-hidden="true">
+    <g transform={`translate(${x.toFixed(1)} ${y.toFixed(1)})`} aria-hidden="true">
       <rect x={gauche} y={-15} width={l} height={14} rx={3} fill="#fff" stroke={alerte ? "#8a1c2b" : "#121212"} strokeWidth={0.8} />
       <polygon points="-3,-1.4 3,-1.4 0,3" fill="#fff" stroke={alerte ? "#8a1c2b" : "#121212"} strokeWidth={0.8} />
       <rect x={-3.4} y={-2.2} width={6.8} height={1.6} fill="#fff" />
@@ -109,12 +149,10 @@ function Bulle({ x, y, texte, alerte, dx = 0 }: { x: number; y: number; texte: s
   );
 }
 
-function Personnage({ a, choisi, onChoisir }: { a: AgentBureau; choisi: boolean; onChoisir: () => void }) {
-  const poste = POSTES[a.id];
-  const [i, j] = a.etat === "travaille" ? poste.travail : poste.repos;
+function Personnage({ a, pose, choisi, onChoisir }: { a: AgentBureau; pose: Pose; choisi: boolean; onChoisir: () => void }) {
+  const { i, j } = pose;
   const [x, y] = iso(i, j);
-  const anim =
-    a.etat === "travaille" ? styles.travaille : a.etat === "publie" ? styles.saute : a.etat === "dort" ? styles.respire : "";
+  const anim = a.etat === "travaille" ? styles.travaille : a.etat === "dort" ? styles.respire : pose.pas ? styles.marche : "";
   return (
     <g
       role="button"
@@ -126,9 +164,10 @@ function Personnage({ a, choisi, onChoisir }: { a: AgentBureau; choisi: boolean;
     >
       {choisi && <polygon points={pts(iso(i - 0.45, j - 0.45), iso(i + 0.45, j - 0.45), iso(i + 0.45, j + 0.45), iso(i - 0.45, j + 0.45))} fill="none" stroke={a.couleur} strokeWidth={1.4} />}
       <ellipse cx={x} cy={y} rx={7} ry={3} fill="rgba(0,0,0,.18)" />
-      <g transform={`translate(${x - 8} ${y - 28})`}>
+      {/* face = -1 : le personnage regarde vers la gauche (miroir autour de son axe) */}
+      <g transform={`translate(${(x - 8 * pose.face).toFixed(2)} ${(y - 28).toFixed(2)}) scale(${pose.face} 1)`}>
         <g className={anim}>
-          <Sprite agent={a.id} couleur={a.couleur} dort={a.etat === "dort"} />
+          <Sprite agent={a.id} couleur={a.couleur} yeuxFermes={pose.yeuxFermes || a.etat === "dort"} pas={pose.pas} />
         </g>
       </g>
       {/* zone de toucher plus large que le dessin, pour le doigt */}
@@ -136,6 +175,87 @@ function Personnage({ a, choisi, onChoisir }: { a: AgentBureau; choisi: boolean;
     </g>
   );
 }
+
+/** Position de départ : à son poste s'il travaille, sinon au premier arrêt de sa promenade. */
+function poseInitiale(a: AgentBureau): Pose {
+  const depart = a.etat === "travaille" ? { i: POSTES[a.id].travail[0], j: POSTES[a.id].travail[1] } : ROUTES[a.id][0];
+  return { i: depart.i, j: depart.j, pas: 0, face: 1, yeuxFermes: false };
+}
+
+/**
+ * Fait vivre la pièce : promenades au repos, pas qui alternent, clignements.
+ * Une seule boucle d'animation (~30 images/s), coupée si l'iPhone demande
+ * moins de mouvement ou si l'onglet est caché.
+ */
+function useVie(agents: AgentBureau[]) {
+  const [poses, setPoses] = useState<Record<string, Pose>>(() => Object.fromEntries(agents.map((a) => [a.id, poseInitiale(a)])));
+  const cle = agents.map((a) => `${a.id}:${a.etat}`).join("|");
+
+  useEffect(() => {
+    const reduit = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const marcheurs = agents.map((a, n) => ({
+      a,
+      marche: !reduit && (a.etat === "repos" || a.etat === "publie" || a.etat === "echec"),
+      cible: 1,
+      pose: poseInitiale(a),
+      // Départs décalés : chacun commence sa promenade à un moment différent.
+      attendJusqua: performance.now() + 1500 + n * 2200,
+      cligne: 1800 + n * 1300,
+    }));
+    if (reduit) {
+      // Pas d'animation : on place seulement chacun à sa position du moment.
+      const id = requestAnimationFrame(() => setPoses(Object.fromEntries(marcheurs.map((m) => [m.a.id, m.pose]))));
+      return () => cancelAnimationFrame(id);
+    }
+
+    let precedent = performance.now();
+    let dernierRendu = 0;
+    let id = 0;
+    const boucle = (t: number) => {
+      const dt = Math.min(0.1, (t - precedent) / 1000);
+      precedent = t;
+      for (const m of marcheurs) {
+        const p = m.pose;
+        p.yeuxFermes = (t + m.cligne) % 4300 < 150;
+        if (!m.marche) continue;
+        const route = ROUTES[m.a.id];
+        if (t < m.attendJusqua) {
+          p.pas = 0;
+          continue;
+        }
+        const but = route[m.cible];
+        const di = but.i - p.i;
+        const dj = but.j - p.j;
+        const dist = Math.hypot(di, dj);
+        const avance = VITESSE * dt;
+        if (dist <= avance) {
+          p.i = but.i;
+          p.j = but.j;
+          p.pas = 0;
+          m.attendJusqua = t + but.pause * 1000 * (0.8 + Math.random() * 0.5);
+          m.cible = (m.cible + 1) % route.length;
+        } else {
+          p.i += (di / dist) * avance;
+          p.j += (dj / dist) * avance;
+          const ecranX = di - dj; // sens du déplacement à l'écran
+          if (Math.abs(ecranX) > 0.05) p.face = ecranX < 0 ? -1 : 1;
+          p.pas = Math.floor(t / 190) % 2 ? 1 : 2;
+        }
+      }
+      if (t - dernierRendu > 33) {
+        dernierRendu = t;
+        setPoses(Object.fromEntries(marcheurs.map((m) => [m.a.id, { ...m.pose }])));
+      }
+      id = requestAnimationFrame(boucle);
+    };
+    id = requestAnimationFrame(boucle);
+    return () => cancelAnimationFrame(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cle]);
+
+  return poses;
+}
+
 
 // ---------------------------------------------------------------------------
 // Décor
@@ -331,45 +451,61 @@ function Plante({ i, j }: { i: number; j: number }) {
 
 export default function Piece({ agents, heure, minute }: { agents: AgentBureau[]; heure: number; minute: number }) {
   const [choix, setChoix] = useState<string>(() => agents.find((a) => a.etat === "travaille")?.id ?? agents[0]?.id);
+  const poses = useVie(agents);
   const nuit = heure >= 22 || heure < 6;
   const crepuscule = !nuit && (heure < 8 || heure >= 19);
   const ciel = nuit ? "#1b2340" : crepuscule ? "#e7a77c" : "#9fcbe8";
   const selection = agents.find((a) => a.id === choix) ?? agents[0];
 
-  // Tout ce qui a de la profondeur est trié de l'arrière vers l'avant.
-  const objets: { prof: number; node: ReactNode }[] = [
-    { prof: 1.1, node: <Bibliotheque key="biblio" /> },
-    { prof: 7.6, node: <Plante key="plante" i={7.2} j={0.2} /> },
-    { prof: 8.0, node: <CoinCafe key="cafe" /> },
-    { prof: 11.0, node: <Portant key="portant" /> },
-    { prof: 12.2, node: <DossierCanape key="dossier" /> },
-    { prof: 13.2, node: <AssiseCanape key="assise" /> },
-    { prof: 8.2, node: <Plante key="plante2" i={0.2} j={0.5} /> },
-  ];
+  // Le décor ne change pas d'une image à l'autre : construit une seule fois.
+  const fond = useMemo(
+    () => (
+      <>
+        <Sol />
+        <Tapis />
+        <Murs ciel={ciel} nuit={nuit} />
+        <Horloge heure={heure} minute={minute} />
+      </>
+    ),
+    [ciel, nuit, heure, minute],
+  );
+  const meubles = useMemo(() => {
+    const liste: { prof: number; node: ReactNode }[] = [
+      { prof: 1.1, node: <Bibliotheque key="biblio" /> },
+      { prof: 7.6, node: <Plante key="plante" i={7.2} j={0.2} /> },
+      { prof: 8.0, node: <CoinCafe key="cafe" /> },
+      { prof: 11.0, node: <Portant key="portant" /> },
+      { prof: 12.2, node: <DossierCanape key="dossier" /> },
+      { prof: 13.2, node: <AssiseCanape key="assise" /> },
+      { prof: 8.2, node: <Plante key="plante2" i={0.2} j={0.5} /> },
+    ];
+    for (const a of agents) {
+      const [bi, bj] = POSTES[a.id]?.bureau ?? [0, 0];
+      if (!POSTES[a.id]) continue;
+      liste.push({ prof: bi + 0.8 + bj + 0.4, node: <Bureau key={`b-${a.id}`} i={bi} j={bj} agent={a.id} travaille={a.etat === "travaille"} /> });
+    }
+    return liste;
+  }, [agents]);
+
+  // Meubles et personnages triés ensemble, de l'arrière vers l'avant.
+  const objets = [...meubles];
   for (const a of agents) {
-    const p = POSTES[a.id];
-    if (!p) continue;
-    const [bi, bj] = p.bureau;
-    objets.push({ prof: bi + 0.8 + bj + 0.4, node: <Bureau key={`b-${a.id}`} i={bi} j={bj} agent={a.id} travaille={a.etat === "travaille"} /> });
-    const [ci, cj] = a.etat === "travaille" ? p.travail : p.repos;
-    objets.push({ prof: ci + cj, node: <Personnage key={`p-${a.id}`} a={a} choisi={a.id === selection?.id} onChoisir={() => setChoix(a.id)} /> });
+    const p = poses[a.id];
+    if (!p || !POSTES[a.id]) continue;
+    objets.push({ prof: p.i + p.j, node: <Personnage key={`p-${a.id}`} a={a} pose={p} choisi={a.id === selection?.id} onChoisir={() => setChoix(a.id)} /> });
   }
   objets.sort((x, y) => x.prof - y.prof);
 
   return (
     <div>
       <svg viewBox="-140 -100 280 236" className={styles.piece} role="img" aria-label="Le bureau des agents">
-        <Sol />
-        <Tapis />
-        <Murs ciel={ciel} nuit={nuit} />
-        <Horloge heure={heure} minute={minute} />
+        {fond}
         {objets.map((o) => o.node)}
         {nuit && <polygon points={pts(iso(0, 0, MUR), iso(0, N, MUR), iso(0, N), iso(N, N), iso(N, 0), iso(N, 0, MUR))} fill="#0b1430" opacity={0.3} pointerEvents="none" />}
         {agents.map((a) => {
-          const p = POSTES[a.id];
+          const p = poses[a.id];
           if (!p || !a.bulle) return null;
-          const [ci, cj] = a.etat === "travaille" ? p.travail : p.repos;
-          const [x, y] = iso(ci, cj);
+          const [x, y] = iso(p.i, p.j);
           return a.etat === "dort" ? (
             <text key={`z-${a.id}`} x={x + 6} y={y - 30} fontSize={8} fontFamily="Georgia, serif" fontStyle="italic" fill={nuit ? "#f6e7a8" : "#4a4a4a"} className={styles.zzz} aria-hidden="true">
               Zzz
