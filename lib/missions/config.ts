@@ -1,10 +1,10 @@
 import "server-only";
 
-export type Mission = "journal" | "recap";
+export type Mission = "journal" | "recap" | "style";
 
 export const MISSIONS: Record<
   Mission,
-  { agent: "redacteur" | "chef-cabinet"; agentEnv: string; environmentEnv: string; titre: string }
+  { agent: "redacteur" | "chef-cabinet" | "styliste"; agentEnv: string; environmentEnv: string; titre: string }
 > = {
   journal: {
     agent: "redacteur",
@@ -17,6 +17,12 @@ export const MISSIONS: Record<
     agentEnv: "AGENT_ID_CHEF_CABINET",
     environmentEnv: "ENVIRONMENT_ID_CHEF_CABINET",
     titre: "Récap de la semaine",
+  },
+  style: {
+    agent: "styliste",
+    agentEnv: "AGENT_ID_STYLISTE",
+    environmentEnv: "ENVIRONMENT_ID_STYLISTE",
+    titre: "Le Style de la semaine",
   },
 };
 

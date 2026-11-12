@@ -7,7 +7,7 @@ export type Decision = { date: string; decision: string; raison: string; annulat
 export type Incident = { type: string; detail: string };
 
 export type Sortie = {
-  type: "journal" | "recap";
+  type: "journal" | "recap" | "style";
   date: string;
   titre: string;
   html: string;
@@ -40,7 +40,7 @@ const chaine = (v: unknown, max: number) => (typeof v === "string" ? v.trim().sl
 
 export function lireSortie(
   texte: string,
-  attendu: { type: "journal" | "recap"; agent: string },
+  attendu: { type: "journal" | "recap" | "style"; agent: string },
 ): { ok: true; sortie: Sortie } | { ok: false; raison: string } {
   try {
     const entete = texte.match(/<<<RAPPORT\s+type="([^"]*)"\s+date="([^"]*)"\s+titre="([^"]*)"\s*>>>/);

@@ -2,6 +2,7 @@
 export const AGENTS = {
   redacteur: { nom: "Rédacteur en chef", rubrique: "Journal", couleur: "#1F3A5F" },
   "chef-cabinet": { nom: "Chef de cabinet", rubrique: "Récap", couleur: "#4B3A6B" },
+  styliste: { nom: "Styliste", rubrique: "Style", couleur: "#2F5D50" },
 } as const;
 
 export type AgentId = keyof typeof AGENTS;

@@ -10,7 +10,7 @@ export type EtatMission = { message?: string; erreur?: string };
 export async function lancerManuellement(_prev: EtatMission, fd: FormData): Promise<EtatMission> {
   await requireUser(); // Marjana uniquement
   const mission = fd.get("mission");
-  if (mission !== "journal" && mission !== "recap") return { erreur: "Mission inconnue." };
+  if (mission !== "journal" && mission !== "recap" && mission !== "style") return { erreur: "Mission inconnue." };
 
   const r = await lancerMission(mission);
   revalidatePath("/missions");

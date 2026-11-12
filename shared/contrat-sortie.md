@@ -5,7 +5,7 @@ format, sinon ton travail est perdu.
 
 Ta réponse finale contient, dans cet ordre, uniquement ces blocs :
 
-<<<RAPPORT type="journal|recap" date="AAAA-MM-JJ" titre="...">>>
+<<<RAPPORT type="journal|recap|style" date="AAAA-MM-JJ" titre="...">>>
 (le document HTML complet et autonome, conforme à la charte rapport-design)
 <<<FIN_RAPPORT>>>
 

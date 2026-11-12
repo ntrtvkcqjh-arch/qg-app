@@ -8,7 +8,7 @@ type Db = ReturnType<typeof createAdminClient>;
 type Run = {
   id: string;
   agent: string;
-  mission: "journal" | "recap" | null;
+  mission: "journal" | "recap" | "style" | null;
   session_id: string | null;
   demarre_a: string;
   curseur: string | null;

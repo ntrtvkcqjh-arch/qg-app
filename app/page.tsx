@@ -71,7 +71,7 @@ export default async function Kiosque() {
                       {r.statut === "en_cours" && <span className="tag attente">En cours</span>}
                       {r.statut === "echec" && <span className="tag echec">Échec</span>}
                     </p>
-                    <h2>{r.titre ?? (r.type === "recap" ? "Récap de la semaine" : "Journal du matin")}</h2>
+                    <h2>{r.titre ?? (r.type === "recap" ? "Récap de la semaine" : r.type === "style" ? "Le Style de la semaine" : "Journal du matin")}</h2>
                   </Link>
                 </li>
               );

@@ -15,6 +15,9 @@ export default function BoutonsMission() {
           Lancer le récap
         </button>
       </div>
+      <button type="submit" name="mission" value="style" className="bouton secondaire" disabled={enCours}>
+        Lancer la Styliste
+      </button>
       {enCours && <p className="meta">Démarrage…</p>}
       {etat.message && <p className="succes">{etat.message}</p>}
       {etat.erreur && <p className="erreur" role="alert">{etat.erreur}</p>}

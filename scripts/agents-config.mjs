@@ -11,6 +11,7 @@ export const SKILLS = {
   "rapport-design": "shared/skills/rapport-design",
   "journal-du-matin": "agents/redacteur/skills/journal-du-matin",
   "recap-dimanche": "agents/chef-cabinet/skills/recap-dimanche",
+  "style-semaine": "agents/styliste/skills/style-semaine",
 };
 
 // Outils : on part de « tout éteint » et on n'allume que le nécessaire.
@@ -61,6 +62,30 @@ export const AGENTS = {
     environnement: "chef-cabinet",
     envVar: "AGENT_ID_CHEF_CABINET",
   },
+  styliste: {
+    nom: "Styliste",
+    description: "Produit « Le Style de la semaine » de Marjana (dimanche et à la demande).",
+    fichiers: [
+      "agents/styliste/SOUL.md",
+      "agents/styliste/AGENTS.md",
+      "shared/regles-communes.md",
+      "shared/sources.md",
+      "shared/profil-marjana.md",
+      "shared/contrat-sortie.md",
+    ],
+    skills: ["rapport-design", "style-semaine"],
+    outils: [
+      ...lecture,
+      {
+        name: "web_search",
+        enabled: true,
+        user_location: { type: "approximate", country: "FR", city: "Paris", timezone: "Europe/Paris" },
+      },
+      { name: "web_fetch", enabled: true, max_content_tokens: 40000 },
+    ],
+    environnement: "styliste",
+    envVar: "AGENT_ID_STYLISTE",
+  },
 };
 
 // Environnements (conteneurs) : un par agent.
@@ -77,6 +102,11 @@ export const ENVIRONNEMENTS = {
     nom: "qg-chef-cabinet",
     config: { type: "cloud", networking: { type: "limited", allowed_hosts: [] } },
     envVar: "ENVIRONMENT_ID_CHEF_CABINET",
+  },
+  styliste: {
+    nom: "qg-styliste",
+    config: { type: "cloud", networking: { type: "unrestricted" } },
+    envVar: "ENVIRONMENT_ID_STYLISTE",
   },
 };
 
