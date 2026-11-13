@@ -17,7 +17,7 @@ type Store = {
   selectionPiece: PieceId | null;
   messageOuvert: string | null;
   toast: string | null;
-  nouvelle: (d: Difficulte, nom: string, mode: ModeDepart) => void;
+  nouvelle: (d: Difficulte, nom: string, mode: ModeDepart, tresorerie?: number) => void;
   reinitialiser: () => void;
   tic: (minutes: number) => void;
   rattraper: () => void;
@@ -40,7 +40,7 @@ export const useJeu = create<Store>()(
       selectionPiece: null,
       messageOuvert: null,
       toast: null,
-      nouvelle: (d, nom, mode) => set({ etat: M.nouvellePartie(d, nom, mode), panneau: "cabinet" }),
+      nouvelle: (d, nom, mode, tresorerie) => set({ etat: M.nouvellePartie(d, nom, mode, tresorerie), panneau: "cabinet" }),
       reinitialiser: () => set({ etat: null, selectionAgent: null, messageOuvert: null }),
       tic: (minutes) => {
         const e = get().etat;

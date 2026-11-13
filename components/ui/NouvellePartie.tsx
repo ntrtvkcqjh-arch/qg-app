@@ -20,6 +20,7 @@ export default function NouvellePartie() {
   const [nom, setNom] = useState("Cabinet EZ");
   const [niveau, setNiveau] = useState<Difficulte>("normal");
   const [mode, setMode] = useState<ModeDepart>("creation");
+  const [budget, setBudget] = useState<"normal" | "dix-millions">("normal");
 
   return (
     <div className="accueil-jeu">
@@ -43,6 +44,17 @@ export default function NouvellePartie() {
             </button>
           ))}
         </div>
+        <span className="libelle">Trésorerie de départ</span>
+        <div className="niveaux deux">
+          <button className={`niveau ${budget === "normal" ? "actif" : ""}`} onClick={() => setBudget("normal")}>
+            <strong>Selon la difficulté</strong>
+            <span>De 15 000 à 40 000 € : chaque euro compte.</span>
+          </button>
+          <button className={`niveau ${budget === "dix-millions" ? "actif" : ""}`} onClick={() => setBudget("dix-millions")}>
+            <strong>10 000 000 €</strong>
+            <span>Reprise avec un trésor de guerre : agrandis, recrute et rachète sans compter.</span>
+          </button>
+        </div>
         <span className="libelle">Difficulté</span>
         <div className="niveaux">
           {NIVEAUX.map((n) => (
@@ -52,7 +64,7 @@ export default function NouvellePartie() {
             </button>
           ))}
         </div>
-        <button className="bouton principal-btn" onClick={() => nouvelle(niveau, nom.trim() || "Cabinet EZ", mode)}>
+        <button className="bouton principal-btn" onClick={() => nouvelle(niveau, nom.trim() || "Cabinet EZ", mode, budget === "dix-millions" ? 10_000_000 : undefined)}>
           Ouvrir le cabinet
         </button>
         <p className="note">La partie est sauvegardée dans ce navigateur. 1 seconde réelle = 1 minute au cabinet.</p>

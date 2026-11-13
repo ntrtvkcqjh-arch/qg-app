@@ -55,7 +55,9 @@ export function initSkills(a: Agent) {
 }
 
 export function migrerExt(e: Etat) {
-  e.politiqueHeures ??= "limitee";
+  e.politiqueHeures ??= "libre";
+  // Choix par défaut d'une ancienne version (« limitée ») : on repasse en libre tant que tu n'as rien choisi.
+  if (!e.compteurs.politiqueChoisie) e.politiqueHeures = "libre";
   e.teletravailJours ??= 0;
   e.violations ??= 0;
   e.sessions ??= [];
@@ -283,6 +285,7 @@ function anniversaires(e: Etat, jour: number) {
 
 export function setPolitiqueHeures(e: Etat, p: Etat["politiqueHeures"]) {
   e.politiqueHeures = p;
+  e.compteurs.politiqueChoisie = 1;
   log(e, `Nouvelle règle d'heures supplémentaires : ${p === "libre" ? "libres jusqu'à minuit" : p === "limitee" ? "limitées à 20 h" : "interdites après 18 h 30"}.`);
 }
 

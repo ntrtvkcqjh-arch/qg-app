@@ -1,6 +1,7 @@
 "use client";
 
-import { dateLongue, heure, jourDe } from "@/lib/calendrier";
+import { dateLongue, heure, jourDe, minuteDuJour } from "@/lib/calendrier";
+import { passerAuLendemain } from "@/lib/moteur";
 import { useJeu } from "@/lib/store";
 import type { Etat } from "@/lib/types";
 
@@ -14,6 +15,9 @@ const VITESSES: { v: Etat["vitesse"]; label: string }[] = [
 export default function BarreHaut() {
   const e = useJeu((s) => s.etat)!;
   const setVitesse = useJeu((s) => s.setVitesse);
+  const agir = useJeu((s) => s.agir);
+  const soir = minuteDuJour(e.minute) >= 18 * 60;
+  const restent = e.agents.filter((a) => !["absent", "conge", "malade"].includes(a.activite)).length;
   const jour = jourDe(e.minute);
 
   return (
@@ -31,6 +35,11 @@ export default function BarreHaut() {
           </button>
         ))}
       </div>
+      {soir && (
+        <button className="bouton-nuit" onClick={() => agir(passerAuLendemain)} title="Sauter la soirée jusqu'au lendemain matin">
+          🌙 Passer à demain{restent ? ` (${restent} encore au bureau)` : ""}
+        </button>
+      )}
       <div className="bh-stats">
         <div className="pa" title="Points d'action du jour">
           {Array.from({ length: e.paMax }).map((_, i) => (

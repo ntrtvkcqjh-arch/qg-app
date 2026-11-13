@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
-import Humain, { modelePour, type Pose } from "./Humain";
+import { useEffect, useMemo, useRef } from "react";
+import Corps, { apparencePour } from "./Corps";
 import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 import { chemin, placeDans } from "@/lib/plan";
@@ -14,8 +14,12 @@ function Silhouette({ v, index, reunionOuverte }: { v: Visiteur; index: number; 
   const g = useRef<Group>(null);
   const piece: PieceId = v.etat === "attend" ? "accueil" : v.etat === "reunion" ? (reunionOuverte ? "reunion" : "associee") : "dehors";
   const cible = placeDans(piece, index + 3, 0);
-  const [pose, setPose] = useState<Pose>("walk");
-  const poseRef = useRef<Pose>("walk");
+  const jambeG = useRef<Group>(null);
+  const jambeD = useRef<Group>(null);
+  const brasG = useRef<Group>(null);
+  const brasD = useRef<Group>(null);
+  const corps = useRef<Group>(null);
+  const apparence = useMemo(() => ({ ...apparencePour(v.id, v.nom.split(" ")[0], v.couleur, "#e0b08a", "#3b2a20"), veste: true }), [v.id, v.nom, v.couleur]);
   const s = useRef({ x: -9, z: 9.5, piece: "dehors" as PieceId, chemin: [] as { x: number; z: number }[], t: index });
 
   useEffect(() => {
@@ -47,42 +51,31 @@ function Silhouette({ v, index, reunionOuverte }: { v: Visiteur; index: number; 
       marche = true;
     }
     g.current.position.set(e.x, 0, e.z);
-    const voulue: Pose = marche ? "walk" : v.etat === "reunion" ? "sit" : "idle";
-    if (voulue !== poseRef.current) {
-      poseRef.current = voulue;
-      setPose(voulue);
+    const assis = !marche && v.etat === "reunion";
+    const balance = marche ? Math.sin(e.t * 9) * 0.6 : 0;
+    if (jambeG.current && jambeD.current) {
+      jambeG.current.rotation.x = assis ? -1.45 : balance;
+      jambeD.current.rotation.x = assis ? -1.45 : -balance;
     }
+    if (brasG.current && brasD.current) {
+      brasG.current.rotation.x = assis ? -0.6 : -balance * 0.8;
+      brasD.current.rotation.x = assis ? -0.6 : balance * 0.8;
+    }
+    if (corps.current) corps.current.position.y = assis ? -0.4 : marche ? Math.abs(Math.sin(e.t * 9)) * 0.04 : 0;
     const visible = !(e.piece === "dehors" && !e.chemin.length);
     g.current.visible = visible;
-    POSITIONS.set(`v_${v.id}`, { x: e.x, y: 1.98, z: e.z, visible });
+    POSITIONS.set(`v_${v.id}`, { x: e.x, y: 1.95, z: e.z, visible });
   });
 
   return (
     <group ref={g}>
-      <Suspense fallback={<group>
-      <mesh position={[-0.09, 0.3, 0]} castShadow>
-        <capsuleGeometry args={[0.07, 0.4, 4, 8]} />
-        <meshStandardMaterial color="#263238" />
-      </mesh>
-      <mesh position={[0.09, 0.3, 0]} castShadow>
-        <capsuleGeometry args={[0.07, 0.4, 4, 8]} />
-        <meshStandardMaterial color="#263238" />
-      </mesh>
-      <mesh position={[0, 0.82, 0]} castShadow>
-        <capsuleGeometry args={[0.21, 0.4, 6, 12]} />
-        <meshStandardMaterial color={v.couleur} />
-      </mesh>
-      <mesh position={[0, 1.33, 0]} castShadow>
-        <sphereGeometry args={[0.17, 18, 14]} />
-        <meshStandardMaterial color="#e0b08a" />
-      </mesh>
-      <mesh position={[0.26, 0.55, 0.05]} castShadow>
-        <boxGeometry args={[0.08, 0.3, 0.4]} />
+      <group ref={corps}>
+        <Corps a={apparence} membres={{ jambeG, jambeD, brasG, brasD }} />
+      </group>
+      <mesh position={[0.3, 0.62, 0.05]} castShadow>
+        <boxGeometry args={[0.08, 0.28, 0.38]} />
         <meshStandardMaterial color="#4e342e" />
       </mesh>
-      </group>}>
-        <Humain modele={modelePour(v.id, v.nom.split(" ")[0])} pose={pose} />
-      </Suspense>
     </group>
   );
 }

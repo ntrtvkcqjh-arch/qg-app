@@ -18,5 +18,5 @@ L'ancien QG est conservé dans la branche `archive-qg` et le tag `qg-final`.
 
 ## Crédits
 
-Modèles 3D : « Furniture Kit » et « Mini Characters » de Kenney (www.kenney.nl), licence CC0.
-Les licences sont dans `public/modeles/`.
+Meubles 3D : « Furniture Kit » de Kenney (www.kenney.nl), licence CC0.
+La licence est dans `public/modeles/`.

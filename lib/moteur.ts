@@ -68,7 +68,7 @@ function nouvellePeriode(jour: number): BilanPeriode {
   return { label: `Semaine du ${dateCourte(jour)}`, debut: jour, ca: 0, charges: 0, livres: 0, echeancesGagnees: 0, echeancesPerdues: 0, moral: 0, qcm: null };
 }
 
-export function nouvellePartie(difficulte: Difficulte, nomCabinet: string, mode: ModeDepart = "reprise"): Etat {
+export function nouvellePartie(difficulte: Difficulte, nomCabinet: string, mode: ModeDepart = "reprise", tresorerieDepart?: number): Etat {
   const r = REGLAGES[difficulte];
   const creation = mode === "creation";
   // Les champs ajoutés ensuite sont posés par migrerExt() plus bas.
@@ -84,7 +84,7 @@ export function nouvellePartie(difficulte: Difficulte, nomCabinet: string, mode:
     pa: r.pa,
     paMax: r.pa,
     gratuitsUtilises: 0,
-    tresorerie: creation ? Math.round(r.tresorerie * 0.8) : r.tresorerie,
+    tresorerie: tresorerieDepart ?? (creation ? Math.round(r.tresorerie * 0.8) : r.tresorerie),
     reputation: creation ? 40 : 60,
     moodGlobal: 62,
     niveauDec: 20,
@@ -475,12 +475,7 @@ export function avancer(e: Etat, minutes: number) {
       debutJournee(e);
       continue;
     }
-    if (m % 15 === 0) {
-      quart(e);
-      // Soirée : quand plus personne n'est au cabinet, on passe directement au lendemain.
-      if (m >= 18 * 60 + 30 && !e.agents.some((a) => a.activite !== "absent" && a.activite !== "conge" && a.activite !== "malade"))
-        e.minute = jourDe(e.minute) * 1440 + FIN_JOURNEE - 1;
-    }
+    if (m % 15 === 0) quart(e);
   }
 }
 
@@ -1962,4 +1957,13 @@ function nouvelleAnnee(e: Etat, jour: number) {
   // On allège l'historique des dossiers livrés depuis longtemps.
   e.dossiers = e.dossiers.filter((d) => d.phase < 5 || (d.livre ?? 0) > jour - 120);
   log(e, `🎆 Bonne année ${annee} ! La saison des bilans ${annee - 1} commence : liasse le ${dateCourte(liasse.jour)}.`, "neutre");
+}
+
+/** Saute le reste de la soirée (bouton « Passer à demain »). Les retardataires finissent leur journée. */
+export function passerAuLendemain(e: Etat): string | null {
+  if (minuteDuJour(e.minute) < 18 * 60) return "Le cabinet est encore ouvert : attends 18 h.";
+  const jour = jourDe(e.minute);
+  let garde = 0;
+  while (jourDe(e.minute) === jour && garde++ < 2000) avancer(e, 15);
+  return null;
 }

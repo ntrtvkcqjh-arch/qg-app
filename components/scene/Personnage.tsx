@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
-import Humain, { modelePour, type Pose } from "./Humain";
+import { useEffect, useMemo, useRef } from "react";
+import Corps, { apparencePour } from "./Corps";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import type { Group } from "three";
 import { POSITIONS } from "./positions";
@@ -33,16 +33,6 @@ export function pieceAgent(agent: Agent, ouvertes: PieceId[]): PieceId {
   return p;
 }
 
-function Membre({ refG, x, y, rayon, long, couleur }: { refG: React.RefObject<Group | null>; x: number; y: number; rayon: number; long: number; couleur: string }) {
-  return (
-    <group ref={refG} position={[x, y, 0]}>
-      <mesh position={[0, -long / 2 - rayon, 0]} castShadow>
-        <capsuleGeometry args={[rayon, long, 4, 8]} />
-        <meshStandardMaterial color={couleur} roughness={0.7} />
-      </mesh>
-    </group>
-  );
-}
 
 export default function Personnage({ agent, index, selectionne, vitesseJeu, onClick, piecesOuvertes }: Props) {
   const groupe = useRef<Group>(null);
@@ -51,8 +41,7 @@ export default function Personnage({ agent, index, selectionne, vitesseJeu, onCl
   const jambeD = useRef<Group>(null);
   const brasG = useRef<Group>(null);
   const brasD = useRef<Group>(null);
-  const [pose, setPose] = useState<Pose>("idle");
-  const poseRef = useRef<Pose>("idle");
+  const apparence = useMemo(() => apparencePour(agent.id, agent.prenom, agent.couleur, agent.peau, agent.cheveux), [agent.id, agent.prenom, agent.couleur, agent.peau, agent.cheveux]);
   const piece = pieceAgent(agent, piecesOuvertes);
   const cible = placeDans(piece, index, agent.bureau);
 
@@ -103,14 +92,9 @@ export default function Personnage({ agent, index, selectionne, vitesseJeu, onCl
       const poste = POSTES[agent.bureau % POSTES.length];
       g.rotation.y = poste.rot === 0 ? 0 : Math.PI;
     }
-    const voulue: Pose = marche ? "walk" : assis ? "sit" : "idle";
-    if (voulue !== poseRef.current) {
-      poseRef.current = voulue;
-      setPose(voulue);
-    }
     const epuise = auPoste && agent.fatigue > 85;
     c.rotation.x = epuise ? 0.5 : 0;
-    c.position.y = assis ? -0.04 : marche ? Math.abs(Math.sin(s.t * 9)) * 0.04 : Math.sin(s.t * 2) * 0.008;
+    c.position.y = assis ? -0.4 : marche ? Math.abs(Math.sin(s.t * 9)) * 0.04 : Math.sin(s.t * 2) * 0.008;
 
     // Bras et jambes
     const balance = marche ? Math.sin(s.t * 9) * 0.6 : 0;
@@ -124,7 +108,7 @@ export default function Personnage({ agent, index, selectionne, vitesseJeu, onCl
       brasD.current.rotation.x = assis ? -1.0 - frappe : balance * 0.8;
     }
     g.visible = !(s.piece === "dehors" && !s.chemin.length);
-    POSITIONS.set(agent.id, { x: s.x, y: assis ? 1.72 : 1.98, z: s.z, visible: g.visible && visibleHtml });
+    POSITIONS.set(agent.id, { x: s.x, y: assis ? 1.55 : 1.95, z: s.z, visible: g.visible && visibleHtml });
   });
 
   const clic = (ev: ThreeEvent<MouseEvent>) => {
@@ -141,36 +125,7 @@ export default function Personnage({ agent, index, selectionne, vitesseJeu, onCl
         </mesh>
       )}
       <group ref={corps}>
-        <Suspense fallback={<group>{/* silhouette simple le temps du chargement */}
-        <Membre refG={jambeG} x={-0.09} y={0.58} rayon={0.075} long={0.4} couleur="#2d3142" />
-        <Membre refG={jambeD} x={0.09} y={0.58} rayon={0.075} long={0.4} couleur="#2d3142" />
-        <mesh position={[0, 0.86, 0]} castShadow>
-          <capsuleGeometry args={[0.2, 0.34, 6, 12]} />
-          <meshStandardMaterial color={agent.couleur} roughness={0.65} />
-        </mesh>
-        <mesh position={[0, 1.1, 0.02]} castShadow>
-          <cylinderGeometry args={[0.06, 0.07, 0.08, 10]} />
-          <meshStandardMaterial color={agent.peau} />
-        </mesh>
-        <Membre refG={brasG} x={-0.26} y={1.04} rayon={0.06} long={0.36} couleur={agent.couleur} />
-        <Membre refG={brasD} x={0.26} y={1.04} rayon={0.06} long={0.36} couleur={agent.couleur} />
-        <mesh position={[0, 1.33, 0]} castShadow>
-          <sphereGeometry args={[0.17, 24, 18]} />
-          <meshStandardMaterial color={agent.peau} roughness={0.55} />
-        </mesh>
-        <mesh position={[0, 1.4, -0.03]} castShadow>
-          <sphereGeometry args={[0.18, 24, 18, 0, Math.PI * 2, 0, Math.PI / 1.9]} />
-          <meshStandardMaterial color={agent.cheveux} roughness={0.9} />
-        </mesh>
-        {[-0.06, 0.06].map((x) => (
-          <mesh key={x} position={[x, 1.35, 0.155]}>
-            <sphereGeometry args={[0.022, 8, 8]} />
-            <meshStandardMaterial color="#1b1b1b" />
-          </mesh>
-        ))}
-        </group>}>
-          <Humain modele={modelePour(agent.id, agent.prenom)} pose={pose} />
-        </Suspense>
+        <Corps a={apparence} membres={{ jambeG, jambeD, brasG, brasD }} />
       </group>
     </group>
   );
