@@ -7,6 +7,10 @@ import type { PieceId } from "@/lib/types";
 import { ORDRE_POSTES, niveauLocaux } from "@/lib/data/locaux";
 import { AILE_EST } from "@/lib/plan";
 import { revetement, skyline, type Revetement } from "./textures";
+import { Meuble } from "./Modeles";
+
+const ECHELLE = 2.0; // échelle commune des meubles Kenney (bureau ≈ 0,77 de haut)
+const HAUT_BUREAU = 0.77; // hauteur du plateau du bureau à cette échelle
 
 const REVETEMENT: Partial<Record<PieceId, Revetement>> = {
   associee: "parquet",
@@ -72,80 +76,23 @@ function Cylindre({
   );
 }
 
-function Plante({
-  x,
-  z,
-  grande = false,
-  echelle = 1,
-  fane = false,
-}: {
-  x: number;
-  z: number;
-  grande?: boolean;
-  echelle?: number;
-  fane?: boolean;
-}) {
-  const k = (grande ? 1.4 : 1) * echelle;
-  return (
-    <group position={[x, 0, z]}>
-      <Cylindre
-        p={[0, 0.25 * k, 0]}
-        r={0.22 * k}
-        r2={0.17 * k}
-        h={0.5 * k}
-        c="#e9e4da"
-      />
-      <mesh position={[0, 0.8 * k, 0]} castShadow>
-        <icosahedronGeometry args={[0.42 * k, 0]} />
-        <meshStandardMaterial color={fane ? "#9a9a4b" : "#4f8a4b"} roughness={0.9} flatShading />
-      </mesh>
-      <mesh position={[0.12 * k, 1.15 * k, 0.05]} castShadow>
-        <icosahedronGeometry args={[0.28 * k, 0]} />
-        <meshStandardMaterial color={fane ? "#a8a356" : "#5f9e57"} roughness={0.9} flatShading />
-      </mesh>
-    </group>
-  );
+function Plante({ x, z, grande = false, echelle = 1, fane = false }: { x: number; z: number; grande?: boolean; echelle?: number; fane?: boolean }) {
+  // Une plante fanée est plus petite ; la taille suit le moral de l'équipe.
+  return <Meuble nom={grande ? "pottedPlant" : fane ? "plantSmall3" : "plantSmall1"} p={[x, 0, z]} echelle={ECHELLE * (grande ? 1.3 : 1.6) * echelle} />;
 }
 
-function Chaise({
-  x,
-  z,
-  rot = 0,
-  c = "#3d4a5c",
-}: {
-  x: number;
-  z: number;
-  rot?: number;
-  c?: string;
-}) {
-  return (
-    <group position={[x, 0, z]} rotation={[0, rot, 0]}>
-      <Cylindre p={[0, 0.22, 0]} r={0.04} h={0.44} c="#555" />
-      <Boite p={[0, 0.46, 0]} s={[0.46, 0.08, 0.46]} c={c} />
-      <Boite p={[0, 0.78, -0.21]} s={[0.46, 0.55, 0.07]} c={c} />
-    </group>
-  );
+function Chaise({ x, z, rot = 0, c }: { x: number; z: number; rot?: number; c?: string }) {
+  void c;
+  return <Meuble nom="chairDesk" p={[x, 0, z]} rot={rot + Math.PI} echelle={ECHELLE} />;
 }
 
 function Bureau({ x, z, rot = 0 }: { x: number; z: number; rot?: number }) {
+  // Modèles Kenney : bureau, écran et clavier (le dos du bureau est côté +z local).
   return (
     <group position={[x, 0, z]} rotation={[0, rot, 0]}>
-      <Boite p={[0, 0.74, 0]} s={[1.9, 0.06, 0.85]} c="#f4f1ea" />
-      <Boite p={[-0.88, 0.37, 0]} s={[0.06, 0.74, 0.8]} c="#c9c4ba" />
-      <Boite p={[0.88, 0.37, 0]} s={[0.06, 0.74, 0.8]} c="#c9c4ba" />
-      {/* écran */}
-      <Boite p={[0, 1.08, 0.22]} s={[0.75, 0.45, 0.04]} c="#1f2430" />
-      <mesh position={[0, 1.08, 0.195]}>
-        <planeGeometry args={[0.68, 0.38]} />
-        <meshStandardMaterial
-          color="#7fb2ff"
-          emissive="#4a7fd6"
-          emissiveIntensity={0.5}
-          side={2}
-        />
-      </mesh>
-      <Boite p={[0, 0.83, 0.24]} s={[0.06, 0.16, 0.06]} c="#1f2430" />
-      <Boite p={[0, 0.78, -0.12]} s={[0.5, 0.02, 0.16]} c="#d9d9d9" />
+      <Meuble nom="desk" p={[0, 0, 0]} rot={Math.PI} echelle={ECHELLE} />
+      <Meuble nom="computerScreen" p={[0, HAUT_BUREAU, 0.2]} rot={Math.PI} echelle={ECHELLE} ombre={false} />
+      <Meuble nom="computerKeyboard" p={[0, HAUT_BUREAU, -0.15]} rot={Math.PI} echelle={ECHELLE} ombre={false} />
     </group>
   );
 }
@@ -392,11 +339,11 @@ function Decor({ onPiece, onFocus, niveau, achats, mois, fenetre, mood, piles, p
 
       {ouvert("reunion") && (
         <group>
-          <Boite p={[-8.5, 0.76, -5]} s={[4.2, 0.08, 1.8]} c={premium ? "#4e342e" : "#7a5638"} />
-          <Boite p={[-8.5, 0.38, -5]} s={[0.3, 0.76, 1]} c="#5b3f29" />
+          <Meuble nom="table" p={[-9.4, 0, -5]} echelle={2.4} />
+          <Meuble nom="table" p={[-7.6, 0, -5]} echelle={2.4} />
           {[-10, -8.5, -7].flatMap((x) => [
-            <Chaise key={`a${x}`} x={x} z={-6.25} c="#2f5bea" />,
-            <Chaise key={`b${x}`} x={x} z={-3.75} rot={Math.PI} c="#2f5bea" />,
+            <Meuble key={`a${x}`} nom="chairModernCushion" p={[x, 0, -6.2]} echelle={ECHELLE} />,
+            <Meuble key={`b${x}`} nom="chairModernCushion" p={[x, 0, -3.8]} rot={Math.PI} echelle={ECHELLE} />,
           ])}
           <Boite p={[-8.5, 1.6, -7.9]} s={[3, 1.3, 0.06]} c="#ffffff" />
           <Boite p={[-8.5, 0.92, -7.85]} s={[3, 0.06, 0.15]} c="#9aa4b1" />
@@ -416,7 +363,7 @@ function Decor({ onPiece, onFocus, niveau, achats, mois, fenetre, mood, piles, p
         <group>
           {[-4.2, -2.5, -0.8].map((x) => (
             <group key={x}>
-              <Boite p={[x, 1.1, -7.5]} s={[1.5, 2.2, 0.6]} c="#8d7b68" />
+              <Meuble nom="bookcaseClosedWide" p={[x, 0, -7.5]} largeur={1.5} />
               {[0.35, 0.95, 1.55].map((y) =>
                 [-0.5, -0.25, 0, 0.25, 0.5].map((dx, i) => (
                   <Boite key={`${y}${dx}`} p={[x + dx, y + 0.2, -7.3]} s={[0.18, 0.42, 0.4]} c={["#d1495b", "#2f5bea", "#f2a541", "#17a398", "#8e44ad"][(i + Math.round(y * 3)) % 5]} ombre={false} />
@@ -485,8 +432,8 @@ function Decor({ onPiece, onFocus, niveau, achats, mois, fenetre, mood, piles, p
       <Boite p={[-9, 0.55, 2]} s={[3, 1.1, 0.7]} c="#2f3b52" />
       <Boite p={[-9, 1.12, 2]} s={[3.1, 0.06, 0.8]} c={premium ? "#c9a227" : "#e9e4da"} />
       <Chaise x={-9} z={1.2} c="#2f3b52" />
-      <Boite p={[-11.3, 0.35, 5.5]} s={[0.9, 0.5, 2.6]} c="#c17c5a" />
-      <Boite p={[-11.65, 0.7, 5.5]} s={[0.25, 0.7, 2.6]} c="#b36d4c" />
+      <Meuble nom="loungeSofaLong" p={[-11.1, 0, 5.5]} rot={Math.PI / 2} echelle={2.2} />
+      <Meuble nom="coatRackStanding" p={[-11.5, 0, 2.6]} echelle={ECHELLE} />
       <Boite p={[-10.2, 0.25, 5.5]} s={[0.8, 0.4, 0.8]} c="#e9e4da" />
       <Plante echelle={echelle} fane={fane} x={-7} z={7.2} grande />
       <Plante echelle={echelle} fane={fane} x={-11.4} z={0.8} />
@@ -542,10 +489,11 @@ function Decor({ onPiece, onFocus, niveau, achats, mois, fenetre, mood, piles, p
 
       {ouvert("cafe") && (
         <group>
-          <Boite p={[11.5, 0.5, 4]} s={[0.8, 1, 5]} c="#f0ece4" />
-          <Boite p={[11.5, 1.03, 4]} s={[0.9, 0.06, 5.1]} c="#5d6d7e" />
-          <Boite p={[11.5, 1.3, 2.4]} s={[0.5, 0.5, 0.4]} c={a.has("cafe_premium") ? "#c9a227" : "#1f2430"} />
-          <Boite p={[11.5, 1.1, 6.8]} s={[0.8, 2.2, 0.8]} c="#dfe6ec" />
+          {[2.2, 3.2, 4.2, 5.2].map((z) => (
+            <Meuble key={z} nom="kitchenBar" p={[11.45, 0, z]} rot={-Math.PI / 2} largeur={1} />
+          ))}
+          <Meuble nom="kitchenCoffeeMachine" p={[11.5, 0.86, 2.4]} rot={-Math.PI / 2} echelle={ECHELLE * (a.has("cafe_premium") ? 1.3 : 1)} />
+          <Meuble nom="kitchenFridgeLarge" p={[11.45, 0, 6.8]} rot={-Math.PI / 2} largeur={0.9} />
           {[
             [8, 3],
             [9.4, 5.8],
@@ -560,10 +508,7 @@ function Decor({ onPiece, onFocus, niveau, achats, mois, fenetre, mood, piles, p
           ))}
           <Plante echelle={echelle} fane={fane} x={6.6} z={7.3} />
           {a.has("canape") && (
-            <group position={[7.4, 0, 1]}>
-              <Boite p={[0, 0.3, 0]} s={[2.2, 0.45, 0.9]} c="#7e57c2" />
-              <Boite p={[0, 0.65, -0.38]} s={[2.2, 0.55, 0.2]} c="#6a45b0" />
-            </group>
+            <Meuble nom="loungeDesignSofa" p={[7.4, 0, 1]} rot={Math.PI} largeur={2.2} />
           )}
           {a.has("babyfoot") && (
             <group position={[7.6, 0, 6.8]}>

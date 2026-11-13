@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment, Lightformer, OrbitControls, OrthographicCamera } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -113,7 +113,7 @@ export default function Cabinet3D() {
           target={[2.5, 0, -2.5]}
           enableDamping
           minZoom={18}
-          maxZoom={110}
+          maxZoom={200}
           minPolarAngle={0.45}
           maxPolarAngle={1.15}
           screenSpacePanning
@@ -147,6 +147,7 @@ export default function Cabinet3D() {
             [9, 3, 4],
             ...(aile ? [[18.5, 3, 4]] : []),
           ].map(([x, y, z]) => <pointLight key={`${x}${z}`} position={[x, y, z]} intensity={amb.lampes * 8} distance={9} color="#ffd59a" />)}
+        <Suspense fallback={null}>
         <Decor
           onPiece={selectionnerPiece}
           onFocus={(p) => setFocus(p)}
@@ -162,6 +163,7 @@ export default function Cabinet3D() {
           meteo={meteo}
         />
         <AileEst pieces={pieces} formation={formation} />
+        </Suspense>
         <Meteo type={meteo} largeurBatiment={aile ? 22 : 12} />
         {agents.map((a, i) => (
           <Personnage key={a.id} agent={a} index={i} selectionne={selection === a.id} vitesseJeu={vitesse} onClick={selectionner} piecesOuvertes={piecesListe} />

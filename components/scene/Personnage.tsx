@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import Humain, { modelePour, type Pose } from "./Humain";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import type { Group } from "three";
 import { POSITIONS } from "./positions";
@@ -50,6 +51,8 @@ export default function Personnage({ agent, index, selectionne, vitesseJeu, onCl
   const jambeD = useRef<Group>(null);
   const brasG = useRef<Group>(null);
   const brasD = useRef<Group>(null);
+  const [pose, setPose] = useState<Pose>("idle");
+  const poseRef = useRef<Pose>("idle");
   const piece = pieceAgent(agent, piecesOuvertes);
   const cible = placeDans(piece, index, agent.bureau);
 
@@ -100,9 +103,14 @@ export default function Personnage({ agent, index, selectionne, vitesseJeu, onCl
       const poste = POSTES[agent.bureau % POSTES.length];
       g.rotation.y = poste.rot === 0 ? 0 : Math.PI;
     }
+    const voulue: Pose = marche ? "walk" : assis ? "sit" : "idle";
+    if (voulue !== poseRef.current) {
+      poseRef.current = voulue;
+      setPose(voulue);
+    }
     const epuise = auPoste && agent.fatigue > 85;
     c.rotation.x = epuise ? 0.5 : 0;
-    c.position.y = assis ? -0.22 : marche ? Math.abs(Math.sin(s.t * 9)) * 0.04 : Math.sin(s.t * 2) * 0.008;
+    c.position.y = assis ? -0.04 : marche ? Math.abs(Math.sin(s.t * 9)) * 0.04 : Math.sin(s.t * 2) * 0.008;
 
     // Bras et jambes
     const balance = marche ? Math.sin(s.t * 9) * 0.6 : 0;
@@ -133,6 +141,7 @@ export default function Personnage({ agent, index, selectionne, vitesseJeu, onCl
         </mesh>
       )}
       <group ref={corps}>
+        <Suspense fallback={<group>{/* silhouette simple le temps du chargement */}
         <Membre refG={jambeG} x={-0.09} y={0.58} rayon={0.075} long={0.4} couleur="#2d3142" />
         <Membre refG={jambeD} x={0.09} y={0.58} rayon={0.075} long={0.4} couleur="#2d3142" />
         <mesh position={[0, 0.86, 0]} castShadow>
@@ -159,6 +168,9 @@ export default function Personnage({ agent, index, selectionne, vitesseJeu, onCl
             <meshStandardMaterial color="#1b1b1b" />
           </mesh>
         ))}
+        </group>}>
+          <Humain modele={modelePour(agent.id, agent.prenom)} pose={pose} />
+        </Suspense>
       </group>
     </group>
   );

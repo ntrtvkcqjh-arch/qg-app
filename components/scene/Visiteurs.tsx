@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import Humain, { modelePour, type Pose } from "./Humain";
 import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 import { chemin, placeDans } from "@/lib/plan";
@@ -13,6 +14,8 @@ function Silhouette({ v, index, reunionOuverte }: { v: Visiteur; index: number; 
   const g = useRef<Group>(null);
   const piece: PieceId = v.etat === "attend" ? "accueil" : v.etat === "reunion" ? (reunionOuverte ? "reunion" : "associee") : "dehors";
   const cible = placeDans(piece, index + 3, 0);
+  const [pose, setPose] = useState<Pose>("walk");
+  const poseRef = useRef<Pose>("walk");
   const s = useRef({ x: -9, z: 9.5, piece: "dehors" as PieceId, chemin: [] as { x: number; z: number }[], t: index });
 
   useEffect(() => {
@@ -43,7 +46,12 @@ function Silhouette({ v, index, reunionOuverte }: { v: Visiteur; index: number; 
       }
       marche = true;
     }
-    g.current.position.set(e.x, marche ? Math.abs(Math.sin(e.t * 9)) * 0.05 : 0, e.z);
+    g.current.position.set(e.x, 0, e.z);
+    const voulue: Pose = marche ? "walk" : v.etat === "reunion" ? "sit" : "idle";
+    if (voulue !== poseRef.current) {
+      poseRef.current = voulue;
+      setPose(voulue);
+    }
     const visible = !(e.piece === "dehors" && !e.chemin.length);
     g.current.visible = visible;
     POSITIONS.set(`v_${v.id}`, { x: e.x, y: 1.98, z: e.z, visible });
@@ -51,6 +59,7 @@ function Silhouette({ v, index, reunionOuverte }: { v: Visiteur; index: number; 
 
   return (
     <group ref={g}>
+      <Suspense fallback={<group>
       <mesh position={[-0.09, 0.3, 0]} castShadow>
         <capsuleGeometry args={[0.07, 0.4, 4, 8]} />
         <meshStandardMaterial color="#263238" />
@@ -71,6 +80,9 @@ function Silhouette({ v, index, reunionOuverte }: { v: Visiteur; index: number; 
         <boxGeometry args={[0.08, 0.3, 0.4]} />
         <meshStandardMaterial color="#4e342e" />
       </mesh>
+      </group>}>
+        <Humain modele={modelePour(v.id, v.nom.split(" ")[0])} pose={pose} />
+      </Suspense>
     </group>
   );
 }
