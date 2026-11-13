@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import type { Group } from "three";
-import { POSITIONS } from "./positions";
+import { ETAGES_AGENTS, POSITIONS } from "./positions";
 import Corps, { ASSIS, DEBOUT, animerSquelette, apparencePour, postureMarche, tournerVers, useSquelette, type Accessoire, type Posture } from "./Corps";
-import { PIECE_ACTIVITE, POSTES, chemin, pieceParId, placeDans } from "@/lib/plan";
+import { BULLE_DE, BUREAU_ASSOCIE, POSTES, chemin, etageDe, pieceParId, placeDans, type Point } from "@/lib/plan";
 import type { Agent, PieceId } from "@/lib/types";
 
 type Props = {
@@ -16,6 +16,8 @@ type Props = {
   vitesseJeu: number;
   onClick: (id: string) => void;
   piecesOuvertes: PieceId[];
+  etageVue: number;
+  cuisine: boolean;
 };
 
 const VITESSE_MARCHE = 1.5; // m/s à vitesse ×1 (pas tranquille)
@@ -26,26 +28,59 @@ function hachage(s: string) {
   return x;
 }
 
-/** Pièce où se trouve l'agent selon son activité et les pièces construites. */
-export function pieceAgent(agent: Agent, ouvertes: PieceId[]): PieceId {
+const PIECE_SERVICE: Record<string, PieceId> = { accueil: "accueil", cuisine: "cafe", pressing: "pressing", coach: "sport", menage: "detente", it: "it", office: "accueil" };
+
+/** Pièce où se trouve la personne selon son activité et les pièces construites. */
+export function pieceAgent(agent: Agent, ouvertes: PieceId[], cuisine = false): PieceId {
   const ouvert = (p: PieceId) => ouvertes.includes(p);
-  let p: PieceId = PIECE_ACTIVITE[agent.activite];
-  if (agent.activite === "travaille") {
-    if (agent.filiere === "rh" && ouvert("rh")) p = "rh";
-    else if (agent.filiere === "associe" && ouvert("associes")) p = "associes";
-    else if (agent.bureau >= 10) p = "annexe";
+  const poste = POSTES[agent.bureau]?.piece;
+  const sonPoste: PieceId = poste && ouvert(poste) ? poste : "openspace";
+  let p: PieceId;
+  switch (agent.activite) {
+    case "absent":
+    case "conge":
+    case "malade":
+    case "teletravail":
+      return "dehors";
+    case "travaille":
+      if (agent.filiere === "service") p = PIECE_SERVICE[agent.service ?? "office"];
+      else if (agent.filiere === "rh") p = "rh";
+      else if (agent.filiere === "associe") p = BUREAU_ASSOCIE[agent.associeDe ?? "expertise"] ?? sonPoste;
+      else p = sonPoste;
+      break;
+    case "reunion":
+      p = BULLE_DE[sonPoste] ?? "reunion";
+      if (!ouvert(p)) p = "reunion";
+      break;
+    case "pause": {
+      const k = (agent.id.charCodeAt(0) + agent.id.length) % 3;
+      p = k === 0 && ouvert("detente") ? "detente" : k === 1 && ouvert("terrasse") ? "terrasse" : "cafe";
+      break;
+    }
+    case "dejeuner":
+      return cuisine ? "cafe" : "dehors"; // sans cuisine, l'équipe sort déjeuner
+    case "sport":
+      p = "sport";
+      break;
+    case "formation":
+      p = "formation";
+      break;
+    case "archives":
+      p = "archives";
+      break;
+    default:
+      p = "accueil";
   }
-  if (agent.activite === "pause" && ouvert("detente") && (agent.id.charCodeAt(0) + agent.id.length) % 2 === 0) p = "detente";
-  if (p !== "dehors" && !ouvert(p)) p = "openspace";
+  if (!ouvert(p)) p = ouvert(sonPoste) ? sonPoste : "accueil";
   return p;
 }
 
-export default function Personnage({ minute, agent, index, selectionne, vitesseJeu, onClick, piecesOuvertes }: Props) {
+export default function Personnage({ minute, agent, index, selectionne, vitesseJeu, onClick, piecesOuvertes, etageVue, cuisine }: Props) {
   const groupe = useRef<Group>(null);
   const sq = useSquelette();
   const pose = useRef<Posture>({ ...DEBOUT });
   const apparence = useMemo(() => apparencePour(agent.id, agent.prenom, agent.couleur, agent.peau, agent.cheveux), [agent.id, agent.prenom, agent.couleur, agent.peau, agent.cheveux]);
-  const piece = pieceAgent(agent, piecesOuvertes);
+  const piece = pieceAgent(agent, piecesOuvertes, cuisine);
   const cible = placeDans(piece, index, agent.bureau);
 
   // Gestes : téléphone par moments, café en pause, tête dans les mains si très stressé.
@@ -54,16 +89,17 @@ export default function Personnage({ minute, agent, index, selectionne, vitesseJ
   const stresse = agent.activite === "travaille" && agent.stress > 75 && hachage(agent.id + tranche + "s") % 3 === 0;
   const accessoire: Accessoire = agent.activite === "pause" ? "cafe" : auTelephone ? "telephone" : null;
   const centre = (() => {
-    if (piece === "formation") return { x: 2.5, z: -7.9 };
+    if (piece === "formation") return { x: -11.9, z: 4 };
     const pc = pieceParId(piece);
     return pc ? { x: (pc.x0 + pc.x1) / 2, z: (pc.z0 + pc.z1) / 2 } : null;
   })();
 
   const etat = useRef({
-    x: piece === "dehors" ? -9 : cible.x,
+    x: piece === "dehors" ? -7.5 : cible.x,
     z: piece === "dehors" ? 9.5 : cible.z,
     piece: piece as PieceId,
-    chemin: [] as { x: number; z: number }[],
+    etage: etageDe(piece),
+    chemin: [] as Point[],
     t: index * 1.7,
     lacet: 0,
     vitesse: 0,
@@ -100,6 +136,7 @@ export default function Personnage({ minute, agent, index, selectionne, vitesseJ
       if (dist <= pas || dist < 0.01) {
         s.x = p.x;
         s.z = p.z;
+        s.etage = p.etage; // l'ascenseur change d'étage
         s.chemin.shift();
       } else {
         s.x += (dx / dist) * pas;
@@ -154,7 +191,8 @@ export default function Personnage({ minute, agent, index, selectionne, vitesseJ
     if (auPoste && agent.fatigue > 85) cibleP.inclinaison = 0.45; // épuisé, affalé sur le bureau
     animerSquelette(sq, pose.current, cibleP, dt, marche ? 14 : 5);
 
-    g.visible = !(s.piece === "dehors" && !s.chemin.length);
+    g.visible = !(s.piece === "dehors" && !s.chemin.length) && s.etage === etageVue;
+    ETAGES_AGENTS.set(agent.id, s.etage);
     POSITIONS.set(agent.id, { x: s.x, y: 1.55 + (1 - Math.min(1, -pose.current.hauteur / 0.42)) * 0.4, z: s.z, visible: g.visible && visibleHtml });
   });
 

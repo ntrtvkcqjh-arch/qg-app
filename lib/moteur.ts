@@ -26,7 +26,8 @@ import { ARCS } from "@/lib/data/arcs";
 import { article } from "@/lib/data/boutique";
 import { CAS } from "@/lib/data/cas";
 import { QCM } from "@/lib/data/formation";
-import { LOCAUX, ORDRE_POSTES, niveauLocaux } from "@/lib/data/locaux";
+import { LOCAUX, niveauLocaux } from "@/lib/data/locaux";
+import { BUREAU_ASSOCIE, OPEN_SPACE, POSTES as POSTES_PLAN } from "@/lib/plan";
 import { MISSIONS_PONCTUELLES, PROSPECTS_NOUVEAUX } from "@/lib/data/prospects";
 import type { Agent, BilanPeriode, Candidat, Client, Difficulte, Dossier, Effets, Etat, Filiere, Gazette, Journal, Message, ModeDepart, NoteCarnet, Niveau, OptionDilemme, PieceId, ResultatControle, TypeMission } from "@/lib/types";
 
@@ -157,6 +158,8 @@ export function nouvellePartie(difficulte: Difficulte, nomCabinet: string, mode:
   e.candidats = creation ? candidatsDeDepart(e) : genererCandidats(e);
   log(e, `Bienvenue chez ${nomCabinet} ! Saison des bilans : la liasse fiscale tombe le ${dateCourte(liasse)}.`, "neutre");
   migrerExt(e);
+  e.compteurs.campus = 1;
+  replacerEquipe(e);
   if (creation)
     log(e, "Tu démarres seule avec trois petits clients. Tu traites les dossiers toi-même depuis ton bureau ; recrute au fur et à mesure que la charge augmente.", "neutre");
   return e;
@@ -205,7 +208,7 @@ export function repartir(e: Etat) {
   const libres = e.dossiers.filter((d) => !d.agent && d.phase < 5).sort((a, b) => a.echeance - b.echeance);
   for (const d of libres) {
     const candidats = e.agents.filter((a) => FILIERES_TYPE[d.type].includes(a.filiere));
-    const pool = candidats.length ? candidats : e.agents.filter((a) => a.filiere !== "rh");
+    const pool = candidats.length ? candidats : e.agents.filter((a) => a.filiere !== "rh" && a.filiere !== "service");
     if (!pool.length) continue; // personne : c'est toi qui le traites
     const charge = (a: Agent) => e.dossiers.filter((x) => x.agent === a.id && x.phase < 5).reduce((s, x) => s + (x.type === "bilan" ? 3 : 1), 0);
     pool.sort((a, b) => charge(a) - charge(b) || b.competence - a.competence);
@@ -216,7 +219,7 @@ export function repartir(e: Etat) {
 export const aUnRH = (e: Etat) => e.agents.some((a) => a.filiere === "rh");
 
 function candidatPour(e: Etat, p: (typeof POSTES_RH)[number]): Candidat {
-  const bonus = aUnRH(e) ? 6 : 0;
+  const bonus = (aUnRH(e) ? 6 : 0) + Math.max(0, Math.floor((marqueEmployeur(e) - 40) / 10));
   return {
     id: uid(e, "c"),
     prenom: pick(PRENOMS),
@@ -235,8 +238,12 @@ function candidatsDeDepart(e: Etat): Candidat[] {
 
 export function genererCandidats(e: Etat): Candidat[] {
   const liste = genererCandidatsBase(e);
-  if (pieceOuverte(e, "associes") && !e.agents.some((a) => a.filiere === "associe") && rnd() < 0.5)
-    liste.push({ id: uid(e, "c"), prenom: pick(PRENOMS), nom: pick(NOMS), poste: "Associé", filiere: "associe", personnalite: pick(PERSONNALITES), competence: 85, salaire: 0 });
+  // Un associé par pôle, quand son bureau existe.
+  for (const [pole, bureau] of Object.entries(BUREAU_ASSOCIE) as [Filiere, PieceId][]) {
+    if (!pieceOuverte(e, bureau) || e.agents.some((a) => a.filiere === "associe" && a.associeDe === pole) || rnd() > 0.45) continue;
+    const libelle = { expertise: "Expertise", fiscal: "Fiscal", social: "Social", juridique: "Juridique", audit: "Audit" }[pole as "expertise"];
+    liste.push({ id: uid(e, "c"), prenom: pick(PRENOMS), nom: pick(NOMS), poste: `Associé ${libelle}`, filiere: "associe", associeDe: pole, personnalite: pick(PERSONNALITES), competence: 85, salaire: 0 });
+  }
   return liste;
 }
 
@@ -765,16 +772,34 @@ function quart(e: Etat) {
         a.fatigue = clamp(a.fatigue - (cafe ? 0.6 : 0.3) * (possede(e, "cafe_premium") ? 2 : 1));
       }
       if (a.activite === "formation") a.competence = clamp(a.competence + 0.25, 0, 95);
+      if (a.activite === "sport") a.stress = clamp(a.stress - 2.5);
+      if (a.activite === "dejeuner" && aService(e, "cuisine")) {
+        a.fatigue = clamp(a.fatigue - 1);
+        a.moral = clamp(a.moral + 0.3);
+      }
       continue;
     }
 
     // Choisir l'activité.
     if (m >= h.dejeuner && m < h.dejeuner + 60) {
-      a.activite = "pause";
+      a.activite = "dejeuner";
       a.activiteJusqua = e.minute + (h.dejeuner + 60 - m);
       continue;
     }
+    // Petit-déjeuner à la cafétéria si la cuisine est assurée.
+    if (m < 9 * 60 + 30 && m - h.arrivee < 15 && aService(e, "cuisine") && rnd() < 0.5) {
+      a.activite = "dejeuner";
+      a.activiteJusqua = e.minute + 15;
+      dire(e, a, "Croissant et café ☕", 20);
+      continue;
+    }
     const x = rnd();
+    if (pieceOuverte(e, "sport") && aService(e, "coach") && a.stress > 50 && x < 0.025) {
+      a.activite = "sport";
+      a.activiteJusqua = e.minute + 30;
+      dire(e, a, "Séance de sport 💪", 25);
+      continue;
+    }
     if ((a.stress > 65 && x < 0.12) || x < 0.025) {
       a.activite = "pause";
       a.activiteJusqua = e.minute + 15 + Math.floor(rnd() * 20);
@@ -806,6 +831,10 @@ function quart(e: Etat) {
     a.activiteJusqua = 0;
     if (a.filiere === "rh") {
       if (rnd() < 0.05) dire(e, a, pick(["Je trie les CV", "Entretien à 15h", "Je prépare la paie RH", "Onboarding en cours"]), 30);
+      continue;
+    }
+    if (a.filiere === "service") {
+      if (rnd() < 0.04) dire(e, a, pick(PHRASES_SERVICE[a.service ?? "office"]), 30);
       continue;
     }
     if (!d) {
@@ -859,7 +888,7 @@ function quart(e: Etat) {
   // Évolution du stress, de la fatigue, du moral.
   const prochains = jour + 7;
   const ete = [7, 8].includes(moisDe(jour));
-  const bonusMoral = (possede(e, "babyfoot") ? 4 : 0) + (possede(e, "mur_vegetal") ? 2 : 0) + (e.niveauLocaux >= 4 ? 5 : 0);
+  const bonusMoral = (aService(e, "pressing") ? 2 : 0) + (aService(e, "menage") ? 1 : 0) + (aService(e, "office") ? 2 : 0) + (possede(e, "babyfoot") ? 4 : 0) + (possede(e, "mur_vegetal") ? 2 : 0) + (e.niveauLocaux >= 4 ? 5 : 0);
   for (const a of e.agents) {
     if (a.activite === "absent" || a.activite === "conge" || a.activite === "malade") continue;
     if (a.activite === "travaille" || a.activite === "reunion") a.fatigue = clamp(a.fatigue + (0.38 + (rush ? 0.3 : 0) + (a.stress > 60 ? 0.15 : 0)) * (possede(e, "assis_debout") ? 0.85 : 1));
@@ -893,7 +922,7 @@ function evenements(e: Etat, f: number) {
   const quiPrevient = () => (presents.length ? pick(presents).id : "cabinet");
 
   for (const a of presents) {
-    if (a.filiere === "rh") continue;
+    if (a.filiere === "rh" || a.filiere === "service") continue;
     const sesDossiers = e.dossiers.filter((d) => d.agent === a.id && d.phase < 5);
     const unDossier = sesDossiers[0];
     if (a.competence < 62 && unDossier && rnd() < 0.006 * f && !messageEnAttente(e, "conseil_tech", a.id))
@@ -1221,15 +1250,15 @@ export function actionBoss(e: Etat, action: "rush" | "renfort"): string | null {
 export function recruter(e: Etat, candidatId: string): string | null {
   const c = e.candidats.find((x) => x.id === candidatId);
   if (!c) return "Candidat introuvable.";
-  if (e.agents.length >= capacitePostes(e)) return "Plus de bureau libre : agrandis tes locaux.";
+  if (c.associeDe && e.agents.some((a) => a.filiere === "associe" && a.associeDe === c.associeDe)) return "Ce pôle a déjà son associé.";
+  const bureau = c.filiere === "associe" || c.filiere === "rh" ? SANS_POSTE : bureauPour(e, c.filiere);
+  if (bureau < 0) return "Plus de bureau libre : agrandis tes locaux.";
   if (e.pa < 1) return "Il te faut 1 PA.";
   const frais = fraisRecrutement(e);
   if (e.tresorerie < frais) return `Trésorerie insuffisante (${frais.toLocaleString("fr-FR")} € de frais).`;
   e.pa -= 1;
   e.tresorerie -= frais;
   e.periode.charges += frais;
-  const occupes = new Set(e.agents.map((a) => a.bureau));
-  const bureau = ORDRE_POSTES.find((b) => !occupes.has(b)) ?? 0;
   const jour = jourDe(e.minute);
   e.agents.push({
     id: uid(e, "a"),
@@ -1258,6 +1287,10 @@ export function recruter(e: Etat, candidatId: string): string | null {
   });
   e.candidats = e.candidats.filter((x) => x.id !== candidatId);
   const nouveau = e.agents[e.agents.length - 1];
+  if (c.associeDe) {
+    nouveau.associeDe = c.associeDe;
+    e.chefsPoles[c.associeDe] = nouveau.id;
+  }
   initSkills(nouveau);
   if (nouveau.filiere === "associe") arriveeAssocie(e, nouveau);
   inc(e, "recrutements");
@@ -1434,13 +1467,49 @@ export function migrer(e: Etat): Etat {
   if (e.controleJour <= jourDe(e.minute)) e.controleJour = ouvreOuApres(e.controleJour + 365);
   migrerExt(e);
   e.pa = e.paMax = SANS_LIMITE;
+  if (!e.compteurs.campus) {
+    e.compteurs.campus = 1;
+    for (const a of e.agents) if (a.filiere === "associe" && !a.associeDe) a.associeDe = "expertise";
+    replacerEquipe(e);
+  }
   return e;
 }
 
 export const possede = (e: Etat, id: string) => e.achats.includes(id);
 export const pieceOuverte = (e: Etat, p: PieceId) => p === "dehors" || niveauLocaux(e.niveauLocaux).pieces.includes(p);
-export const capacitePostes = (e: Etat) => niveauLocaux(e.niveauLocaux).postes;
-export const postesOuverts = (e: Etat) => ORDRE_POSTES.slice(0, capacitePostes(e));
+export const SANS_POSTE = 999; // personnes sans poste en open space (associés, RH, services)
+export const capacitePostes = (e: Etat) => POSTES_PLAN.filter((p) => pieceOuverte(e, p.piece)).length;
+export const postesOuverts = (e: Etat) => POSTES_PLAN.map((p, i) => (pieceOuverte(e, p.piece) ? i : -1)).filter((i) => i >= 0);
+
+/** Poste libre dans l'open space du pôle (sinon n'importe quel open space ouvert), ou -1. */
+export function bureauPour(e: Etat, filiere: Filiere, sauf?: string): number {
+  const occupes = new Set(e.agents.filter((a) => a.id !== sauf).map((a) => a.bureau));
+  const libres = POSTES_PLAN.map((p, i) => ({ p, i })).filter(({ p, i }) => pieceOuverte(e, p.piece) && !occupes.has(i));
+  const pole = OPEN_SPACE[filiere];
+  return (libres.find(({ p }) => p.piece === pole) ?? libres[0])?.i ?? -1;
+}
+
+/** Réattribue les postes (pôles) : à la migration vers le campus et après un agrandissement. */
+export function replacerEquipe(e: Etat) {
+  for (const a of e.agents) a.bureau = SANS_POSTE;
+  for (const a of e.agents) {
+    if (a.filiere === "associe" || a.filiere === "rh" || a.filiere === "service") continue;
+    const b = bureauPour(e, a.filiere, a.id);
+    a.bureau = b < 0 ? SANS_POSTE : b;
+  }
+}
+
+export const aService = (e: Etat, s: NonNullable<Agent["service"]>) => e.agents.some((a) => a.filiere === "service" && a.service === s);
+
+const PHRASES_SERVICE: Record<NonNullable<Agent["service"]>, string[]> = {
+  accueil: ["Bonjour, je vous annonce", "Votre rendez-vous arrive", "Je prends un message"],
+  cuisine: ["Le plat du jour est prêt !", "Croissants tout chauds", "Service dans 10 minutes"],
+  pressing: ["Vos chemises sont prêtes", "Dépôt enregistré", "Conciergerie à votre service"],
+  coach: ["Allez, encore une série !", "Étirements à 17h", "Cours de yoga demain"],
+  menage: ["Je passe l'aspirateur", "Tout est propre", "Poubelles vidées"],
+  it: ["Mise à jour en cours", "Mot de passe réinitialisé", "Sauvegarde OK"],
+  office: ["Commande de fournitures passée", "Salle réservée", "Planning à jour"],
+};
 
 export function clientDepuis(e: Etat, p: (typeof PROSPECTS_NOUVEAUX)[number], satisfaction: number, multForfait = 1): Client {
   const c: Client = {
@@ -1471,6 +1540,7 @@ export function agrandirLocaux(e: Etat): string | null {
   e.niveauLocaux = suivant.niveau;
   e.loyer = suivant.loyer;
   if (suivant.niveau === 4) e.reputation = clamp(e.reputation + 10);
+  replacerEquipe(e);
   for (const a of e.agents) a.moral = clamp(a.moral + 6);
   log(e, `🏗️ Travaux terminés : bienvenue dans le « ${suivant.nom} » ! Nouveau loyer : ${suivant.loyer.toLocaleString("fr-FR")} €/mois.`, "bien");
   return null;
@@ -1526,7 +1596,7 @@ function genererPropositions(e: Etat, f: number) {
   const jour = jourDe(e.minute);
   if (e.propositions.length >= 6) return;
   const premium = e.niveauLocaux >= 4 ? 1.15 : 1;
-  const chanceNouveau = (e.mode === "creation" && e.clients.length < 8 ? 0.006 : 0.0025) * (e.reputation > 30 ? 1 : 0.3);
+  const chanceNouveau = (e.mode === "creation" && e.clients.length < 8 ? 0.006 : 0.0025) * (e.reputation > 30 ? 1 : 0.3) * (aService(e, "accueil") ? 1.3 : 1);
   if (rnd() < chanceNouveau && e.clients.length + e.propositions.length < 18) {
     const libres = PROSPECTS_NOUVEAUX.filter((x) => !e.clients.some((c) => c.nom === x.nom) && !e.propositions.some((p) => p.nouveau?.nom === x.nom) && !e.compteurs[`refus:${x.nom}`]);
     if (libres.length) {
@@ -1969,4 +2039,60 @@ export function passerAuLendemain(e: Etat): string | null {
   let garde = 0;
   while (jourDe(e.minute) === jour && garde++ < 2000) avancer(e, 15);
   return null;
+}
+
+// ---------- services du campus ----------
+
+export const SERVICES: { type: NonNullable<Agent["service"]>; nom: string; poste: string; salaire: number; piece: PieceId | null; effet: string }[] = [
+  { type: "accueil", nom: "Accueil", poste: "Hôte / hôtesse d'accueil", salaire: 2000, piece: "accueil", effet: "Reçoit clients et prospects : +30 % de prospects qui se présentent." },
+  { type: "cuisine", nom: "Cafétéria", poste: "Cuisinier·ère", salaire: 2200, piece: "cafe", effet: "Petit-déjeuner et déjeuner servis sur place : moins de fatigue, meilleur moral. Sans cuisine, l'équipe sort déjeuner." },
+  { type: "pressing", nom: "Pressing & conciergerie", poste: "Concierge", salaire: 1900, piece: "pressing", effet: "Chemises, courses, rendez-vous : moral en hausse." },
+  { type: "coach", nom: "Salle de sport", poste: "Coach sportif", salaire: 2300, piece: "sport", effet: "Séances de sport pour les plus stressés : le stress retombe vite." },
+  { type: "menage", nom: "Ménage", poste: "Agent·e d'entretien", salaire: 1850, piece: null, effet: "Bureaux impeccables : léger bonus de moral." },
+  { type: "it", nom: "Support informatique", poste: "Technicien·ne IT", salaire: 2800, piece: "it", effet: "Divise par deux les pannes et cyberattaques." },
+  { type: "office", nom: "Office manager", poste: "Office manager", salaire: 2500, piece: "accueil", effet: "Fournitures, salles, planning : moral en hausse." },
+];
+
+export function recruterService(e: Etat, type: NonNullable<Agent["service"]>): string | null {
+  const def = SERVICES.find((x) => x.type === type);
+  if (!def) return "Service inconnu.";
+  if (def.piece && !pieceOuverte(e, def.piece)) return "Cette pièce n'existe pas encore : agrandis tes locaux.";
+  if (e.agents.filter((a) => a.service === type).length >= 3) return "Trois personnes suffisent pour ce service.";
+  const jour = jourDe(e.minute);
+  e.agents.push({
+    id: uid(e, "a"),
+    prenom: pick(PRENOMS),
+    nom: pick(NOMS),
+    poste: def.poste,
+    filiere: "service",
+    service: type,
+    personnalite: pick(PERSONNALITES),
+    couleur: pick(COULEURS),
+    cheveux: pick(CHEVEUX),
+    peau: pick(PEAUX),
+    bureau: SANS_POSTE,
+    competence: 60,
+    stress: 15,
+    fatigue: 10,
+    confiance: 60,
+    moral: 75,
+    salaire: def.salaire,
+    activite: "absent",
+    activiteJusqua: 0,
+    absentJusquau: 0,
+    embauche: jour,
+    clan: null,
+    bulle: null,
+    bulleJusqua: 0,
+  });
+  initSkills(e.agents[e.agents.length - 1]);
+  const n = e.agents[e.agents.length - 1];
+  log(e, `🧑‍🍳 ${n.prenom} ${n.nom} rejoint les services du campus (${def.poste.toLowerCase()}).`, "bien");
+  return null;
+}
+
+/** Attractivité du cabinet pour les candidats (0-100). */
+export function marqueEmployeur(e: Etat): number {
+  const services = new Set(e.agents.filter((a) => a.filiere === "service").map((a) => a.service)).size;
+  return clamp(20 + services * 8 + (e.niveauLocaux >= 4 ? 10 : 0) + (e.moodGlobal - 50) / 2 + (e.reputation - 50) / 3);
 }

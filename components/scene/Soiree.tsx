@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
-import { POSTES, chemin, pieceParId } from "@/lib/plan";
+import { POSTES, chemin, etageDe, pieceParId, type Point } from "@/lib/plan";
 import type { PieceId } from "@/lib/types";
 import Corps, { DEBOUT, animerSquelette, postureMarche, tournerVers, useSquelette, type Posture } from "./Corps";
 import { POSITIONS } from "./positions";
@@ -11,12 +11,12 @@ import { POSITIONS } from "./positions";
 // Ambiance du soir : lampes de bureau et écrans allumés pour ceux qui
 // restent tard, et la femme de ménage qui fait sa tournée.
 
-export function LampesBureaux({ postes }: { postes: number[] }) {
+export function LampesBureaux({ postes, etage }: { postes: number[]; etage: number }) {
   return (
     <>
       {postes.map((i, k) => {
         const p = POSTES[i];
-        if (!p) return null;
+        if (!p || etageDe(p.piece) !== etage) return null;
         const sens = p.rot === 0 ? 1 : -1;
         return (
           <group key={i}>
@@ -42,13 +42,11 @@ export function LampesBureaux({ postes }: { postes: number[] }) {
   );
 }
 
-const TOURNEE: PieceId[] = ["openspace", "cafe", "accueil", "reunion", "archives", "formation", "openspace"];
-
-export function FemmeDeMenage({ pieces }: { pieces: PieceId[] }) {
+export function FemmeDeMenage({ pieces, etage }: { pieces: PieceId[]; etage: number }) {
   const g = useRef<Group>(null);
   const sq = useSquelette();
   const pose = useRef<Posture>({ ...DEBOUT });
-  const s = useRef({ x: -9, z: 9.5, piece: "dehors" as PieceId, chemin: [] as { x: number; z: number }[], etape: 0, pause: 0, t: 0 });
+  const s = useRef({ x: 5, z: -1, piece: "openspace" as PieceId, chemin: [] as Point[], etape: 0, pause: 0, t: 0 });
 
   useFrame((_, dt) => {
     const e = s.current;
@@ -57,13 +55,13 @@ export function FemmeDeMenage({ pieces }: { pieces: PieceId[] }) {
     if (!e.chemin.length) {
       e.pause -= dt;
       if (e.pause <= 0) {
-        const liste = TOURNEE.filter((p) => pieces.includes(p));
+        const liste = pieces.filter((p) => etageDe(p) === etage);
         const suivante = liste[e.etape % liste.length];
         e.etape++;
         const pc = pieceParId(suivante);
         if (pc) {
           const cible = { x: (pc.x0 + pc.x1) / 2 + Math.sin(e.etape) * 1.5, z: (pc.z0 + pc.z1) / 2 + Math.cos(e.etape) * 1.2 };
-          e.chemin = chemin({ x: e.x, z: e.z, piece: e.piece }, { ...cible, piece: suivante });
+          e.chemin = chemin({ x: e.x, z: e.z, piece: etageDe(e.piece) === etage ? e.piece : suivante }, { ...cible, piece: suivante });
           e.piece = suivante;
         }
         e.pause = 6;
@@ -108,6 +106,23 @@ export function FemmeDeMenage({ pieces }: { pieces: PieceId[] }) {
           <meshStandardMaterial color="#8d6e63" />
         </mesh>
       </group>
+    </group>
+  );
+}
+
+/** Formateur devant l'écran de la salle de formation (3e étage). */
+export function Formateur() {
+  const g = useRef<Group>(null);
+  const sq = useSquelette();
+  const pose = useRef<Posture>({ ...DEBOUT });
+  useFrame(({ clock }, dt) => {
+    const t = clock.elapsedTime;
+    if (g.current) g.current.rotation.y = Math.PI / 2 + Math.sin(t * 0.6) * 0.4;
+    animerSquelette(sq, pose.current, { ...DEBOUT, epauleD: -0.9 + Math.sin(t * 1.5) * 0.4, coudeD: -0.8, epauleG: -0.2 }, Math.min(dt, 0.1), 4);
+  });
+  return (
+    <group ref={g} position={[-11.2, 0, 4]}>
+      <Corps a={{ haut: "#ffffff", bas: "#37474f", peau: "#e0b08a", cheveux: "#5d4037", coiffure: "courte", veste: true }} sq={sq} />
     </group>
   );
 }

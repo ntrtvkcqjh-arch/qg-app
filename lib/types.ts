@@ -14,9 +14,27 @@ export type PieceId =
   | "it"
   | "associes"
   | "annexe"
+  | "os_fiscal"
+  | "os_social"
+  | "os_juridique"
+  | "bur_expertise"
+  | "bur_fiscal"
+  | "bur_social"
+  | "bur_juridique"
+  | "bur_audit"
+  | "bulle1"
+  | "bulle2"
+  | "bulle3"
+  | "reunion2"
+  | "conseil"
+  | "pressing"
+  | "sport"
+  | "terrasse"
   | "dehors";
 
-export type Filiere = "expertise" | "fiscal" | "social" | "juridique" | "rh" | "audit" | "associe";
+export type Filiere = "expertise" | "fiscal" | "social" | "juridique" | "rh" | "audit" | "associe" | "service";
+
+export type TypeService = "accueil" | "cuisine" | "pressing" | "coach" | "menage" | "it" | "office";
 
 export type Activite =
   | "absent" // pas encore arrivé / parti le soir
@@ -28,7 +46,9 @@ export type Activite =
   | "accueil"
   | "conge"
   | "malade"
-  | "teletravail";
+  | "teletravail"
+  | "dejeuner"
+  | "sport";
 
 export type Personnalite =
   | "perfectionniste"
@@ -72,6 +92,8 @@ export type Agent = {
   diplome?: { nom: "DSCG" | "DEC"; progression: number } | null;
   tuteur?: string | null; // id du tuteur
   anniversaire?: number; // jour de l'année (0-364)
+  service?: TypeService; // personnel des services du campus
+  associeDe?: Filiere; // pôle dont l'associé a la charge
 };
 
 export type Domaine = "tva" | "is" | "paie" | "juridique" | "revision" | "audit" | "outils";
@@ -291,6 +313,7 @@ export type Candidat = {
   personnalite: Personnalite;
   competence: number;
   salaire: number;
+  associeDe?: Filiere; // candidat associé : pôle visé
 };
 
 export type Etat = {

@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import * as M from "@/lib/moteur";
+import { ETAGES_AGENTS } from "@/components/scene/positions";
 import type { Difficulte, Etat, ModeDepart, PieceId } from "@/lib/types";
 
 // Le store garde l'état du jeu (sauvegardé dans le navigateur) et l'état
@@ -16,6 +17,8 @@ type Store = {
   selectionAgent: string | null;
   selectionPiece: PieceId | null;
   messageOuvert: string | null;
+  etageVue: number;
+  voirEtage: (n: number) => void;
   toast: string | null;
   nouvelle: (d: Difficulte, nom: string, mode: ModeDepart, tresorerie?: number) => void;
   reinitialiser: () => void;
@@ -39,6 +42,8 @@ export const useJeu = create<Store>()(
       selectionAgent: null,
       selectionPiece: null,
       messageOuvert: null,
+      etageVue: 1,
+      voirEtage: (n) => set({ etageVue: n }),
       toast: null,
       nouvelle: (d, nom, mode, tresorerie) => set({ etat: M.nouvellePartie(d, nom, mode, tresorerie), panneau: "cabinet" }),
       reinitialiser: () => set({ etat: null, selectionAgent: null, messageOuvert: null }),
@@ -78,7 +83,10 @@ export const useJeu = create<Store>()(
         set({ etat: { ...e, vitesse: v, derniereVisite: Date.now() } });
       },
       ouvrir: (p) => set({ panneau: p }),
-      selectionner: (agent) => set({ selectionAgent: agent, selectionPiece: null }),
+      selectionner: (agent) => {
+        const etage = agent ? ETAGES_AGENTS.get(agent) : undefined;
+        set({ selectionAgent: agent, selectionPiece: null, ...(etage !== undefined ? { etageVue: etage } : {}) });
+      },
       selectionnerPiece: (p) => set({ selectionPiece: p, selectionAgent: null }),
       ouvrirMessage: (id) => {
         const e = get().etat;

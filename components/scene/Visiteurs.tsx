@@ -4,20 +4,20 @@ import { useEffect, useMemo, useRef } from "react";
 import Corps, { ASSIS, DEBOUT, animerSquelette, apparencePour, postureMarche, tournerVers, useSquelette, type Posture } from "./Corps";
 import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
-import { chemin, placeDans } from "@/lib/plan";
+import { chemin, placeDans, type Point } from "@/lib/plan";
 import type { PieceId, Visiteur } from "@/lib/types";
 import { POSITIONS } from "./positions";
 
 // Clients et prospects qui viennent en personne au cabinet.
 
-function Silhouette({ v, index, reunionOuverte }: { v: Visiteur; index: number; reunionOuverte: boolean }) {
+function Silhouette({ v, index, reunionOuverte, etageVue }: { v: Visiteur; index: number; reunionOuverte: boolean; etageVue: number }) {
   const g = useRef<Group>(null);
-  const piece: PieceId = v.etat === "attend" ? "accueil" : v.etat === "reunion" ? (reunionOuverte ? "reunion" : "associee") : "dehors";
+  const piece: PieceId = v.etat === "attend" ? "accueil" : v.etat === "reunion" ? (reunionOuverte ? "reunion" : "accueil") : "dehors";
   const cible = placeDans(piece, index + 3, 0);
   const sq = useSquelette();
   const pose = useRef<Posture>({ ...DEBOUT });
   const apparence = useMemo(() => ({ ...apparencePour(v.id, v.nom.split(" ")[0], v.couleur, "#e0b08a", "#3b2a20"), veste: true }), [v.id, v.nom, v.couleur]);
-  const s = useRef({ x: -9, z: 9.5, piece: "dehors" as PieceId, chemin: [] as { x: number; z: number }[], t: index });
+  const s = useRef({ x: -9, z: 9.5, piece: "dehors" as PieceId, etage: 0, chemin: [] as Point[], t: index });
 
   useEffect(() => {
     const e = s.current;
@@ -39,6 +39,7 @@ function Silhouette({ v, index, reunionOuverte }: { v: Visiteur; index: number; 
       if (d <= pas) {
         e.x = p.x;
         e.z = p.z;
+        e.etage = p.etage;
         e.chemin.shift();
       } else {
         e.x += (dx / d) * pas;
@@ -51,7 +52,7 @@ function Silhouette({ v, index, reunionOuverte }: { v: Visiteur; index: number; 
     const assis = !marche && v.etat === "reunion";
     const cibleP = marche ? postureMarche(e.t, 7) : assis ? { ...ASSIS, coudeG: -0.6, coudeD: -0.6 } : { ...DEBOUT };
     animerSquelette(sq, pose.current, cibleP, Math.min(dt, 0.1), marche ? 14 : 5);
-    const visible = !(e.piece === "dehors" && !e.chemin.length);
+    const visible = !(e.piece === "dehors" && !e.chemin.length) && e.etage === etageVue;
     g.current.visible = visible;
     POSITIONS.set(`v_${v.id}`, { x: e.x, y: 1.95, z: e.z, visible });
   });
@@ -67,11 +68,11 @@ function Silhouette({ v, index, reunionOuverte }: { v: Visiteur; index: number; 
   );
 }
 
-export default function Visiteurs({ visiteurs, reunionOuverte }: { visiteurs: Visiteur[]; reunionOuverte: boolean }) {
+export default function Visiteurs({ visiteurs, reunionOuverte, etageVue }: { visiteurs: Visiteur[]; reunionOuverte: boolean; etageVue: number }) {
   return (
     <>
       {visiteurs.map((v, i) => (
-        <Silhouette key={v.id} v={v} index={i} reunionOuverte={reunionOuverte} />
+        <Silhouette key={v.id} v={v} index={i} reunionOuverte={reunionOuverte} etageVue={etageVue} />
       ))}
     </>
   );

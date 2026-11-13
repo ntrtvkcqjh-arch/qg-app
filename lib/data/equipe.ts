@@ -73,4 +73,5 @@ export const LIBELLE_FILIERE: Record<Filiere, string> = {
   rh: "Ressources humaines",
   audit: "Audit / CAC",
   associe: "Associé",
+  service: "Services du campus",
 };

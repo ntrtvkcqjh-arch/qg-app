@@ -5,3 +5,6 @@
 
 export const POSITIONS = new Map<string, { x: number; y: number; z: number; visible: boolean }>();
 export const ETIQUETTES = new Map<string, HTMLElement>();
+
+/** Étage actuel de chaque personne (mis à jour par la scène). */
+export const ETAGES_AGENTS = new Map<string, number>();

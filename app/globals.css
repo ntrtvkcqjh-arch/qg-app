@@ -2277,3 +2277,54 @@ td.objectif .niveau-skill {
     transform: translateX(0);
   }
 }
+
+.selecteur-etage {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 20;
+}
+.selecteur-etage button {
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 12px;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  max-width: 190px;
+}
+.selecteur-etage button strong {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #eef1f5;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  flex: none;
+}
+.selecteur-etage button span {
+  font-size: 11.5px;
+  color: var(--doux);
+  line-height: 1.25;
+}
+.selecteur-etage button.actif strong {
+  background: var(--bleu);
+  color: white;
+}
+.selecteur-etage button.actif span {
+  color: var(--texte);
+  font-weight: 600;
+}
+.equipe-service {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+}

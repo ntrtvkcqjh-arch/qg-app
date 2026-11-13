@@ -2,7 +2,7 @@
 
 import { BOUTIQUE } from "@/lib/data/boutique";
 import { LOCAUX, niveauLocaux } from "@/lib/data/locaux";
-import { acheter, agrandirLocaux, pieceOuverte, possede } from "@/lib/moteur";
+import { SERVICES, acheter, agrandirLocaux, licencier, marqueEmployeur, pieceOuverte, possede, recruterService } from "@/lib/moteur";
 import { pieceParId } from "@/lib/plan";
 import { useJeu } from "@/lib/store";
 import { euros } from "../textes";
@@ -45,6 +45,39 @@ export default function Locaux() {
       ) : (
         <p className="aide">Tu as le plus beau cabinet de la ville. 🏆</p>
       )}
+
+      <h3 className="titre-section">Services du campus</h3>
+      <p className="aide">
+        Le personnel des services n&apos;a pas de dossiers, mais il rend le campus vivant et attire de meilleurs candidats. Marque employeur :{" "}
+        <b>{Math.round(marqueEmployeur(e))}/100</b>.
+      </p>
+      <div className="grille-boutique">
+        {SERVICES.map((sv) => {
+          const equipe = e.agents.filter((a) => a.service === sv.type);
+          const dispo = !sv.piece || pieceOuverte(e, sv.piece);
+          return (
+            <div key={sv.type} className={`article ${equipe.length ? "achete" : ""}`}>
+              <strong>{sv.nom}</strong>
+              <small>{sv.effet}</small>
+              <em>
+                {sv.poste} · {euros(sv.salaire)} brut/mois
+              </em>
+              {equipe.length > 0 && (
+                <span className="equipe-service">
+                  {equipe.map((a) => (
+                    <button key={a.id} className="lien" title="Se séparer de cette personne" onClick={() => agir(licencier, a.id)}>
+                      {a.prenom} ✕
+                    </button>
+                  ))}
+                </span>
+              )}
+              <button className="bouton petit" disabled={!dispo || equipe.length >= 3} onClick={() => agir(recruterService, sv.type)}>
+                {dispo ? "Recruter" : "Pièce à construire"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
 
       <h3 className="titre-section">Boutique de mobilier</h3>
       <p className="aide">Chaque achat apparaît dans le cabinet en 3D et a un effet réel sur l&apos;équipe.</p>

@@ -11,6 +11,8 @@ export const LIBELLE_ACTIVITE: Record<Activite, string> = {
   conge: "En congés",
   malade: "Malade",
   teletravail: "Télétravail",
+  dejeuner: "Au repas",
+  sport: "À la salle de sport",
 };
 
 export const euros = (n: number) => `${Math.round(n).toLocaleString("fr-FR")} €`;

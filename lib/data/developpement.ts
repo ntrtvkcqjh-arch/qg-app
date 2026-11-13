@@ -31,6 +31,7 @@ export const BONUS_FILIERE: Record<Filiere, Partial<Record<Domaine, number>>> = 
   audit: { audit: 22, revision: 10 },
   rh: { paie: 6, outils: 4 },
   associe: { revision: 10, is: 10, audit: 6, juridique: 6 },
+  service: {},
 };
 
 export type Formation = { id: string; nom: string; domaine: Domaine; jours: number; prix: number; gain: number; description: string };

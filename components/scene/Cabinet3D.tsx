@@ -9,14 +9,14 @@ import Decor from "./Decor";
 import Personnage from "./Personnage";
 import Associee from "./Associee";
 import Visiteurs from "./Visiteurs";
-import AileEst from "./AileEst";
 import Meteo from "./Meteo";
 import { FemmeDeMenage, LampesBureaux } from "./Soiree";
 import { CoucheEtiquettes, Projecteur } from "./Etiquettes";
 import { jourDe, minuteDuJour, moisDe } from "@/lib/calendrier";
 import { POLES } from "@/lib/data/developpement";
 import { niveauLocaux } from "@/lib/data/locaux";
-import { pieceParId } from "@/lib/plan";
+import { ETAGES, pieceParId } from "@/lib/plan";
+import { Formateur } from "./Soiree";
 import { useJeu } from "@/lib/store";
 import type { PieceId } from "@/lib/types";
 
@@ -107,7 +107,10 @@ export default function Cabinet3D() {
   const piecesListe = niveauLocaux(niveau).pieces;
   const pieces = piecesListe.join(",");
   const mood = Math.round(moodBrut / 10) * 10;
-  const aile = niveau >= 5;
+  const aile = false;
+  const etageVue = useJeu((s) => s.etageVue);
+  const voirEtage = useJeu((s) => s.voirEtage);
+  const cuisine = useJeu((s) => !!s.etat?.agents.some((a) => a.service === "cuisine"));
 
   return (
     <div className="scene-3d">
@@ -167,17 +170,19 @@ export default function Cabinet3D() {
           deco={deco}
           nuit={amb.nuit}
           meteo={meteo}
+          etage={etageVue}
+          formation={formation}
         />
-        <AileEst pieces={pieces} formation={formation} />
+        {formation && etageVue === 3 && pieces.includes("formation") && <Formateur />}
         </Suspense>
         <Meteo type={meteo} largeurBatiment={aile ? 22 : 12} />
         {agents.map((a, i) => (
-          <Personnage key={a.id} minute={minute} agent={a} index={i} selectionne={selection === a.id} vitesseJeu={vitesse} onClick={selectionner} piecesOuvertes={piecesListe} />
+          <Personnage key={a.id} minute={minute} agent={a} index={i} selectionne={selection === a.id} vitesseJeu={vitesse} onClick={selectionner} piecesOuvertes={piecesListe} etageVue={etageVue} cuisine={cuisine} />
         ))}
-        <Associee />
-        {postesAllumes && <LampesBureaux postes={postesAllumes.split(",").map(Number)} />}
-        {m >= 20 * 60 + 30 && m < 22 * 60 + 30 && <FemmeDeMenage pieces={piecesListe} />}
-        <Visiteurs visiteurs={visiteurs} reunionOuverte={piecesListe.includes("reunion")} />
+        <Associee etageVue={etageVue} />
+        {postesAllumes && <LampesBureaux postes={postesAllumes.split(",").map(Number)} etage={etageVue} />}
+        {m >= 20 * 60 + 30 && m < 22 * 60 + 30 && <FemmeDeMenage key={etageVue} pieces={piecesListe} etage={etageVue} />}
+        <Visiteurs visiteurs={visiteurs} reunionOuverte={piecesListe.includes("reunion")} etageVue={etageVue} />
         <Projecteur />
       </Canvas>
       <CoucheEtiquettes />
@@ -189,6 +194,14 @@ export default function Cabinet3D() {
           </span>
         </div>
       )}
+      <div className="selecteur-etage" role="group" aria-label="Étages du campus">
+        {[3, 2, 1, 0].map((n) => (
+          <button key={n} className={etageVue === n ? "actif" : ""} onClick={() => voirEtage(n)} title={ETAGES[n]}>
+            <strong>{n === 0 ? "RDC" : `${n}`}</strong>
+            <span>{ETAGES[n].replace(/^[^:]*: /, "")}</span>
+          </button>
+        ))}
+      </div>
       <div className="commandes-camera">
         {focus && (
           <button onClick={() => setFocus(null)} title="Revenir à la vue d'ensemble">

@@ -486,7 +486,7 @@ export function arriveeAssocie(e: Etat, a: Agent) {
     creerDossier(e, c, "conseil", ajouterJoursOuvres(jour, 12), jour, `Reprise du dossier — ${c.nom}`).honoraires = 1200;
   }
   repartir(e);
-  log(e, `🤝 ${a.prenom} ${a.nom} devient associé·e et apporte sa clientèle. Il·elle touchera 25 % des bénéfices mensuels.`, "bien");
+  log(e, `🤝 ${a.prenom} ${a.nom} devient associé·e${a.associeDe ? ` du pôle ${a.associeDe}` : ""} et apporte sa clientèle. Il·elle touchera 8 % du résultat mensuel et dirige le pôle.`, "bien");
 }
 
 function partAssocies(e: Etat) {
@@ -495,7 +495,7 @@ function partAssocies(e: Etat) {
   const derniers = e.bilans.slice(0, 4);
   const resultat = derniers.reduce((s, p) => s + p.ca - p.charges, 0);
   if (resultat <= 0) return;
-  const part = Math.round(resultat * 0.25);
+  const part = Math.round(resultat * 0.08 * associes.length); // 8 % du résultat par associé
   e.tresorerie -= part;
   e.periode.charges += part;
   log(e, `🤝 Quote-part des associés sur le résultat du mois : ${part.toLocaleString("fr-FR")} €.`);
@@ -503,7 +503,8 @@ function partAssocies(e: Etat) {
 
 function incidentIT(e: Etat) {
   const protege = pieceOuverte(e, "it");
-  if (rnd() > (protege ? 0.03 : 0.12)) return;
+  const support = e.agents.some((a) => a.service === "it");
+  if (rnd() > (protege ? 0.03 : 0.12) * (support ? 0.5 : 1)) return;
   const cyber = rnd() < 0.5;
   for (const d of e.dossiers.filter((x) => x.phase < 5)) d.progression = Math.max(0, d.progression - (cyber ? 15 : 8));
   const cout = cyber ? 2500 : 800;
