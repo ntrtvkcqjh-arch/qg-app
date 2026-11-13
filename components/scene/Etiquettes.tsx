@@ -49,6 +49,11 @@ export function CoucheEtiquettes() {
   const selection = useJeu((s) => s.selectionAgent);
   const selectionner = useJeu((s) => s.selectionner);
   const selectionnerPiece = useJeu((s) => s.selectionnerPiece);
+  const monClient = useJeu((s) => {
+    const d = s.etat?.dossiers.find((x) => x.id === s.etat?.travailToi);
+    return d ? s.etat?.clients.find((c) => c.id === d.client)?.nom ?? null : null;
+  });
+  const ouvrir = useJeu((s) => s.ouvrir);
 
   return (
     <div className="couche-etiquettes">
@@ -62,6 +67,10 @@ export function CoucheEtiquettes() {
           {p.nom}
         </button>
       ))}
+      <div ref={enregistrer("a:toi")} className="etiquette pos" onClick={() => ouvrir("dossiers")}>
+        {monClient && <div className="bulle">Je traite {monClient}</div>}
+        <div className="nom toi">Toi</div>
+      </div>
       {agents.map((a) => (
         <div
           key={a.id}

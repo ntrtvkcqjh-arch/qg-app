@@ -11,7 +11,7 @@ export type PieceId =
   | "cafe"
   | "dehors";
 
-export type Filiere = "expertise" | "fiscal" | "social" | "juridique";
+export type Filiere = "expertise" | "fiscal" | "social" | "juridique" | "rh";
 
 export type Activite =
   | "absent" // pas encore arrivé / parti le soir
@@ -157,6 +157,7 @@ export type Echeance = {
 export type Journal = { jour: number; minute: number; texte: string; ton: "bien" | "mal" | "neutre" };
 
 export type Difficulte = "facile" | "normal" | "expert";
+export type ModeDepart = "reprise" | "creation";
 
 export type BilanPeriode = {
   label: string;
@@ -185,6 +186,9 @@ export type Etat = {
   version: 1;
   nomCabinet: string;
   difficulte: Difficulte;
+  mode?: ModeDepart; // absent dans les anciennes sauvegardes = reprise
+  loyer?: number;
+  travailToi?: string | null; // dossier que tu traites toi-même en ce moment
   minute: number; // minute absolue simulée depuis le début (jour*1440 + minute du jour)
   vitesse: 0 | 1 | 3 | 10;
   pa: number;

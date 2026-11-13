@@ -2,7 +2,7 @@
 
 import { dateCourte } from "@/lib/calendrier";
 import { LIBELLE_FILIERE, LIBELLE_PERSO } from "@/lib/data/equipe";
-import { recruter } from "@/lib/moteur";
+import { aUnRH, besoins, fraisRecrutement, publierAnnonce, recruter } from "@/lib/moteur";
 import { MAX_POSTES } from "@/lib/plan";
 import { useJeu } from "@/lib/store";
 import { LIBELLE_ACTIVITE, euros } from "../textes";
@@ -53,8 +53,32 @@ export default function Equipe() {
         </tbody>
       </table>
 
+      <h3 className="titre-section">Charge par métier</h3>
+      <p className="aide">Charge des dossiers en cours (un bilan compte triple) comparée à ce que ton équipe peut absorber. Au-delà de 100 %, recrute dans ce métier.</p>
+      <div className="besoins">
+        {besoins(e).map((b) => {
+          const pct = b.capacite ? Math.round(b.ratio * 100) : b.charge ? 999 : 0;
+          return (
+            <div key={b.filiere} className="besoin">
+              <span>{LIBELLE_FILIERE[b.filiere]}</span>
+              <div className="jauge large">
+                <div className={pct > 100 ? "rouge" : pct > 75 ? "orange" : "vert"} style={{ width: `${Math.min(100, pct)}%` }} />
+              </div>
+              <strong className={pct > 100 ? "rouge-t" : ""}>{b.capacite ? `${pct} %` : b.charge ? "personne" : "—"}</strong>
+            </div>
+          );
+        })}
+      </div>
+      {e.agents.length === 0 && <p className="aide">Pour l&apos;instant, c&apos;est toi qui traites tous les dossiers, plus lentement qu&apos;une équipe.</p>}
+
       <h3 className="titre-section">Recrutement</h3>
-      <p className="aide">Nouveaux candidats chaque lundi. Recruter coûte 1 PA et 2 000 € de frais.</p>
+      <p className="aide">
+        Nouveaux candidats chaque lundi, en priorité dans les métiers qui manquent. Recruter coûte 1 PA et {euros(fraisRecrutement(e))} de frais.
+        {aUnRH(e) ? " Ta ou ton responsable RH attire de meilleurs profils et divise les frais par deux." : " Un·e responsable RH attirerait de meilleurs profils et diviserait les frais par deux."}
+      </p>
+      <button className="bouton petit annonce" onClick={() => agir(publierAnnonce)}>
+        📢 Publier une annonce maintenant (1 PA, 300 €)
+      </button>
       <div className="candidats">
         {e.candidats.length === 0 && <p className="vide">Plus de candidats cette semaine.</p>}
         {e.candidats.map((c) => (

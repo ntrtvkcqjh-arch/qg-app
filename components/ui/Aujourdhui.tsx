@@ -1,6 +1,8 @@
 "use client";
 
 import { dateCourte, jourDe, joursOuvresEntre } from "@/lib/calendrier";
+import { besoins } from "@/lib/moteur";
+import { LIBELLE_FILIERE } from "@/lib/data/equipe";
 import { useJeu } from "@/lib/store";
 import { LIBELLE_ACTIVITE } from "./textes";
 
@@ -15,6 +17,8 @@ export default function Aujourdhui() {
   const enAttente = e.messages.filter((m) => m.statut === "attente");
   const prochaine = e.echeances.find((x) => !x.resolue && x.jour >= jour);
   const parPhase = [1, 2, 3, 4].map((p) => actifs.filter((d) => d.phase === p).length);
+  const monDossier = e.dossiers.find((d) => d.id === e.travailToi);
+  const manque = besoins(e).filter((b) => b.ratio > 1).sort((a, b) => b.ratio - a.ratio)[0];
 
   return (
     <aside className="panneau-droit">
@@ -46,6 +50,17 @@ export default function Aujourdhui() {
             </em>
           </div>
         )}
+        {monDossier && (
+          <div className="toi-travaille">
+            <span>🧑‍💼 Tu travailles sur</span>
+            <strong>{monDossier.titre}</strong>
+          </div>
+        )}
+        {manque && (
+          <button className="conseil-rh" onClick={() => ouvrir("equipe")}>
+            👥 Surcharge en {LIBELLE_FILIERE[manque.filiere].toLowerCase()} : pense à recruter
+          </button>
+        )}
         <div className="pipeline">
           {["Collecte", "Saisie", "Révision", "Validation"].map((n, i) => (
             <div key={n}>
@@ -57,6 +72,7 @@ export default function Aujourdhui() {
       </section>
       <section className="carte liste-equipe">
         <h3>Équipe</h3>
+        {e.agents.length === 0 && <p className="vide">Personne pour l&apos;instant : tu es seule au cabinet. Recrute dans Équipe &amp; RH.</p>}
         {e.agents.map((a) => (
           <button key={a.id} className="ligne-agent" onClick={() => selectionner(a.id)}>
             <span className="avatar" style={{ background: a.couleur }}>

@@ -44,7 +44,11 @@ export const POSTES: { poste: string; filiere: Filiere; comp: [number, number]; 
   { poste: "Gestionnaire de paie", filiere: "social", comp: [55, 72], salaire: [2500, 2900] },
   { poste: "Juriste", filiere: "juridique", comp: [58, 75], salaire: [2800, 3200] },
   { poste: "Chef de mission", filiere: "expertise", comp: [72, 85], salaire: [3500, 4000] },
+  { poste: "Responsable RH", filiere: "rh", comp: [55, 75], salaire: [2800, 3300] },
 ];
+
+/** Petits clients de départ quand on crée son cabinet à partir de zéro. */
+export const CLIENTS_CREATION = ["boulangerie", "immo", "asso"];
 export const PERSONNALITES: Personnalite[] = ["perfectionniste", "anxieux", "ambitieux", "nonchalant", "sociable", "rebelle", "loyal"];
 export const COULEURS = ["#2f5bea", "#e4572e", "#17a398", "#f2a541", "#8e44ad", "#43aa8b", "#d1495b", "#3d405b", "#ff7f51", "#118ab2"];
 export const CHEVEUX = ["#111111", "#3b2416", "#6b4423", "#c89b5d", "#a0522d", "#1d1d1d", "#d4b483"];
@@ -65,4 +69,5 @@ export const LIBELLE_FILIERE: Record<Filiere, string> = {
   fiscal: "Fiscal",
   social: "Social / paie",
   juridique: "Juridique",
+  rh: "Ressources humaines",
 };

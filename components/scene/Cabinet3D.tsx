@@ -4,6 +4,7 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls, OrthographicCamera } from "@react-three/drei";
 import Decor from "./Decor";
 import Personnage from "./Personnage";
+import Associee from "./Associee";
 import { CoucheEtiquettes, Projecteur } from "./Etiquettes";
 import { useJeu } from "@/lib/store";
 
@@ -57,6 +58,7 @@ export default function Cabinet3D() {
             onClick={selectionner}
           />
         ))}
+        <Associee />
         <Projecteur />
       </Canvas>
       <CoucheEtiquettes />

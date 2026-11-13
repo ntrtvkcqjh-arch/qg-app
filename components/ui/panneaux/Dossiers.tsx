@@ -68,9 +68,9 @@ export default function Dossiers() {
                 <div className="ligne3">
                   <label>
                     Responsable
-                    <select value={d.agent ?? ""} onChange={(ev) => agir(reassigner, d.id, ev.target.value)}>
-                      {!d.agent && <option value="">—</option>}
-                      {e.agents.map((a) => (
+                    <select value={d.agent && d.agent !== "toi" ? d.agent : "toi"} onChange={(ev) => agir(reassigner, d.id, ev.target.value)}>
+                      <option value="toi">Moi (associée)</option>
+                      {e.agents.filter((a) => a.filiere !== "rh").map((a) => (
                         <option key={a.id} value={a.id}>
                           {a.prenom} ({a.poste})
                         </option>

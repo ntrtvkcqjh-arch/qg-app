@@ -1562,3 +1562,65 @@ h4 {
   z-index: 60;
   box-shadow: var(--ombre);
 }
+
+.libelle {
+  font-weight: 600;
+  margin-bottom: -8px;
+}
+.niveaux.deux {
+  grid-template-columns: 1fr 1fr;
+}
+.toi-travaille,
+.conseil-rh {
+  margin-top: 10px;
+  border-radius: 12px;
+  padding: 9px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  width: 100%;
+}
+.toi-travaille {
+  background: var(--bleu-clair);
+}
+.toi-travaille span {
+  font-size: 11px;
+  color: var(--bleu);
+  font-weight: 600;
+}
+.toi-travaille strong {
+  font-size: 13px;
+}
+.conseil-rh {
+  background: #fdecea;
+  color: var(--rouge);
+  font-weight: 600;
+  font-size: 12.5px;
+}
+.besoins {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.besoin {
+  display: grid;
+  grid-template-columns: 150px 1fr 70px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.besoin .jauge.large {
+  width: 100%;
+}
+.besoin strong {
+  text-align: right;
+}
+.bouton.annonce {
+  margin-bottom: 10px;
+}
+.etiquette .nom.toi {
+  background: #121a2e;
+  color: white;
+}

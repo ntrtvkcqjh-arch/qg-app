@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import * as M from "@/lib/moteur";
-import type { Difficulte, Etat, PieceId } from "@/lib/types";
+import type { Difficulte, Etat, ModeDepart, PieceId } from "@/lib/types";
 
 // Le store garde l'état du jeu (sauvegardé dans le navigateur) et l'état
 // d'interface (sélection, panneau ouvert), qui, lui, n'est pas sauvegardé.
@@ -17,7 +17,7 @@ type Store = {
   selectionPiece: PieceId | null;
   messageOuvert: string | null;
   toast: string | null;
-  nouvelle: (d: Difficulte, nom: string) => void;
+  nouvelle: (d: Difficulte, nom: string, mode: ModeDepart) => void;
   reinitialiser: () => void;
   tic: (minutes: number) => void;
   rattraper: () => void;
@@ -40,7 +40,7 @@ export const useJeu = create<Store>()(
       selectionPiece: null,
       messageOuvert: null,
       toast: null,
-      nouvelle: (d, nom) => set({ etat: M.nouvellePartie(d, nom), panneau: "cabinet" }),
+      nouvelle: (d, nom, mode) => set({ etat: M.nouvellePartie(d, nom, mode), panneau: "cabinet" }),
       reinitialiser: () => set({ etat: null, selectionAgent: null, messageOuvert: null }),
       tic: (minutes) => {
         const e = get().etat;
