@@ -2,7 +2,7 @@
 
 import { useFrame, useThree } from "@react-three/fiber";
 import { Vector3 } from "three";
-import { PIECES } from "@/lib/plan";
+import { AILE_EST, PIECES } from "@/lib/plan";
 import { niveauLocaux } from "@/lib/data/locaux";
 import { useJeu } from "@/lib/store";
 import { ETIQUETTES, POSITIONS } from "./positions";
@@ -57,12 +57,13 @@ export function CoucheEtiquettes() {
   const ouvrir = useJeu((s) => s.ouvrir);
   const ouvrirMessage = useJeu((s) => s.ouvrirMessage);
   const pieces = useJeu((s) => niveauLocaux(s.etat?.niveauLocaux ?? 3).pieces);
+  const niveau = useJeu((s) => s.etat?.niveauLocaux ?? 3);
   const visiteurs = useJeu((s) => s.etat?.visiteurs ?? []);
   const propositions = useJeu((s) => s.etat?.propositions ?? []);
 
   return (
     <div className="couche-etiquettes">
-      {PIECES.map((p) => (
+      {PIECES.filter((p) => !AILE_EST.includes(p.id) || niveau >= 4).map((p) => (
         <button
           key={p.id}
           ref={enregistrer(`p:${p.id}`)}
