@@ -9,13 +9,15 @@ import { POSITIONS } from "./positions";
 
 // Toi, l'associée, assise à ton bureau pendant les heures d'ouverture.
 const PLACE = { x: 8.5, z: -6.75 };
+const AVATAR_DEFAUT = { cheveux: "#2a1a12", tenue: "#121a2e", peau: "#e8b894", deco: "#3a2a1d" };
 
 export default function Associee() {
   const presente = useJeu((s) => {
     const m = s.etat ? minuteDuJour(s.etat.minute) : 0;
-    return m >= 8 * 60 + 30 && m < 19 * 60;
+    return m >= 8 * 60 + 30 && m < 19 * 60 + 30;
   });
   const corps = useRef<Group>(null);
+  const avatar = useJeu((s) => s.etat?.avatar ?? AVATAR_DEFAUT);
 
   useFrame(({ clock }) => {
     POSITIONS.set("toi", { x: PLACE.x, y: 1.7, z: PLACE.z, visible: presente });
@@ -36,15 +38,15 @@ export default function Associee() {
         </mesh>
         <mesh position={[0, 0.82, 0]} castShadow>
           <capsuleGeometry args={[0.2, 0.38, 6, 12]} />
-          <meshStandardMaterial color="#121a2e" roughness={0.6} />
+          <meshStandardMaterial color={avatar.tenue} roughness={0.6} />
         </mesh>
         <mesh position={[0, 1.33, 0]} castShadow>
           <sphereGeometry args={[0.17, 20, 16]} />
-          <meshStandardMaterial color="#e8b894" roughness={0.6} />
+          <meshStandardMaterial color={avatar.peau} roughness={0.6} />
         </mesh>
         <mesh position={[0, 1.38, -0.05]} castShadow>
           <sphereGeometry args={[0.2, 20, 16, 0, Math.PI * 2, 0, Math.PI / 1.7]} />
-          <meshStandardMaterial color="#2a1a12" roughness={0.9} />
+          <meshStandardMaterial color={avatar.cheveux} roughness={0.9} />
         </mesh>
       </group>
     </group>

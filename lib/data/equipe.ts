@@ -22,16 +22,16 @@ export const RELATIONS_INITIALES: Relation[] = [
 ];
 
 export const CLIENTS_INITIAUX: Client[] = [
-  { id: "boulangerie", nom: "Boulangerie Delorme", dirigeant: "Gérard Delorme", secteur: "Boulangerie artisanale", trait: "envoie ses factures dans une boîte à chaussures", satisfaction: 70, forfait: 1400, tvaMensuelle: false, paie: true },
-  { id: "startup", nom: "Kleo SAS", dirigeant: "Maxime Vidal", secteur: "Start-up SaaS", trait: "veut tout pour hier et lève des fonds tous les six mois", satisfaction: 65, forfait: 3200, tvaMensuelle: true, paie: false },
-  { id: "garage", nom: "Garage Fontaine", dirigeant: "Sylvie Fontaine", secteur: "Garage automobile", trait: "conteste chaque ligne de la facture d'honoraires", satisfaction: 60, forfait: 1800, tvaMensuelle: true, paie: false },
-  { id: "resto", nom: "Le Comptoir d'Anna", dirigeant: "Anna Rizzi", secteur: "Restaurant", trait: "paye tout en liquide et oublie de le noter", satisfaction: 68, forfait: 1600, tvaMensuelle: true, paie: true },
-  { id: "btp", nom: "Bâtir Plus SARL", dirigeant: "Jean-Marc Costa", secteur: "BTP", trait: "a des chantiers partout et des situations de travaux nulle part", satisfaction: 62, forfait: 2800, tvaMensuelle: true, paie: true },
-  { id: "pharma", nom: "Pharmacie du Parc", dirigeant: "Claire Nguyen", secteur: "Pharmacie", trait: "ultra organisée, ne pardonne aucune erreur", satisfaction: 80, forfait: 2600, tvaMensuelle: false, paie: true },
-  { id: "immo", nom: "SCI Les Tilleuls", dirigeant: "Famille Berthier", secteur: "Immobilier", trait: "trois frères qui ne se parlent plus", satisfaction: 66, forfait: 900, tvaMensuelle: false, paie: false },
-  { id: "mode", nom: "Atelier Mona", dirigeant: "Mona Ferrand", secteur: "Mode éthique", trait: "influenceuse, poste tout sur Instagram, même ses problèmes de TVA", satisfaction: 72, forfait: 1500, tvaMensuelle: true, paie: false },
-  { id: "transport", nom: "TransAlpes", dirigeant: "Didier Rocher", secteur: "Transport routier", trait: "flotte de 40 camions, carburant en pagaille", satisfaction: 64, forfait: 3400, tvaMensuelle: true, paie: true },
-  { id: "asso", nom: "Association Sport+", dirigeant: "Hélène Brun", secteur: "Association sportive", trait: "bénévoles adorables, comptabilité créative", satisfaction: 75, forfait: 800, tvaMensuelle: false, paie: false },
+  { id: "boulangerie", nom: "Boulangerie Delorme", dirigeant: "Gérard Delorme", secteur: "Boulangerie artisanale", trait: "envoie ses factures dans une boîte à chaussures", satisfaction: 70, forfait: 1800, tvaMensuelle: false, paie: true },
+  { id: "startup", nom: "Kleo SAS", dirigeant: "Maxime Vidal", secteur: "Start-up SaaS", trait: "veut tout pour hier et lève des fonds tous les six mois", satisfaction: 65, forfait: 4150, tvaMensuelle: true, paie: false },
+  { id: "garage", nom: "Garage Fontaine", dirigeant: "Sylvie Fontaine", secteur: "Garage automobile", trait: "conteste chaque ligne de la facture d'honoraires", satisfaction: 60, forfait: 2350, tvaMensuelle: true, paie: false },
+  { id: "resto", nom: "Le Comptoir d'Anna", dirigeant: "Anna Rizzi", secteur: "Restaurant", trait: "paye tout en liquide et oublie de le noter", satisfaction: 68, forfait: 2100, tvaMensuelle: true, paie: true },
+  { id: "btp", nom: "Bâtir Plus SARL", dirigeant: "Jean-Marc Costa", secteur: "BTP", trait: "a des chantiers partout et des situations de travaux nulle part", satisfaction: 62, forfait: 3650, tvaMensuelle: true, paie: true },
+  { id: "pharma", nom: "Pharmacie du Parc", dirigeant: "Claire Nguyen", secteur: "Pharmacie", trait: "ultra organisée, ne pardonne aucune erreur", satisfaction: 80, forfait: 3400, tvaMensuelle: false, paie: true },
+  { id: "immo", nom: "SCI Les Tilleuls", dirigeant: "Famille Berthier", secteur: "Immobilier", trait: "trois frères qui ne se parlent plus", satisfaction: 66, forfait: 1150, tvaMensuelle: false, paie: false },
+  { id: "mode", nom: "Atelier Mona", dirigeant: "Mona Ferrand", secteur: "Mode éthique", trait: "influenceuse, poste tout sur Instagram, même ses problèmes de TVA", satisfaction: 72, forfait: 1950, tvaMensuelle: true, paie: false },
+  { id: "transport", nom: "TransAlpes", dirigeant: "Didier Rocher", secteur: "Transport routier", trait: "flotte de 40 camions, carburant en pagaille", satisfaction: 64, forfait: 4400, tvaMensuelle: true, paie: true },
+  { id: "asso", nom: "Association Sport+", dirigeant: "Hélène Brun", secteur: "Association sportive", trait: "bénévoles adorables, comptabilité créative", satisfaction: 75, forfait: 1050, tvaMensuelle: false, paie: false },
 ];
 
 // Pour générer des candidats au recrutement.
@@ -45,6 +45,7 @@ export const POSTES: { poste: string; filiere: Filiere; comp: [number, number]; 
   { poste: "Juriste", filiere: "juridique", comp: [58, 75], salaire: [2800, 3200] },
   { poste: "Chef de mission", filiere: "expertise", comp: [72, 85], salaire: [3500, 4000] },
   { poste: "Responsable RH", filiere: "rh", comp: [55, 75], salaire: [2800, 3300] },
+  { poste: "Auditeur", filiere: "audit", comp: [55, 78], salaire: [2900, 3500] },
 ];
 
 /** Petits clients de départ quand on crée son cabinet à partir de zéro. */
@@ -70,4 +71,6 @@ export const LIBELLE_FILIERE: Record<Filiere, string> = {
   social: "Social / paie",
   juridique: "Juridique",
   rh: "Ressources humaines",
+  audit: "Audit / CAC",
+  associe: "Associé",
 };

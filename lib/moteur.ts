@@ -21,6 +21,7 @@ import { CLIENTS_CREATION, CLIENTS_INITIAUX, CHEVEUX, COULEURS, EQUIPE_INITIALE,
 import { DILEMMES } from "@/lib/data/dilemmes";
 import { BADGES } from "@/lib/data/formation";
 import { MODELES } from "@/lib/data/messages";
+import { actionSpeciale, arriveeAssocie, debutJourneeExt, estTeletravail, facteurCompetence, facturer, finJourneeExt, horairesAgent, initSkills, migrerExt, noterArrivee, noterDepart, progresserSkill, quartAgent } from "@/lib/ext";
 import { ARCS } from "@/lib/data/arcs";
 import { article } from "@/lib/data/boutique";
 import { CAS } from "@/lib/data/cas";
@@ -37,27 +38,28 @@ export const REGLAGES: Record<Difficulte, { pa: number; evenements: number; vite
   expert: { pa: 3, evenements: 1.4, vitesse: 0.9, penalites: 1.4, tresorerie: 15000 },
 };
 
-const VITESSE_TYPE: Record<TypeMission, number> = { tva: 3.2, paie: 4, bilan: 0.4, liasse: 0.8, juridique: 1.6, conseil: 1.2 };
+const VITESSE_TYPE: Record<TypeMission, number> = { tva: 3.2, paie: 4, bilan: 0.4, liasse: 0.8, juridique: 1.6, conseil: 1.2, audit: 0.5 };
 const FILIERES_TYPE: Record<TypeMission, string[]> = {
-  tva: ["fiscal", "expertise"],
-  paie: ["social"],
-  bilan: ["expertise", "fiscal"],
-  liasse: ["fiscal", "expertise"],
-  juridique: ["juridique"],
-  conseil: ["fiscal", "juridique", "expertise"],
+  tva: ["fiscal", "expertise", "associe"],
+  paie: ["social", "associe"],
+  bilan: ["expertise", "fiscal", "associe"],
+  liasse: ["fiscal", "expertise", "associe"],
+  juridique: ["juridique", "associe"],
+  conseil: ["fiscal", "juridique", "expertise", "associe"],
+  audit: ["audit", "associe"],
 };
 const LOYER = 3500;
 const CHARGES_FIXES = 600;
 
 export const clamp = (v: number, a = 0, b = 100) => Math.max(a, Math.min(b, v));
-const rnd = () => Math.random();
-const pick = <T,>(arr: T[]): T => arr[Math.floor(rnd() * arr.length)];
-function hash(s: string): number {
+export const rnd = () => Math.random();
+export const pick = <T,>(arr: T[]): T => arr[Math.floor(rnd() * arr.length)];
+export function hash(s: string): number {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
   return Math.abs(h);
 }
-const uid = (e: Etat, p: string) => `${p}${++e.seq}`;
+export const uid = (e: Etat, p: string) => `${p}${++e.seq}`;
 export const jourActuel = (e: Etat) => jourDe(e.minute);
 
 // ---------- création ----------
@@ -69,7 +71,8 @@ function nouvellePeriode(jour: number): BilanPeriode {
 export function nouvellePartie(difficulte: Difficulte, nomCabinet: string, mode: ModeDepart = "reprise"): Etat {
   const r = REGLAGES[difficulte];
   const creation = mode === "creation";
-  const e: Etat = {
+  // Les champs ajoutés ensuite sont posés par migrerExt() plus bas.
+  const e = {
     version: 1,
     nomCabinet,
     difficulte,
@@ -115,7 +118,7 @@ export function nouvellePartie(difficulte: Difficulte, nomCabinet: string, mode:
     bossActif: null,
     absence: null,
     derniereVisite: Date.now(),
-    compteurs: {},
+    compteurs: { forfaitsRevus: 1 },
     seq: 0,
     niveauLocaux: creation ? 1 : 3,
     propositions: [],
@@ -128,7 +131,7 @@ export function nouvellePartie(difficulte: Difficulte, nomCabinet: string, mode:
     arcsFinis: [],
     controleJour: ouvreOuApres(jourDeLaDate(2026, 9, 15)),
     controleResultat: null,
-  };
+  } as unknown as Etat;
   if (creation) e.loyer = LOCAUX[0].loyer;
 
   // Échéances de l'année : TVA (24), DSN (15), liasse, approbation des comptes.
@@ -153,6 +156,7 @@ export function nouvellePartie(difficulte: Difficulte, nomCabinet: string, mode:
   repartir(e);
   e.candidats = creation ? candidatsDeDepart(e) : genererCandidats(e);
   log(e, `Bienvenue chez ${nomCabinet} ! Saison des bilans : la liasse fiscale tombe le ${dateCourte(liasse)}.`, "neutre");
+  migrerExt(e);
   if (creation)
     log(e, "Tu démarres seule avec trois petits clients. Tu traites les dossiers toi-même depuis ton bureau ; recrute au fur et à mesure que la charge augmente.", "neutre");
   return e;
@@ -162,12 +166,12 @@ const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", 
 const nomMois = (m: number) => MOIS[m - 1];
 
 function honorairesPour(type: TypeMission, c: Client): number {
-  const base = { tva: 250, paie: 350, bilan: 1500 + c.forfait * 0.8, liasse: 800, juridique: 700, conseil: 1800 }[type];
+  const base = { tva: 250, paie: 350, bilan: 1500 + c.forfait * 0.8, liasse: 800, juridique: 700, conseil: 1800, audit: 4500 }[type];
   return Math.round(base / 50) * 50;
 }
 
-function creerDossier(e: Etat, c: Client, type: TypeMission, echeance: number, jour: number, titre?: string): Dossier {
-  const noms: Record<TypeMission, string> = { tva: "TVA", paie: "Paie", bilan: "Bilan", liasse: "Liasse", juridique: "AG d'approbation", conseil: "Mission de conseil" };
+export function creerDossier(e: Etat, c: Client, type: TypeMission, echeance: number, jour: number, titre?: string): Dossier {
+  const noms: Record<TypeMission, string> = { tva: "TVA", paie: "Paie", bilan: "Bilan", liasse: "Liasse", juridique: "AG d'approbation", conseil: "Mission de conseil", audit: "Mission d'audit" };
   const d: Dossier = {
     id: uid(e, "d"),
     client: c.id,
@@ -230,6 +234,13 @@ function candidatsDeDepart(e: Etat): Candidat[] {
 }
 
 export function genererCandidats(e: Etat): Candidat[] {
+  const liste = genererCandidatsBase(e);
+  if (pieceOuverte(e, "associes") && !e.agents.some((a) => a.filiere === "associe") && rnd() < 0.5)
+    liste.push({ id: uid(e, "c"), prenom: pick(PRENOMS), nom: pick(NOMS), poste: "Associé", filiere: "associe", personnalite: pick(PERSONNALITES), competence: 85, salaire: 0 });
+  return liste;
+}
+
+function genererCandidatsBase(e: Etat): Candidat[] {
   // On propose en priorité les métiers qui manquent au regard des dossiers.
   const manques = besoins(e).filter((b) => b.ratio > 1).map((b) => b.filiere);
   const n = aUnRH(e) ? 5 : 3;
@@ -241,8 +252,10 @@ export function genererCandidats(e: Etat): Candidat[] {
 
 /** Charge de travail par métier, comparée à la capacité de l'équipe. */
 export function besoins(e: Etat): { filiere: Filiere; charge: number; capacite: number; ratio: number }[] {
-  const principal: Record<TypeMission, Filiere> = { tva: "fiscal", paie: "social", bilan: "expertise", liasse: "fiscal", juridique: "juridique", conseil: "fiscal" };
-  const res = (["expertise", "fiscal", "social", "juridique"] as Filiere[]).map((f) => {
+  const principal: Record<TypeMission, Filiere> = { tva: "fiscal", paie: "social", bilan: "expertise", liasse: "fiscal", juridique: "juridique", conseil: "fiscal", audit: "audit" };
+  const filieres: Filiere[] = ["expertise", "fiscal", "social", "juridique"];
+  if (e.dossiers.some((d) => d.type === "audit" && d.phase < 5) || e.agents.some((a) => a.filiere === "audit")) filieres.push("audit");
+  const res = filieres.map((f) => {
     const charge = e.dossiers.filter((d) => d.phase < 5 && principal[d.type] === f).reduce((s, d) => s + (d.type === "bilan" ? 3 : 1), 0);
     const capacite = e.agents.filter((a) => a.filiere === f || (f === "fiscal" && a.filiere === "expertise") || (f === "expertise" && a.filiere === "fiscal")).length * 8;
     return { filiere: f, charge, capacite, ratio: capacite ? charge / capacite : charge > 0 ? 9 : 0 };
@@ -263,13 +276,13 @@ const nomAgent = (e: Etat, id: string | null | undefined) => {
   const a = e.agents.find((x) => x.id === id);
   return a ? a.prenom : "quelqu'un";
 };
-const nomClient = (e: Etat, id: string | null | undefined) => e.clients.find((x) => x.id === id)?.nom ?? "un client";
+export const nomClient = (e: Etat, id: string | null | undefined) => e.clients.find((x) => x.id === id)?.nom ?? "un client";
 
 function remplir(t: string, vars: Record<string, string>) {
   return t.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? "");
 }
 
-function envoyer(
+export function envoyer(
   e: Etat,
   theme: string,
   de: string,
@@ -304,21 +317,21 @@ function envoyer(
   return msg;
 }
 
-function ajouterJoursOuvres(jour: number, n: number) {
+export function ajouterJoursOuvres(jour: number, n: number) {
   let j = jour;
   for (let i = 0; i < n; i++) j = prochainJourOuvre(j);
   return j;
 }
 
-function dire(e: Etat, a: Agent, texte: string, duree = 40) {
+export function dire(e: Etat, a: Agent, texte: string, duree = 40) {
   a.bulle = texte;
   a.bulleJusqua = e.minute + duree;
 }
 
-function messageEnAttente(e: Etat, theme: string, de?: string, dossier?: string) {
+export function messageEnAttente(e: Etat, theme: string, de?: string, dossier?: string) {
   return e.messages.some((m) => m.statut === "attente" && m.theme === theme && (!de || m.de === de) && (!dossier || m.dossier === dossier));
 }
-function dernierMessage(e: Etat, theme: string, de?: string) {
+export function dernierMessage(e: Etat, theme: string, de?: string) {
   const m = e.messages.find((x) => x.theme === theme && (!de || x.de === de));
   return m ? m.jour : -999;
 }
@@ -364,7 +377,7 @@ function payer(e: Etat, cout: number, niveau?: Niveau): boolean {
 
 // ---------- dossiers ----------
 
-function avancerDossier(e: Etat, d: Dossier, points: number) {
+export function avancerDossier(e: Etat, d: Dossier, points: number) {
   let reste = points;
   while (reste > 0 && d.phase < 5) {
     if (d.phase === 3 && d.progression >= 100) return; // attend ta validation
@@ -421,14 +434,13 @@ function livrer(e: Etat, d: Dossier) {
   d.phase = 5;
   d.progression = 100;
   d.livre = jour;
-  e.tresorerie += d.honoraires;
-  e.periode.ca += d.honoraires;
+  facturer(e, d);
   e.periode.livres++;
   inc(e, "livres");
   const c = e.clients.find((x) => x.id === d.client);
   if (c) c.satisfaction = clamp(c.satisfaction + (jour <= d.echeance ? 4 : -6));
   if (jour > d.echeance) inc(e, "retards");
-  log(e, `📦 ${d.titre} livré par ${nomAgent(e, d.agent)} (+${d.honoraires.toLocaleString("fr-FR")} €).`, "bien");
+  log(e, `📦 ${d.titre} livré par ${d.agent === null || d.agent === "toi" ? "toi" : nomAgent(e, d.agent)} : facture de ${d.honoraires.toLocaleString("fr-FR")} € émise.`, "bien");
   // Un bilan livré déclenche l'AG d'approbation des comptes.
   if (d.type === "bilan" && c) {
     const ag = e.echeances.find((x) => x.type === "juridique" && !x.resolue && x.jour > jour);
@@ -437,7 +449,7 @@ function livrer(e: Etat, d: Dossier) {
   }
 }
 
-function inc(e: Etat, k: string, n = 1) {
+export function inc(e: Etat, k: string, n = 1) {
   e.compteurs[k] = (e.compteurs[k] ?? 0) + n;
 }
 
@@ -448,15 +460,6 @@ export function resteAvantValidation(d: Dossier): number {
 }
 
 // ---------- horaires des agents ----------
-
-function horaires(a: Agent, jour: number) {
-  const h = hash(a.id + ":" + jour);
-  const decal = { anxieux: -20, perfectionniste: -15, ambitieux: -10, loyal: -5, sociable: 0, rebelle: 10, nonchalant: 25 }[a.personnalite];
-  const arrivee = 8 * 60 + 15 + (h % 45) + decal;
-  const depart = 18 * 60 + ((h >> 4) % 75) + (a.personnalite === "ambitieux" || a.personnalite === "perfectionniste" ? 20 : 0) + (a.stress > 70 ? 15 : 0);
-  const dejeuner = 12 * 60 + 15 + ((h >> 8) % 45);
-  return { arrivee, depart: Math.min(depart, FIN_JOURNEE - 5), dejeuner };
-}
 
 // ---------- boucle ----------
 
@@ -472,7 +475,12 @@ export function avancer(e: Etat, minutes: number) {
       debutJournee(e);
       continue;
     }
-    if (m % 15 === 0) quart(e);
+    if (m % 15 === 0) {
+      quart(e);
+      // Soirée : quand plus personne n'est au cabinet, on passe directement au lendemain.
+      if (m >= 18 * 60 + 30 && !e.agents.some((a) => a.activite !== "absent" && a.activite !== "conge" && a.activite !== "malade"))
+        e.minute = jourDe(e.minute) * 1440 + FIN_JOURNEE - 1;
+    }
   }
 }
 
@@ -484,7 +492,8 @@ function debutJournee(e: Etat) {
   const lundi = dateDe(jour).getUTCDay() === 1;
 
   for (const a of e.agents) {
-    const nuit = lundi ? 15 : 9;
+    const tard = a.dernierDepart ? Math.max(0, minuteDuJour(a.dernierDepart) - 19 * 60) / 60 : 0;
+    const nuit = (lundi ? 15 : 9) - tard * 2;
     a.fatigue = clamp(a.fatigue - nuit);
     a.stress = clamp(a.stress - (lundi ? 10 : 3));
     a.bulle = null;
@@ -527,6 +536,8 @@ function debutJournee(e: Etat) {
     e.qcmDisponible = true;
     e.candidats = genererCandidats(e);
   }
+
+  debutJourneeExt(e, jour, lundi, premierOuvreDuMois);
 
   // Conséquences différées.
   for (const c of e.differes.filter((x) => x.jour <= jour)) {
@@ -591,6 +602,7 @@ function gagnerBadgeEcheance(e: Etat, type: TypeMission) {
 }
 
 function finJournee(e: Etat) {
+  finJourneeExt(e);
   const jour = jourDe(e.minute);
   const r = REGLAGES[e.difficulte];
 
@@ -681,6 +693,13 @@ function ignorer(e: Etat, m: Message) {
     case "conge":
       if (a) a.moral = clamp(a.moral - 10);
       break;
+    case "special":
+    case "anniversaire": {
+      const opts = m.dilemme?.options ?? [];
+      const opt = opts[opts.length - 1];
+      if (opt) appliquerOption(e, m, opt);
+      break;
+    }
     case "arc":
     case "dilemme": {
       // l'option la moins coûteuse est appliquée par défaut
@@ -694,7 +713,7 @@ function ignorer(e: Etat, m: Message) {
   if (a) log(e, `${a.prenom} attendait une réponse à « ${m.sujet} ». Confiance en baisse.`, "mal");
 }
 
-function depart(e: Etat, a: Agent, raison: string) {
+export function depart(e: Etat, a: Agent, raison: string) {
   e.agents = e.agents.filter((x) => x.id !== a.id);
   e.anciens.push({ prenom: a.prenom, nom: a.nom, depart: jourDe(e.minute), raison });
   for (const d of e.dossiers) if (d.agent === a.id && d.phase < 5) d.agent = null;
@@ -710,23 +729,37 @@ function quart(e: Etat) {
   const r = REGLAGES[e.difficulte];
   const rush = e.compteurs.rushJour === jour;
 
+  const seminaire = e.compteurs.seminaireJour === jour;
   for (const a of e.agents) {
     if (a.bulle && a.bulleJusqua < e.minute) a.bulle = null;
-    if (a.activite === "conge" || a.activite === "malade") continue;
-    const h = horaires(a, jour);
+    if (a.activite === "conge" || a.activite === "malade" || seminaire) continue;
+    const h = horairesAgent(e, a, jour);
 
     if (m < h.arrivee || m >= h.depart) {
       if (a.activite !== "absent" && m >= h.depart) {
         a.activite = "absent";
-        if (rnd() < 0.5) dire(e, a, pick(["À demain !", "Bonne soirée", "Je file !"]), 20);
+        noterDepart(e, a);
+        if (rnd() < 0.5) dire(e, a, m >= 20 * 60 ? pick(["Enfin fini…", "Bonne nuit !", "Je n'en peux plus"]) : pick(["À demain !", "Bonne soirée", "Je file !"]), 20);
       }
       continue;
     }
     if (a.activite === "absent") {
-      a.activite = "travaille";
-      if (rnd() < 0.4) dire(e, a, pick(["Bonjour !", "Café d'abord…", "C'est parti"]), 25);
+      noterArrivee(e, a);
+      a.activite = estTeletravail(e, a, jour) ? "teletravail" : "travaille";
+      if (rnd() < 0.4 && a.activite === "travaille") dire(e, a, pick(["Bonjour !", "Café d'abord…", "C'est parti"]), 25);
     }
+    if (m === 18 * 60 && a.activite === "travaille" && h.depart > 18 * 60 + 30 && rnd() < 0.5) dire(e, a, pick(["Je reste un peu ce soir", "Encore ce dossier à finir…", "Soirée au bureau"]), 30);
+    quartAgent(e, a);
 
+    if (a.activite === "teletravail") {
+      const dt = e.dossiers.filter((d) => d.agent === a.id && d.phase < 5 && !d.bloque && !(d.phase === 3 && d.progression >= 100)).sort((p, q) => p.echeance - q.echeance)[0];
+      if (dt && !(m >= h.dejeuner && m < h.dejeuner + 60)) {
+        avancerDossier(e, dt, 2.8 * facteurCompetence(e, a, dt) * (1 - a.fatigue / 160) * VITESSE_TYPE[dt.type] * r.vitesse / Math.sqrt(dt.difficulte));
+        dt.heures = (dt.heures ?? 0) + 0.25;
+        progresserSkill(a, dt);
+      }
+      continue;
+    }
     // Activité ponctuelle en cours ?
     if (a.activite !== "travaille" && a.activiteJusqua > e.minute) {
       if (a.activite === "pause") {
@@ -783,7 +816,7 @@ function quart(e: Etat) {
       continue;
     }
     // Avancement du dossier.
-    let v = 2.8 * (a.competence / 60) * (1 - a.fatigue / 160) * (1 - Math.max(0, a.stress - 70) / 90) * VITESSE_TYPE[d.type] * r.vitesse / Math.sqrt(d.difficulte);
+    let v = 2.8 * facteurCompetence(e, a, d) * (1 - a.fatigue / 160) * (1 - Math.max(0, a.stress - 70) / 90) * VITESSE_TYPE[d.type] * r.vitesse / Math.sqrt(d.difficulte);
     if (rush) v *= 1.8;
     if (possede(e, "babyfoot")) v *= 0.97;
     if (possede(e, "imprimante") && d.phase <= 2) v *= 1.08;
@@ -795,6 +828,8 @@ function quart(e: Etat) {
       v *= 1.08;
     }
     avancerDossier(e, d, v);
+    d.heures = (d.heures ?? 0) + 0.25;
+    progresserSkill(a, d);
     if (rnd() < 0.03) dire(e, a, pick([`Je suis sur ${nomClient(e, d.client)}`, "Ça avance", "Rapprochement en cours", "Je lettre les comptes"]), 25);
     // Cas pratique : le collaborateur bloque et te demande de trancher.
     if (d.phase >= 2 && d.phase <= 3 && !d.bloque && rnd() < 0.0016 * r.evenements && !messageEnAttente(e, "cas")) {
@@ -817,6 +852,7 @@ function quart(e: Etat) {
     const d = miens[0];
     if (d) {
       e.travailToi = d.id;
+      d.heures = (d.heures ?? 0) + 0.25;
       const v = 2.8 * 0.75 * VITESSE_TYPE[d.type] * r.vitesse * (rush ? 1.5 : 1) / Math.sqrt(d.difficulte);
       avancerDossier(e, d, v);
       if (d.phase === 1 && !d.bloque && rnd() < 0.003 * r.evenements) d.bloque = "Pièces manquantes";
@@ -968,7 +1004,7 @@ function ctxDilemme(m: Message) {
 function appliquerOption(e: Etat, m: Message, opt: NonNullable<Message["dilemme"]>["options"][number]) {
   const ctx = ctxDilemme(m);
   appliquerEffets(e, opt.effets, ctx);
-  if (opt.action) actionArc(e, opt.action, { ...(e.arcs.find((x) => x.id === m.arc?.id)?.ctx ?? {}), ...ctx });
+  if (opt.action && !actionSpeciale(e, opt.action, m)) actionArc(e, opt.action, { ...(e.arcs.find((x) => x.id === m.arc?.id)?.ctx ?? {}), ...ctx });
   if (opt.differe) e.differes.push({ jour: ajouterJoursOuvres(jourDe(e.minute), opt.differe.delai), effets: opt.differe.effets, texte: opt.differe.texte, ...ctx });
 }
 
@@ -1224,6 +1260,9 @@ export function recruter(e: Etat, candidatId: string): string | null {
     bulleJusqua: 0,
   });
   e.candidats = e.candidats.filter((x) => x.id !== candidatId);
+  const nouveau = e.agents[e.agents.length - 1];
+  initSkills(nouveau);
+  if (nouveau.filiere === "associe") arriveeAssocie(e, nouveau);
   inc(e, "recrutements");
   log(e, `🤝 ${c.prenom} ${c.nom} rejoint le cabinet comme ${c.poste.toLowerCase()}.`, "bien");
   repartir(e);
@@ -1324,7 +1363,7 @@ export function enregistrerOral(e: Etat, score: number, question: string) {
 
 // ---------- badges ----------
 
-function donnerBadge(e: Etat, id: string) {
+export function donnerBadge(e: Etat, id: string) {
   if (e.badges.some((b) => b.id === id)) return;
   e.badges.push({ id, jour: jourDe(e.minute) });
   const b = BADGES.find((x) => x.id === id);
@@ -1396,6 +1435,7 @@ export function migrer(e: Etat): Etat {
   e.controleJour ??= ouvreOuApres(jourDeLaDate(2026, 9, 15));
   e.controleResultat ??= null;
   if (e.controleJour <= jourDe(e.minute)) e.controleJour = ouvreOuApres(e.controleJour + 365);
+  migrerExt(e);
   return e;
 }
 
@@ -1404,7 +1444,7 @@ export const pieceOuverte = (e: Etat, p: PieceId) => p === "dehors" || niveauLoc
 export const capacitePostes = (e: Etat) => niveauLocaux(e.niveauLocaux).postes;
 export const postesOuverts = (e: Etat) => ORDRE_POSTES.slice(0, capacitePostes(e));
 
-function clientDepuis(e: Etat, p: (typeof PROSPECTS_NOUVEAUX)[number], satisfaction: number, multForfait = 1): Client {
+export function clientDepuis(e: Etat, p: (typeof PROSPECTS_NOUVEAUX)[number], satisfaction: number, multForfait = 1): Client {
   const c: Client = {
     id: uid(e, "cl"),
     nom: p.nom,
@@ -1456,7 +1496,7 @@ export function acheter(e: Etat, id: string): string | null {
 
 const COULEURS_VISITEURS = ["#6c757d", "#8d6e63", "#5c6bc0", "#26a69a", "#ef6c00", "#7e57c2"];
 
-function ajouterVisiteur(e: Etat, nom: string, lien: string) {
+export function ajouterVisiteur(e: Etat, nom: string, lien: string) {
   if (e.visiteurs.length >= 4) return;
   const m = minuteDuJour(e.minute);
   if (m < 9 * 60 || m > 17 * 60 + 30) return;

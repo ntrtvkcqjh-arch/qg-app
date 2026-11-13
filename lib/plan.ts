@@ -26,7 +26,15 @@ export const PIECES: Piece[] = [
   { id: "accueil", nom: "Accueil", x0: -12, x1: -6, z0: 0, z1: 8, sol: "#e8dcc8", porte: -9, description: "Clients et prospects qui passent au cabinet." },
   { id: "openspace", nom: "Open space", x0: -6, x1: 6, z0: 0, z1: 8, sol: "#9fb4d8", porte: 0, description: "L'équipe au travail sur les dossiers." },
   { id: "cafe", nom: "Cafétéria", x0: 6, x1: 12, z0: 0, z1: 8, sol: "#e6e1d6", porte: 9, description: "Pauses, rumeurs, clans et moral." },
+  // Aile Est (agrandissements 5 et 6)
+  { id: "associes", nom: "Bureaux des associés", x0: 12, x1: 16, z0: -8, z1: -2, sol: "#a47551", porte: 14, description: "Tes associés y reçoivent leurs propres clients." },
+  { id: "it", nom: "Salle IT", x0: 16, x1: 18.5, z0: -8, z1: -2, sol: "#b0bec5", porte: 17.25, description: "Serveurs et cybersécurité : moins de pannes et d'attaques." },
+  { id: "detente", nom: "Espace détente", x0: 18.5, x1: 22, z0: -8, z1: -2, sol: "#c8e6c9", porte: 20.25, description: "Sieste, sport, phone box : la fatigue retombe plus vite." },
+  { id: "rh", nom: "Bureau RH", x0: 12, x1: 15, z0: 0, z1: 8, sol: "#e1bee7", porte: 13.5, description: "Entretiens d'embauche et suivi du personnel." },
+  { id: "annexe", nom: "Open space annexe", x0: 15, x1: 22, z0: 0, z1: 8, sol: "#a5c8b8", porte: 18.5, description: "Pôle audit et conseil : 6 postes supplémentaires." },
 ];
+
+export const AILE_EST: PieceId[] = ["associes", "it", "detente", "rh", "annexe"];
 
 export const pieceParId = (id: PieceId) => PIECES.find((p) => p.id === id);
 
@@ -47,6 +55,17 @@ export const POSTES: { x: number; z: number; rot: number }[] = (() => {
   return res;
 })();
 
+// Postes de l'open space annexe (indices 10 à 15).
+for (const [x, z, rot] of [
+  [16.6, 2.6, 0],
+  [18.6, 2.6, 0],
+  [20.6, 2.6, 0],
+  [16.6, 5.0, Math.PI],
+  [18.6, 5.0, Math.PI],
+  [20.6, 5.0, Math.PI],
+] as const)
+  POSTES.push({ x, z, rot });
+
 export const MAX_POSTES = POSTES.length;
 
 export const PIECE_ACTIVITE: Record<Activite, PieceId> = {
@@ -59,11 +78,12 @@ export const PIECE_ACTIVITE: Record<Activite, PieceId> = {
   accueil: "accueil",
   conge: "dehors",
   malade: "dehors",
+  teletravail: "dehors",
 };
 
 /** Point de stationnement d'un agent dans une pièce (dispersé selon son index). */
 export function placeDans(piece: PieceId, index: number, bureau: number): { x: number; z: number } {
-  if (piece === "openspace") {
+  if (piece === "openspace" || piece === "annexe") {
     const p = POSTES[bureau % POSTES.length];
     // la chaise est devant le bureau
     return { x: p.x, z: p.z + (p.rot === 0 ? -0.7 : 0.7) };

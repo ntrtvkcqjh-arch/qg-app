@@ -13,6 +13,7 @@ import Boss from "./ui/Boss";
 import Absence from "./ui/Absence";
 import Toast from "./ui/Toast";
 import Modales from "./ui/Modales";
+import Sons from "./Sons";
 
 const Cabinet3D = dynamic(() => import("./scene/Cabinet3D"), {
   ssr: false,
@@ -67,6 +68,7 @@ export default function Jeu() {
       </div>
       <Absence />
       <Modales />
+      <Sons />
       <Toast />
     </div>
   );

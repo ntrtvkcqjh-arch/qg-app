@@ -8,6 +8,8 @@ import { PIECE_ACTIVITE, pieceParId } from "@/lib/plan";
 import { useJeu, type Panneau } from "@/lib/store";
 import { NOMS_PHASES } from "@/lib/types";
 import { LIBELLE_ACTIVITE, euros } from "./textes";
+import { LIBELLE_DOMAINE } from "@/lib/data/developpement";
+import { DOMAINES, designerTuteur, inscrireDiplome } from "@/lib/ext";
 
 export default function Fiche() {
   const id = useJeu((s) => s.selectionAgent);
@@ -106,6 +108,7 @@ function FicheAgent({ id }: { id: string }) {
           </div>
         ))}
       </div>
+      <FicheDeveloppement id={a.id} />
       <div className="actions">
         <button className="bouton" onClick={() => agir(augmenter, a.id)}>
           +100 € de salaire
@@ -190,5 +193,60 @@ function FichePiece() {
         </button>
       )}
     </aside>
+  );
+}
+
+function FicheDeveloppement({ id }: { id: string }) {
+  const e = useJeu((s) => s.etat)!;
+  const agir = useJeu((s) => s.agir);
+  const a = e.agents.find((x) => x.id === id);
+  if (!a) return null;
+  const tuteurs = e.agents.filter((x) => x.id !== a.id && x.competence >= 65 && x.filiere !== "associe");
+  return (
+    <>
+      <div className="bloc">
+        <h4>Compétences par domaine</h4>
+        <div className="skills">
+          {DOMAINES.map((d) => (
+            <div key={d} className="jauge-ligne">
+              <span>
+                {LIBELLE_DOMAINE[d]}
+                {a.objectif === d ? " 🎯" : ""}
+              </span>
+              <div className="jauge">
+                <div className="bleu" style={{ width: `${a.skills?.[d] ?? 0}%` }} />
+              </div>
+              <strong>{Math.round(a.skills?.[d] ?? 0)}</strong>
+            </div>
+          ))}
+        </div>
+        <p className="aide">
+          Cette semaine : {Math.round(a.heuresSemaine ?? 0)} h · heures sup du mois : {Math.round(a.heuresSup ?? 0)} h
+        </p>
+      </div>
+      <div className="bloc">
+        <h4>Évolution</h4>
+        {a.diplome ? (
+          <p className="aide">
+            📚 Prépare le {a.diplome.nom} : {Math.round(a.diplome.progression)} %
+          </p>
+        ) : (
+          <button className="bouton petit" onClick={() => agir(inscrireDiplome, a.id)}>
+            📚 Financer le {/Collaborat|Chef/.test(a.poste) ? "DEC (3 000 €)" : "DSCG (1 500 €)"}
+          </button>
+        )}
+        <label className="ligne-tuteur">
+          Tuteur
+          <select value={a.tuteur ?? ""} onChange={(ev) => agir(designerTuteur, a.id, ev.target.value || null)}>
+            <option value="">Aucun</option>
+            {tuteurs.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.prenom} ({t.poste})
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+    </>
   );
 }

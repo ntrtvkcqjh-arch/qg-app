@@ -5,6 +5,23 @@ import type { ThreeEvent } from "@react-three/fiber";
 import { PIECES, POSTES, type Piece } from "@/lib/plan";
 import type { PieceId } from "@/lib/types";
 import { ORDRE_POSTES, niveauLocaux } from "@/lib/data/locaux";
+import { AILE_EST } from "@/lib/plan";
+import { revetement, skyline, type Revetement } from "./textures";
+
+const REVETEMENT: Partial<Record<PieceId, Revetement>> = {
+  associee: "parquet",
+  accueil: "parquet",
+  reunion: "parquet",
+  associes: "parquet",
+  openspace: "moquette",
+  annexe: "moquette",
+  formation: "moquette",
+  rh: "moquette",
+  cafe: "carrelage",
+  detente: "carrelage",
+  archives: "beton",
+  it: "beton",
+};
 
 type V3 = [number, number, number];
 
@@ -137,10 +154,12 @@ function Sol({
   piece,
   onClick,
   verrou,
+  onDouble,
 }: {
   piece: Piece;
   onClick: (id: PieceId) => void;
   verrou: boolean;
+  onDouble?: (id: PieceId) => void;
 }) {
   const w = piece.x1 - piece.x0;
   const d = piece.z1 - piece.z0;
@@ -153,9 +172,17 @@ function Sol({
         ev.stopPropagation();
         onClick(piece.id);
       }}
+      onDoubleClick={(ev: ThreeEvent<MouseEvent>) => {
+        ev.stopPropagation();
+        onDouble?.(piece.id);
+      }}
     >
       <planeGeometry args={[w - 0.05, d - 0.05]} />
-      <meshStandardMaterial color={verrou ? "#bdb8b0" : piece.sol} roughness={0.95} />
+      {verrou || !REVETEMENT[piece.id] ? (
+        <meshStandardMaterial color={verrou ? "#bdb8b0" : piece.sol} roughness={0.95} />
+      ) : (
+        <meshStandardMaterial color={piece.sol} map={revetement(REVETEMENT[piece.id]!, w, d)} roughness={0.85} />
+      )}
     </mesh>
   );
 }
@@ -235,12 +262,17 @@ function CloisonZ({
 
 type PropsDecor = {
   onPiece: (id: PieceId) => void;
+  onFocus: (id: PieceId) => void;
   niveau: number;
   achats: string; // ids séparés par des virgules
   mois: number;
   fenetre: string; // couleur des fenêtres selon l'heure
   mood: number; // arrondi à la dizaine
   piles: string; // charge par poste, ex. "2,0,5,…"
+  poles: string; // couleur du pôle par poste, ex. "#2f5bea,,#17a398,…"
+  deco: string; // bois de ton bureau
+  nuit: boolean;
+  meteo: string;
 };
 
 function Sapin({ x, z }: { x: number; z: number }) {
@@ -284,7 +316,11 @@ function Chantier({ piece }: { piece: (typeof PIECES)[number] }) {
   );
 }
 
-function Decor({ onPiece, niveau, achats, mois, fenetre, mood, piles }: PropsDecor) {
+function Decor({ onPiece, onFocus, niveau, achats, mois, fenetre, mood, piles, poles, deco, nuit, meteo }: PropsDecor) {
+  const couleursPoles = poles.split(",");
+  const vue = skyline(fenetre, nuit, meteo);
+  const aile = niveau >= 5;
+  const visibles = PIECES.filter((p) => !AILE_EST.includes(p.id) || niveau >= 4);
   const n = niveauLocaux(niveau);
   const ouvert = (id: PieceId) => n.pieces.includes(id);
   const a = new Set(achats.split(",").filter(Boolean));
@@ -309,10 +345,10 @@ function Decor({ onPiece, niveau, achats, mois, fenetre, mood, piles }: PropsDec
         <planeGeometry args={[24, 2]} />
         <meshStandardMaterial color="#cbbfae" />
       </mesh>
-      {PIECES.map((p) => (
-        <Sol key={p.id} piece={p} onClick={onPiece} verrou={!ouvert(p.id)} />
+      {visibles.map((p) => (
+        <Sol key={p.id} piece={p} onClick={onPiece} onDouble={onFocus} verrou={!ouvert(p.id)} />
       ))}
-      {PIECES.filter((p) => !ouvert(p.id)).map((p) => (
+      {visibles.filter((p) => !ouvert(p.id)).map((p) => (
         <Chantier key={p.id} piece={p} />
       ))}
 
@@ -323,13 +359,13 @@ function Decor({ onPiece, niveau, achats, mois, fenetre, mood, piles }: PropsDec
       {[-9, -3, 3, 9].map((x) => (
         <mesh key={x} position={[x, 1.9, -7.98]}>
           <planeGeometry args={[3.2, 1.3]} />
-          <meshStandardMaterial color={fenetre} emissive={fenetre} emissiveIntensity={0.35} />
+          <meshStandardMaterial map={vue} emissive="#ffffff" emissiveMap={vue} emissiveIntensity={nuit ? 0.9 : 0.45} />
         </mesh>
       ))}
       {[-5, 4].map((z) => (
         <mesh key={z} position={[-11.98, 1.9, z]} rotation={[0, Math.PI / 2, 0]}>
           <planeGeometry args={[3, 1.3]} />
-          <meshStandardMaterial color={fenetre} emissive={fenetre} emissiveIntensity={0.35} />
+          <meshStandardMaterial map={vue} emissive="#ffffff" emissiveMap={vue} emissiveIntensity={nuit ? 0.9 : 0.45} />
         </mesh>
       ))}
       {premium &&
@@ -352,7 +388,7 @@ function Decor({ onPiece, niveau, achats, mois, fenetre, mood, piles }: PropsDec
       <CloisonZ x={-6} z0={0} z1={8} h={0.6} />
       <CloisonZ x={6} z0={0} z1={8} h={0.6} />
       <CloisonX z={8} x0={-12} x1={12} portes={[-9]} h={0.3} />
-      <CloisonZ x={12} z0={-8} z1={8} h={0.3} />
+      {!aile && <CloisonZ x={12} z0={-8} z1={8} h={0.3} />}
 
       {ouvert("reunion") && (
         <group>
@@ -429,7 +465,7 @@ function Decor({ onPiece, niveau, achats, mois, fenetre, mood, piles }: PropsDec
         <meshStandardMaterial color={premium ? "#d7c4a3" : "#e7d8c3"} />
       </mesh>
       <group position={[8.5, 0, -6]}>
-        <Boite p={[0, 0.76, 0]} s={[2.6, 0.08, 1.1]} c="#3a2a1d" />
+        <Boite p={[0, 0.76, 0]} s={[2.6, 0.08, 1.1]} c={deco} />
         <Boite p={[-1.15, 0.38, 0]} s={[0.15, 0.76, 1]} c="#2c2016" />
         <Boite p={[1.15, 0.38, 0]} s={[0.15, 0.76, 1]} c="#2c2016" />
         <Boite p={[-0.5, 1.1, -0.25]} s={[0.9, 0.55, 0.04]} c="#1f2430" />
@@ -470,7 +506,14 @@ function Decor({ onPiece, niveau, achats, mois, fenetre, mood, piles }: PropsDec
       {POSTES.map((p, i) =>
         postes.has(i) ? (
           <group key={i}>
+            {couleursPoles[i] && (
+              <mesh position={[p.x, 0.016, p.z + (p.rot === 0 ? -0.35 : 0.35)]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+                <planeGeometry args={[2, 1.9]} />
+                <meshStandardMaterial color={couleursPoles[i]} transparent opacity={0.35} />
+              </mesh>
+            )}
             <Bureau x={p.x} z={p.z} rot={p.rot} />
+            <Boite p={[p.x + (p.rot === 0 ? -0.55 : 0.55), 0.83, p.z + (p.rot === 0 ? -0.15 : 0.15)]} s={[0.09, 0.11, 0.09]} c={i % 3 ? "#ffffff" : "#d1495b"} ombre={false} />
             <Chaise x={p.x} z={p.z + (p.rot === 0 ? -0.7 : 0.7)} rot={p.rot} />
             {Array.from({ length: Math.min(6, charges[i] ?? 0) }).map((_, k) => (
               <Boite key={k} p={[p.x + (p.rot === 0 ? 0.65 : -0.65), 0.8 + k * 0.07, p.z]} s={[0.32, 0.06, 0.42]} c={k % 2 ? "#f5f5f5" : "#fff3c4"} ombre={false} />

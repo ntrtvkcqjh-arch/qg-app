@@ -17,9 +17,11 @@ export const LOCAUX: NiveauLocaux[] = [
   { niveau: 2, nom: "Plateau", pieces: ["associee", "openspace", "accueil", "cafe", "archives"], postes: 7, loyer: 2200, travaux: 6000, description: "Cafétéria (pauses plus efficaces) et archives. 7 postes." },
   { niveau: 3, nom: "Cabinet complet", pieces: ["associee", "openspace", "accueil", "cafe", "archives", "reunion", "formation"], postes: 10, loyer: 3500, travaux: 14000, description: "Salle de réunion et salle de formation. 10 postes." },
   { niveau: 4, nom: "Cabinet premium", pieces: ["associee", "openspace", "accueil", "cafe", "archives", "reunion", "formation"], postes: 10, loyer: 4500, travaux: 25000, description: "Rénovation haut de gamme : moral et réputation en hausse, clients plus généreux." },
+  { niveau: 5, nom: "Aile Est", pieces: ["associee", "openspace", "accueil", "cafe", "archives", "reunion", "formation", "rh", "annexe", "detente"], postes: 16, loyer: 6500, travaux: 40000, description: "Bureau RH, open space annexe (pôle audit/conseil, 6 postes) et espace détente." },
+  { niveau: 6, nom: "Étage de direction", pieces: ["associee", "openspace", "accueil", "cafe", "archives", "reunion", "formation", "rh", "annexe", "detente", "associes", "it"], postes: 16, loyer: 8000, travaux: 60000, description: "Bureaux des associés et salle IT (cybersécurité)." },
 ];
 
 /** Ordre dans lequel les bureaux de l'open space sont ouverts. */
-export const ORDRE_POSTES = [0, 1, 2, 3, 5, 6, 7, 4, 8, 9];
+export const ORDRE_POSTES = [0, 1, 2, 3, 5, 6, 7, 4, 8, 9, 10, 11, 12, 13, 14, 15];
 
 export const niveauLocaux = (n: number) => LOCAUX[Math.max(0, Math.min(LOCAUX.length - 1, n - 1))];

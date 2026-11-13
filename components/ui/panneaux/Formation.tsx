@@ -4,6 +4,9 @@ import { useState } from "react";
 import { dateCourte } from "@/lib/calendrier";
 import { ORAL, QCM, type QuestionQcm } from "@/lib/data/formation";
 import { ajouterCarnet, enregistrerOral, enregistrerQcm, retirerCarnet } from "@/lib/moteur";
+import { enregistrerThemes, themesFaibles } from "@/lib/ext";
+import DecPlan from "./DecPlan";
+import FormationEquipe from "./FormationEquipe";
 import { jourDe } from "@/lib/calendrier";
 import type { NoteCarnet } from "@/lib/types";
 import { useJeu } from "@/lib/store";
@@ -20,14 +23,34 @@ function melanger<T>(t: T[]): T[] {
 export default function Formation() {
   const e = useJeu((s) => s.etat)!;
   const [mode, setMode] = useState<"menu" | "qcm" | "oral" | "carnet">("menu");
+  const [onglet, setOnglet] = useState<"moi" | "equipe">("moi");
 
   if (mode === "qcm") return <Qcm fin={() => setMode("menu")} />;
   if (mode === "oral") return <Oral fin={() => setMode("menu")} />;
   if (mode === "carnet") return <Carnet fin={() => setMode("menu")} />;
 
   const dernier = e.qcm[e.qcm.length - 1];
+  const onglets = (
+    <div className="onglets">
+      <button className={onglet === "moi" ? "actif" : ""} onClick={() => setOnglet("moi")}>
+        🎯 Toi : préparation du DEC
+      </button>
+      <button className={onglet === "equipe" ? "actif" : ""} onClick={() => setOnglet("equipe")}>
+        👥 L&apos;équipe : formations
+      </button>
+    </div>
+  );
+  if (onglet === "equipe")
+    return (
+      <div>
+        {onglets}
+        <FormationEquipe />
+      </div>
+    );
   return (
     <div>
+      {onglets}
+      <DecPlan />
       <div className="niveau-dec">
         <span>Niveau DEC</span>
         <div className="jauge large">
@@ -82,7 +105,11 @@ function Qcm({ fin }: { fin: () => void }) {
   const agir = useJeu((s) => s.agir);
   const [questions] = useState<QuestionQcm[]>(() => {
     const noms = e.clients.map((c) => c.nom);
-    return melanger(QCM)
+    // 6 questions sur tes thèmes faibles (si connus), 4 au hasard.
+    const faibles = themesFaibles(e);
+    const cibles = melanger(QCM.filter((q) => faibles.includes(q.theme))).slice(0, faibles.length ? 6 : 0);
+    const reste = melanger(QCM.filter((q) => !cibles.includes(q))).slice(0, 10 - cibles.length);
+    return melanger([...cibles, ...reste])
       .slice(0, 10)
       .map((q) => ({ ...q, question: q.question.replace("{client}", noms[Math.floor(Math.random() * noms.length)] ?? "Un client") }));
   });
@@ -90,6 +117,7 @@ function Qcm({ fin }: { fin: () => void }) {
   const [choix, setChoix] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [rates, setRates] = useState<NoteCarnet[]>([]);
+  const [resultats, setResultats] = useState<{ theme: string; ok: boolean }[]>([]);
   const [termine, setTermine] = useState(false);
   const q = questions[i];
 
@@ -119,6 +147,7 @@ function Qcm({ fin }: { fin: () => void }) {
             className={`choix-btn ${choix !== null && k === q.bonne ? "bon" : ""} ${choix === k && k !== q.bonne ? "faux" : ""}`}
             onClick={() => {
               setChoix(k);
+              setResultats((r) => [...r, { theme: q.theme, ok: k === q.bonne }]);
               if (k === q.bonne) setScore((s) => s + 1);
               else setRates((r) => [...r, { theme: q.theme, question: q.question, explication: q.explication, jour: jourDe(e.minute) }]);
             }}
@@ -137,6 +166,7 @@ function Qcm({ fin }: { fin: () => void }) {
               if (i === 9) {
                 agir(enregistrerQcm, score, 10);
                 if (rates.length) agir(ajouterCarnet, rates);
+                agir(enregistrerThemes, resultats);
                 setTermine(true);
               } else {
                 setI(i + 1);

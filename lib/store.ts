@@ -8,7 +8,7 @@ import type { Difficulte, Etat, ModeDepart, PieceId } from "@/lib/types";
 // Le store garde l'état du jeu (sauvegardé dans le navigateur) et l'état
 // d'interface (sélection, panneau ouvert), qui, lui, n'est pas sauvegardé.
 
-export type Panneau = "cabinet" | "messages" | "demandes" | "dossiers" | "equipe" | "locaux" | "formation" | "bilans" | "badges" | "journal";
+export type Panneau = "cabinet" | "messages" | "demandes" | "dossiers" | "equipe" | "locaux" | "formation" | "bilans" | "badges" | "journal" | "reglages";
 
 type Store = {
   etat: Etat | null;

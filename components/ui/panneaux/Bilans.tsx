@@ -3,16 +3,37 @@
 import { dateCourte } from "@/lib/calendrier";
 import { useJeu } from "@/lib/store";
 import { euros } from "../textes";
+import Finances from "./Finances";
+import { useState } from "react";
 
 export default function Bilans() {
   const e = useJeu((s) => s.etat)!;
+  const [onglet, setOnglet] = useState<"semaines" | "finances">("semaines");
   const periodes = [{ ...e.periode, moral: Math.round(e.moodGlobal), label: `${e.periode.label} (en cours)` }, ...e.bilans];
   const histo = [...periodes].slice(0, 10).reverse();
   const max = Math.max(1, ...histo.flatMap((p) => [p.ca, p.charges]));
   const echeances = e.echeances.filter((x) => x.resolue);
 
+  const onglets = (
+    <div className="onglets">
+      <button className={onglet === "semaines" ? "actif" : ""} onClick={() => setOnglet("semaines")}>
+        Bilans hebdomadaires
+      </button>
+      <button className={onglet === "finances" ? "actif" : ""} onClick={() => setOnglet("finances")}>
+        Factures, rentabilité, concurrence
+      </button>
+    </div>
+  );
+  if (onglet === "finances")
+    return (
+      <div>
+        {onglets}
+        <Finances />
+      </div>
+    );
   return (
     <div>
+      {onglets}
       <div className="kpis-bilan">
         <div>
           <span>Trésorerie</span>

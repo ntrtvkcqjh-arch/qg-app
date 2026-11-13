@@ -10,6 +10,7 @@ import Badges from "./panneaux/Badges";
 import JournalPanneau from "./panneaux/Journal";
 import Demandes from "./panneaux/Demandes";
 import Locaux from "./panneaux/Locaux";
+import Reglages from "./panneaux/Reglages";
 
 const TITRES = {
   messages: "Messagerie",
@@ -21,6 +22,7 @@ const TITRES = {
   bilans: "Bilans",
   badges: "Badges",
   journal: "Journal du cabinet",
+  reglages: "Réglages",
   cabinet: "",
 } as const;
 
@@ -45,6 +47,7 @@ export default function Tiroir() {
         {panneau === "bilans" && <Bilans />}
         {panneau === "badges" && <Badges />}
         {panneau === "journal" && <JournalPanneau />}
+        {panneau === "reglages" && <Reglages />}
       </div>
     </section>
   );

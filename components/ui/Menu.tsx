@@ -13,6 +13,7 @@ const ENTREES: { id: Panneau; icone: string; label: string }[] = [
   { id: "bilans", icone: "📊", label: "Bilans" },
   { id: "badges", icone: "🏅", label: "Badges" },
   { id: "journal", icone: "📰", label: "Journal" },
+  { id: "reglages", icone: "⚙️", label: "Réglages" },
 ];
 
 export default function Menu() {

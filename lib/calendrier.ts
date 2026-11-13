@@ -1,9 +1,9 @@
 // Calendrier simulé. Le jour 0 est le lundi 2 mars 2026 (en pleine saison
-// des bilans). Seuls les jours ouvrés sont simulés, de 8h00 à 19h30.
+// des bilans). Seuls les jours ouvrés sont simulés, de 8h00 à minuit.
 
 export const DEBUT_JOURNEE = 8 * 60; // 8h00
-export const FIN_JOURNEE = 19 * 60 + 30; // 19h30
-export const MINUTES_PAR_JOUR = FIN_JOURNEE - DEBUT_JOURNEE; // 690
+export const FIN_JOURNEE = 23 * 60 + 59; // minuit (les collaborateurs peuvent rester tard)
+export const MINUTES_PAR_JOUR = FIN_JOURNEE - DEBUT_JOURNEE;
 
 const ORIGINE = Date.UTC(2026, 2, 2); // lundi 2 mars 2026
 const JOUR_MS = 86_400_000;

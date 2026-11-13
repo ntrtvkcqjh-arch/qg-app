@@ -5,6 +5,7 @@ import { LIBELLE_FILIERE, LIBELLE_PERSO } from "@/lib/data/equipe";
 import { aUnRH, besoins, capacitePostes, fraisRecrutement, publierAnnonce, recruter } from "@/lib/moteur";
 import { useJeu } from "@/lib/store";
 import { LIBELLE_ACTIVITE, euros } from "../textes";
+import EquipePlus from "./EquipePlus";
 
 export default function Equipe() {
   const e = useJeu((s) => s.etat)!;
@@ -132,6 +133,7 @@ export default function Equipe() {
           ))}
         </>
       )}
+      <EquipePlus />
     </div>
   );
 }

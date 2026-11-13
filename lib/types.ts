@@ -9,9 +9,14 @@ export type PieceId =
   | "accueil"
   | "openspace"
   | "cafe"
+  | "detente"
+  | "rh"
+  | "it"
+  | "associes"
+  | "annexe"
   | "dehors";
 
-export type Filiere = "expertise" | "fiscal" | "social" | "juridique" | "rh";
+export type Filiere = "expertise" | "fiscal" | "social" | "juridique" | "rh" | "audit" | "associe";
 
 export type Activite =
   | "absent" // pas encore arrivé / parti le soir
@@ -22,7 +27,8 @@ export type Activite =
   | "archives"
   | "accueil"
   | "conge"
-  | "malade";
+  | "malade"
+  | "teletravail";
 
 export type Personnalite =
   | "perfectionniste"
@@ -57,7 +63,18 @@ export type Agent = {
   clan: string | null;
   bulle: string | null;
   bulleJusqua: number;
+  // Ajouts (facultatifs pour les anciennes sauvegardes)
+  skills?: Record<Domaine, number>; // compétences par domaine 0-100
+  heuresSemaine?: number; // heures travaillées cette semaine
+  heuresSup?: number; // heures sup du mois à payer
+  dernierDepart?: number; // minute absolue du dernier départ (repos 11 h)
+  objectif?: Domaine | null; // objectif fixé à l'entretien annuel
+  diplome?: { nom: "DSCG" | "DEC"; progression: number } | null;
+  tuteur?: string | null; // id du tuteur
+  anniversaire?: number; // jour de l'année (0-364)
 };
+
+export type Domaine = "tva" | "is" | "paie" | "juridique" | "revision" | "audit" | "outils";
 
 export type Relation = { a: string; b: string; type: "rivalite" | "mentorat" | "amitie"; intensite: number };
 
@@ -70,7 +87,7 @@ export const NOMS_PHASES: Record<Phase, string> = {
   5: "Livré",
 };
 
-export type TypeMission = "bilan" | "tva" | "paie" | "liasse" | "juridique" | "conseil";
+export type TypeMission = "bilan" | "tva" | "paie" | "liasse" | "juridique" | "conseil" | "audit";
 
 export type Dossier = {
   id: string;
@@ -86,7 +103,26 @@ export type Dossier = {
   bloque: string | null; // raison si bloqué (pièces manquantes…)
   cree: number;
   livre: number | null;
+  heures?: number; // temps passé (feuilles de temps)
 };
+
+export type Facture = { id: string; client: string; libelle: string; montant: number; emise: number; echeance: number; prevue: number; payee: number | null; relances: number };
+
+export type Concurrent = {
+  id: string;
+  nom: string;
+  sigle: string;
+  couleur: string;
+  type: "big4" | "reseau" | "local";
+  ca: number; // CA annuel (€)
+  reputation: number;
+  effectif: number;
+  agressivite: number; // 0-1
+};
+
+export type SessionFormation = { id: string; formation: string; jour: number; participants: string[]; terminee: boolean };
+
+export type Memoire = { sujet: string | null; etape: number; qualite: number; soutenu: boolean };
 
 export type Client = {
   id: string;
@@ -108,7 +144,26 @@ export type OptionDilemme = {
   effets: Effets;
   differe?: { delai: number; effets: Effets; texte: string };
   resultat: string;
-  action?: "promouvoir" | "client_part" | "client_part_perte" | "reconcilier" | "mission_conseil" | "lcbft_ok" | "lcbft_ko";
+  action?:
+    | "promouvoir"
+    | "client_part"
+    | "client_part_perte"
+    | "reconcilier"
+    | "mission_conseil"
+    | "lcbft_ok"
+    | "lcbft_ko"
+    | "contre_offre"
+    | "entretien_retenir"
+    | "laisser_partir"
+    | "geste_commercial"
+    | "rdv_client"
+    | "perdre_client"
+    | "ao_agressif"
+    | "ao_standard"
+    | "ao_premium"
+    | "rachat"
+    | "rachat_negocie"
+    | "diplome_resultat";
 };
 
 export type Effets = {
@@ -140,6 +195,7 @@ export type Message = {
   dilemme?: { titre: string; options: OptionDilemme[] };
   cas?: CasPratique; // cas pratique à résoudre toi-même
   arc?: { id: string; etape: number }; // étape d'un arc narratif
+  payload?: Record<string, string | number>; // données d'un événement spécial
   reponse?: string;
 };
 
@@ -159,6 +215,7 @@ export type Visiteur = {
   couleur: string;
   message: string; // id du message ou de la proposition liée
   etat: "attend" | "reunion" | "part";
+  piece?: PieceId; // pièce de rendez-vous (sinon salle de réunion)
   jusqua: number; // minute absolue de fin de l'étape
 };
 
@@ -284,4 +341,20 @@ export type Etat = {
   arcsFinis: string[];
   controleJour: number; // jour du prochain contrôle qualité de l'Ordre
   controleResultat: ResultatControle | null; // affiché une fois
+  // Ajouts (posés par migrer())
+  politiqueHeures: "libre" | "limitee" | "interdite";
+  teletravailJours: 0 | 1 | 2;
+  violations: number; // infractions au droit du travail non sanctionnées
+  sessions: SessionFormation[];
+  budgetFormation: number; // budget annuel restant (€)
+  statsThemes: Record<string, { ok: number; total: number }>;
+  dateDec: number; // jour de l'épreuve écrite visée
+  memoire: Memoire;
+  chefsPoles: Partial<Record<Filiere, string>>;
+  concurrents: Concurrent[];
+  factures: Facture[];
+  entretiensFaits: number; // année des derniers entretiens annuels
+  avatar: { cheveux: string; tenue: string; peau: string; deco: string };
+  sons: boolean;
+  meteo: "soleil" | "nuages" | "pluie" | "neige";
 };

@@ -1912,3 +1912,311 @@ h4 {
 .points-controle li.ko {
   color: var(--rouge);
 }
+
+.commandes-camera {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  z-index: 20;
+}
+.commandes-camera button {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-weight: 600;
+  font-size: 12.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+.commandes-camera button.actif {
+  background: var(--bleu);
+  color: white;
+}
+.commandes-camera .astuce {
+  font-size: 11.5px;
+  color: var(--doux);
+  background: rgba(255, 255, 255, 0.75);
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+.pastilles {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pastille-choix {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--ligne);
+}
+.pastille-choix.actif {
+  box-shadow: 0 0 0 3px var(--bleu);
+}
+.reglage-ligne {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+.poles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 8px;
+}
+.pole {
+  border: 1px solid var(--ligne);
+  border-left: 4px solid;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.pole small {
+  color: var(--doux);
+}
+.pole select,
+.planif select,
+.ligne-entretien select,
+.ligne-tuteur select,
+.compte-rebours select {
+  padding: 5px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--ligne);
+}
+.ligne-entretien {
+  display: grid;
+  grid-template-columns: 120px 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+.ligne-tuteur {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  margin-top: 8px;
+}
+.tableau-defile {
+  overflow-x: auto;
+}
+.tableau.competences th,
+.tableau.competences td {
+  text-align: center;
+  white-space: nowrap;
+}
+.tableau.competences td:first-child,
+.tableau.competences th:first-child {
+  text-align: left;
+}
+.niveau-skill {
+  display: inline-block;
+  min-width: 30px;
+  border-radius: 6px;
+  padding: 2px 4px;
+  font-weight: 600;
+}
+td.objectif .niveau-skill {
+  outline: 2px solid var(--bleu);
+}
+.planif {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.planif label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.participants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.participant {
+  border: 1px solid var(--ligne);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 13px;
+}
+.participant.actif {
+  background: var(--bleu);
+  color: white;
+  border-color: var(--bleu);
+}
+.participant small {
+  opacity: 0.7;
+}
+.compte-rebours {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #1d2a5b, #2f5bea);
+  color: white;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.compte-rebours div {
+  display: flex;
+  flex-direction: column;
+}
+.compte-rebours small {
+  opacity: 0.8;
+}
+.compte-rebours strong {
+  font-size: 20px;
+}
+.compte-rebours span {
+  font-size: 12px;
+  opacity: 0.85;
+}
+.plan-semaine {
+  border: 1px solid var(--ligne);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+.plan-semaine ul {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.plan-semaine li.fait {
+  color: var(--vert);
+  text-decoration: line-through;
+}
+.frise-memoire {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 8px 0;
+}
+.frise-memoire span {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: #f2f4f7;
+  color: var(--doux);
+}
+.frise-memoire span.fait {
+  background: #e6f6ee;
+  color: var(--vert);
+}
+.frise-memoire span.courant {
+  background: var(--bleu);
+  color: white;
+}
+.etape-memoire,
+.sujets {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.etape-memoire p,
+.memoire p {
+  margin: 0;
+  line-height: 1.5;
+}
+.option.actif {
+  border-color: var(--bleu);
+  background: var(--bleu-clair);
+}
+.classement {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rang {
+  display: grid;
+  grid-template-columns: 26px 44px 1fr 120px 170px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--ligne);
+  border-radius: 10px;
+  font-size: 13px;
+}
+.rang.nous {
+  border-color: var(--bleu);
+  background: var(--bleu-clair);
+  font-weight: 700;
+}
+.rang .position {
+  font-weight: 800;
+  color: var(--doux);
+}
+.logo-cabinet {
+  width: 40px;
+  height: 28px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+.rang small {
+  color: var(--doux);
+  font-weight: 400;
+}
+.skills .jauge-ligne span {
+  width: 120px;
+}
+
+.compte-rebours select {
+  color: var(--texte);
+  background: white;
+}
+.tiroir ~ .boss {
+  left: 16px;
+  transform: none;
+  width: calc(100% - 700px);
+  min-width: 360px;
+}
+.voile-chargement {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--fond);
+  color: var(--doux);
+  z-index: 15;
+  font-weight: 600;
+  transition: opacity 0.4s;
+}
+.voile-chargement span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.voile-chargement i {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid var(--ligne);
+  border-top-color: var(--bleu);
+  animation: tourne 0.9s linear infinite;
+}
+@keyframes tourne {
+  to {
+    transform: rotate(360deg);
+  }
+}
