@@ -8,7 +8,7 @@ import type { Difficulte, Etat, ModeDepart, PieceId } from "@/lib/types";
 // Le store garde l'état du jeu (sauvegardé dans le navigateur) et l'état
 // d'interface (sélection, panneau ouvert), qui, lui, n'est pas sauvegardé.
 
-export type Panneau = "cabinet" | "messages" | "dossiers" | "equipe" | "formation" | "bilans" | "badges" | "journal";
+export type Panneau = "cabinet" | "messages" | "demandes" | "dossiers" | "equipe" | "locaux" | "formation" | "bilans" | "badges" | "journal";
 
 type Store = {
   etat: Etat | null;
@@ -53,7 +53,7 @@ export const useJeu = create<Store>()(
       rattraper: () => {
         const e = get().etat;
         if (!e) return;
-        const c = structuredClone(e);
+        const c = M.migrer(structuredClone(e));
         M.rattraper(c, Date.now());
         set({ etat: c });
       },

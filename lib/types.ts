@@ -108,6 +108,7 @@ export type OptionDilemme = {
   effets: Effets;
   differe?: { delai: number; effets: Effets; texte: string };
   resultat: string;
+  action?: "promouvoir" | "client_part" | "client_part_perte" | "reconcilier" | "mission_conseil" | "lcbft_ok" | "lcbft_ko";
 };
 
 export type Effets = {
@@ -137,7 +138,59 @@ export type Message = {
   theme: string; // sert au Ghost Writer (conseil pédagogique)
   dossier?: string;
   dilemme?: { titre: string; options: OptionDilemme[] };
+  cas?: CasPratique; // cas pratique à résoudre toi-même
+  arc?: { id: string; etape: number }; // étape d'un arc narratif
   reponse?: string;
+};
+
+export type CasPratique = {
+  theme: string;
+  enonce: string;
+  choix: string[];
+  bonne: number;
+  explication: string;
+};
+
+export type NoteCarnet = { theme: string; question: string; explication: string; jour: number };
+
+export type Visiteur = {
+  id: string;
+  nom: string;
+  couleur: string;
+  message: string; // id du message ou de la proposition liée
+  etat: "attend" | "reunion" | "part";
+  jusqua: number; // minute absolue de fin de l'étape
+};
+
+export type Gazette = {
+  jour: number;
+  titre: string;
+  ton: "enjoue" | "neutre" | "sombre";
+  une: string;
+  chiffres: string[];
+  potins: string[];
+  humeur: string;
+  motDuDec: string;
+};
+
+export type ArcEnCours = { id: string; etape: number; prochain: number; ctx: Record<string, string>; choix: number[] };
+
+export type ResultatControle = { jour: number; note: string; points: { label: string; ok: boolean }[]; effet: string };
+
+/** Demande d'un prospect ou d'un client : à accepter ou refuser. */
+export type Proposition = {
+  id: string;
+  origine: "courrier" | "visite" | "client";
+  clientId: string | null; // client existant (mission ponctuelle) ou null (nouveau client)
+  nouveau: Omit<Client, "id"> | null;
+  titre: string;
+  description: string;
+  missions: { type: TypeMission; titre: string; honoraires: number; delai: number }[];
+  forfait: number; // forfait mensuel si nouveau client
+  difficulte: number; // 1-5
+  risque: string | null; // signal LCB-FT ou client difficile
+  recue: number; // jour
+  expire: number; // jour
 };
 
 export type ConsequenceDifferee = { jour: number; effets: Effets; texte: string; agent?: string; client?: string; dossier?: string };
@@ -219,4 +272,16 @@ export type Etat = {
   derniereVisite: number; // timestamp réel (ms)
   compteurs: Record<string, number>; // pour les badges
   seq: number;
+  // Ajouts « créatifs » (valeurs par défaut posées par migrer())
+  niveauLocaux: number; // 1 à 4
+  propositions: Proposition[];
+  achats: string[]; // mobilier acheté
+  visiteurs: Visiteur[];
+  carnet: NoteCarnet[];
+  gazettes: Gazette[];
+  gazetteNonLue: boolean;
+  arcs: ArcEnCours[];
+  arcsFinis: string[];
+  controleJour: number; // jour du prochain contrôle qualité de l'Ordre
+  controleResultat: ResultatControle | null; // affiché une fois
 };

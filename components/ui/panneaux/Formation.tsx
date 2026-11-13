@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { dateCourte } from "@/lib/calendrier";
 import { ORAL, QCM, type QuestionQcm } from "@/lib/data/formation";
-import { enregistrerOral, enregistrerQcm } from "@/lib/moteur";
+import { ajouterCarnet, enregistrerOral, enregistrerQcm, retirerCarnet } from "@/lib/moteur";
+import { jourDe } from "@/lib/calendrier";
+import type { NoteCarnet } from "@/lib/types";
 import { useJeu } from "@/lib/store";
 
 function melanger<T>(t: T[]): T[] {
@@ -17,10 +19,11 @@ function melanger<T>(t: T[]): T[] {
 
 export default function Formation() {
   const e = useJeu((s) => s.etat)!;
-  const [mode, setMode] = useState<"menu" | "qcm" | "oral">("menu");
+  const [mode, setMode] = useState<"menu" | "qcm" | "oral" | "carnet">("menu");
 
   if (mode === "qcm") return <Qcm fin={() => setMode("menu")} />;
   if (mode === "oral") return <Oral fin={() => setMode("menu")} />;
+  if (mode === "carnet") return <Carnet fin={() => setMode("menu")} />;
 
   const dernier = e.qcm[e.qcm.length - 1];
   return (
@@ -43,6 +46,13 @@ export default function Formation() {
           )}
           <button className="bouton principal-btn" disabled={!e.qcmDisponible} onClick={() => setMode("qcm")}>
             {e.qcmDisponible ? "Commencer le QCM" : "Déjà fait cette semaine"}
+          </button>
+        </div>
+        <div className="carte-formation">
+          <h3>📒 Carnet de révision</h3>
+          <p>Chaque question de QCM ou cas pratique raté y est noté, avec son explication. Relis-le avant tes oraux.</p>
+          <button className="bouton principal-btn" onClick={() => setMode("carnet")}>
+            Ouvrir le carnet ({e.carnet.length})
           </button>
         </div>
         <div className="carte-formation">
@@ -79,6 +89,7 @@ function Qcm({ fin }: { fin: () => void }) {
   const [i, setI] = useState(0);
   const [choix, setChoix] = useState<number | null>(null);
   const [score, setScore] = useState(0);
+  const [rates, setRates] = useState<NoteCarnet[]>([]);
   const [termine, setTermine] = useState(false);
   const q = questions[i];
 
@@ -109,6 +120,7 @@ function Qcm({ fin }: { fin: () => void }) {
             onClick={() => {
               setChoix(k);
               if (k === q.bonne) setScore((s) => s + 1);
+              else setRates((r) => [...r, { theme: q.theme, question: q.question, explication: q.explication, jour: jourDe(e.minute) }]);
             }}
           >
             {c}
@@ -124,6 +136,7 @@ function Qcm({ fin }: { fin: () => void }) {
             onClick={() => {
               if (i === 9) {
                 agir(enregistrerQcm, score, 10);
+                if (rates.length) agir(ajouterCarnet, rates);
                 setTermine(true);
               } else {
                 setI(i + 1);
@@ -179,6 +192,36 @@ function Oral({ fin }: { fin: () => void }) {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function Carnet({ fin }: { fin: () => void }) {
+  const e = useJeu((s) => s.etat)!;
+  const agir = useJeu((s) => s.agir);
+  const themes = [...new Set(e.carnet.map((n) => n.theme))];
+  return (
+    <div className="carnet">
+      <button className="lien" onClick={fin}>
+        ← Retour
+      </button>
+      {e.carnet.length === 0 && <p className="vide">Ton carnet est vide : aucune erreur à revoir. Bravo !</p>}
+      {themes.map((t) => (
+        <section key={t}>
+          <h3 className="titre-section">{t}</h3>
+          {e.carnet
+            .filter((n) => n.theme === t)
+            .map((n) => (
+              <div key={n.question} className="note-carnet">
+                <p className="q">{n.question}</p>
+                <p className="r">{n.explication}</p>
+                <button className="bouton petit" onClick={() => agir(retirerCarnet, n.question)}>
+                  ✔ Revu, je retire
+                </button>
+              </div>
+            ))}
+        </section>
+      ))}
     </div>
   );
 }

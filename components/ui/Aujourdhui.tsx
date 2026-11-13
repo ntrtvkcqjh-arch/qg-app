@@ -56,6 +56,12 @@ export default function Aujourdhui() {
             <strong>{monDossier.titre}</strong>
           </div>
         )}
+        {e.propositions.length > 0 && (
+          <button className="conseil-demandes" onClick={() => ouvrir("demandes")}>
+            📥 {e.propositions.length} demande(s) en attente
+            {e.propositions.some((p) => p.origine === "visite") ? " · quelqu'un t'attend à l'accueil !" : ""}
+          </button>
+        )}
         {manque && (
           <button className="conseil-rh" onClick={() => ouvrir("equipe")}>
             👥 Surcharge en {LIBELLE_FILIERE[manque.filiere].toLowerCase()} : pense à recruter

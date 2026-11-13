@@ -13,6 +13,7 @@ type Props = {
   selectionne: boolean;
   vitesseJeu: number;
   onClick: (id: string) => void;
+  piecesOuvertes: PieceId[];
 };
 
 const VITESSE_MARCHE = 2.4; // unités par seconde réelle (x vitesse du jeu, plafonnée)
@@ -23,10 +24,13 @@ export default function Personnage({
   selectionne,
   vitesseJeu,
   onClick,
+  piecesOuvertes,
 }: Props) {
   const groupe = useRef<Group>(null);
   const corps = useRef<Group>(null);
-  const piece: PieceId = PIECE_ACTIVITE[agent.activite];
+  const voulue: PieceId = PIECE_ACTIVITE[agent.activite];
+  // Pièce pas encore construite : on reste dans l'open space.
+  const piece: PieceId = voulue === "dehors" || piecesOuvertes.includes(voulue) ? voulue : "openspace";
   const cible = placeDans(piece, index, agent.bureau);
 
   // Position courante et chemin restant, gardés hors du rendu React.
@@ -86,6 +90,8 @@ export default function Personnage({
       const poste = POSTES[agent.bureau % POSTES.length];
       g.rotation.y = poste.rot === 0 ? 0 : Math.PI;
     }
+    const epuise = assis && agent.activite === "travaille" && agent.fatigue > 85;
+    c.rotation.x = epuise ? 0.5 : 0;
     c.position.y = assis
       ? -0.28
       : marche

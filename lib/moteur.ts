@@ -21,8 +21,13 @@ import { CLIENTS_CREATION, CLIENTS_INITIAUX, CHEVEUX, COULEURS, EQUIPE_INITIALE,
 import { DILEMMES } from "@/lib/data/dilemmes";
 import { BADGES } from "@/lib/data/formation";
 import { MODELES } from "@/lib/data/messages";
-import { MAX_POSTES } from "@/lib/plan";
-import type { Agent, BilanPeriode, Candidat, Client, Difficulte, Dossier, Effets, Etat, Filiere, Journal, Message, ModeDepart, Niveau, TypeMission } from "@/lib/types";
+import { ARCS } from "@/lib/data/arcs";
+import { article } from "@/lib/data/boutique";
+import { CAS } from "@/lib/data/cas";
+import { QCM } from "@/lib/data/formation";
+import { LOCAUX, ORDRE_POSTES, niveauLocaux } from "@/lib/data/locaux";
+import { MISSIONS_PONCTUELLES, PROSPECTS_NOUVEAUX } from "@/lib/data/prospects";
+import type { Agent, BilanPeriode, Candidat, Client, Difficulte, Dossier, Effets, Etat, Filiere, Gazette, Journal, Message, ModeDepart, NoteCarnet, Niveau, OptionDilemme, PieceId, ResultatControle, TypeMission } from "@/lib/types";
 
 // ---------- réglages ----------
 
@@ -112,7 +117,19 @@ export function nouvellePartie(difficulte: Difficulte, nomCabinet: string, mode:
     derniereVisite: Date.now(),
     compteurs: {},
     seq: 0,
+    niveauLocaux: creation ? 1 : 3,
+    propositions: [],
+    achats: [],
+    visiteurs: [],
+    carnet: [],
+    gazettes: [],
+    gazetteNonLue: false,
+    arcs: [],
+    arcsFinis: [],
+    controleJour: ouvreOuApres(jourDeLaDate(2026, 9, 15)),
+    controleResultat: null,
   };
+  if (creation) e.loyer = LOCAUX[0].loyer;
 
   // Échéances de l'année : TVA (24), DSN (15), liasse, approbation des comptes.
   for (let i = 0; i < 12; i++) {
@@ -121,15 +138,14 @@ export function nouvellePartie(difficulte: Difficulte, nomCabinet: string, mode:
     e.echeances.push({ id: `tva-${annee}-${mois}`, nom: `TVA de ${nomMois(mois)}`, type: "tva", jour: ouvreOuApres(jourDeLaDate(annee, mois, 24)), annoncee: false, resolue: false });
     e.echeances.push({ id: `dsn-${annee}-${mois}`, nom: `DSN de ${nomMois(mois)}`, type: "paie", jour: ouvreOuApres(jourDeLaDate(annee, mois, 15)), annoncee: false, resolue: false });
   }
-  e.echeances.push({ id: "liasse-2026", nom: "Liasse fiscale IS", type: "bilan", jour: ouvreOuApres(jourDeLaDate(2026, 5, 20)), annoncee: false, resolue: false });
-  e.echeances.push({ id: "ag-2026", nom: "Approbation des comptes", type: "juridique", jour: ouvreOuApres(jourDeLaDate(2026, 6, 30)), annoncee: false, resolue: false });
+  echeancesAnnuelles(e, 2026);
   e.echeances.sort((a, b) => a.jour - b.jour);
 
   // Bilans 2025 de tous les clients, déjà plus ou moins avancés.
-  const liasse = e.echeances.find((x) => x.id === "liasse-2026")!.jour;
+  const liasse = prochaineLiasse(e)!.jour;
   const avance: [number, number][] = [[2, 40], [1, 70], [1, 20], [2, 10], [1, 0], [3, 30], [1, 50], [1, 0], [2, 60], [1, 10]];
   e.clients.forEach((c, i) => {
-    const d = creerDossier(e, c, "bilan", liasse, 0);
+    const d = creerDossier(e, c, "bilan", liasse, 0, `Bilan 2025 — ${c.nom}`);
     d.phase = avance[i][0] as Dossier["phase"];
     d.progression = avance[i][1];
   });
@@ -151,7 +167,7 @@ function honorairesPour(type: TypeMission, c: Client): number {
 }
 
 function creerDossier(e: Etat, c: Client, type: TypeMission, echeance: number, jour: number, titre?: string): Dossier {
-  const noms: Record<TypeMission, string> = { tva: "TVA", paie: "Paie", bilan: "Bilan 2025", liasse: "Liasse", juridique: "AG d'approbation", conseil: "Mission de conseil" };
+  const noms: Record<TypeMission, string> = { tva: "TVA", paie: "Paie", bilan: "Bilan", liasse: "Liasse", juridique: "AG d'approbation", conseil: "Mission de conseil" };
   const d: Dossier = {
     id: uid(e, "d"),
     client: c.id,
@@ -228,7 +244,7 @@ export function besoins(e: Etat): { filiere: Filiere; charge: number; capacite: 
   const principal: Record<TypeMission, Filiere> = { tva: "fiscal", paie: "social", bilan: "expertise", liasse: "fiscal", juridique: "juridique", conseil: "fiscal" };
   const res = (["expertise", "fiscal", "social", "juridique"] as Filiere[]).map((f) => {
     const charge = e.dossiers.filter((d) => d.phase < 5 && principal[d.type] === f).reduce((s, d) => s + (d.type === "bilan" ? 3 : 1), 0);
-    const capacite = e.agents.filter((a) => a.filiere === f || (f === "fiscal" && a.filiere === "expertise") || (f === "expertise" && a.filiere === "fiscal")).length * 5;
+    const capacite = e.agents.filter((a) => a.filiere === f || (f === "fiscal" && a.filiere === "expertise") || (f === "expertise" && a.filiere === "fiscal")).length * 8;
     return { filiere: f, charge, capacite, ratio: capacite ? charge / capacite : charge > 0 ? 9 : 0 };
   });
   return res;
@@ -411,10 +427,11 @@ function livrer(e: Etat, d: Dossier) {
   inc(e, "livres");
   const c = e.clients.find((x) => x.id === d.client);
   if (c) c.satisfaction = clamp(c.satisfaction + (jour <= d.echeance ? 4 : -6));
+  if (jour > d.echeance) inc(e, "retards");
   log(e, `📦 ${d.titre} livré par ${nomAgent(e, d.agent)} (+${d.honoraires.toLocaleString("fr-FR")} €).`, "bien");
   // Un bilan livré déclenche l'AG d'approbation des comptes.
   if (d.type === "bilan" && c) {
-    const ag = e.echeances.find((x) => x.id === "ag-2026");
+    const ag = e.echeances.find((x) => x.type === "juridique" && !x.resolue && x.jour > jour);
     if (ag && !ag.resolue) creerDossier(e, c, "juridique", ag.jour, jour);
     repartir(e);
   }
@@ -494,6 +511,8 @@ function debutJournee(e: Etat) {
     e.periode.ca += forfaits;
     e.periode.charges += charges;
     log(e, `Début de mois : ${forfaits.toLocaleString("fr-FR")} € de forfaits encaissés, ${charges.toLocaleString("fr-FR")} € de salaires et charges payés.`, forfaits >= charges ? "bien" : "mal");
+    if (moisDe(jour) === 1) nouvelleAnnee(e, jour);
+    echeancesDuMois(e, jour);
     dossiersDuMois(e, jour);
     repartir(e);
   }
@@ -501,6 +520,7 @@ function debutJournee(e: Etat) {
   // Nouvelle semaine : bilan de la semaine passée, QCM, candidats.
   if (lundi && jour > 0) {
     e.periode.moral = Math.round(e.moodGlobal);
+    genererGazette(e);
     e.bilans.unshift(e.periode);
     if (e.bilans.length > 60) e.bilans.length = 60;
     e.periode = nouvellePeriode(jour);
@@ -553,6 +573,8 @@ function debutJournee(e: Etat) {
       }
     }
   }
+  controleQualite(e, jour);
+  avancerArcs(e, jour);
   verifierBadges(e);
 }
 
@@ -632,6 +654,14 @@ function finJournee(e: Etat) {
   // Débloquer automatiquement les pièces manquantes après 3 jours.
   for (const d of e.dossiers) if (d.bloque && rnd() < 0.3) d.bloque = null;
 
+  // Demandes expirées et visiteurs qui repartent le soir.
+  for (const p of e.propositions.filter((x) => x.expire <= jour)) {
+    if (p.origine === "visite" && p.nouveau) e.reputation = clamp(e.reputation - 1);
+    log(e, `📭 Demande sans suite : ${p.titre}.`);
+  }
+  e.propositions = e.propositions.filter((x) => x.expire > jour);
+  e.visiteurs = [];
+
   verifierBadges(e);
 }
 
@@ -651,10 +681,12 @@ function ignorer(e: Etat, m: Message) {
     case "conge":
       if (a) a.moral = clamp(a.moral - 10);
       break;
+    case "arc":
     case "dilemme": {
       // l'option la moins coûteuse est appliquée par défaut
       const opt = m.dilemme?.options.reduce((x, y) => (y.cout < x.cout ? y : x));
       if (opt) appliquerOption(e, m, opt);
+      if (opt && m.arc) suiteArc(e, m, m.dilemme!.options.indexOf(opt));
       log(e, `Dilemme « ${m.dilemme?.titre} » laissé sans réponse : l'équipe a improvisé.`, "mal");
       break;
     }
@@ -698,8 +730,9 @@ function quart(e: Etat) {
     // Activité ponctuelle en cours ?
     if (a.activite !== "travaille" && a.activiteJusqua > e.minute) {
       if (a.activite === "pause") {
-        a.stress = clamp(a.stress - 1);
-        a.fatigue = clamp(a.fatigue - 0.6);
+        const cafe = pieceOuverte(e, "cafe");
+        a.stress = clamp(a.stress - (cafe ? 1 : 0.5) * (possede(e, "canape") ? 2 : 1));
+        a.fatigue = clamp(a.fatigue - (cafe ? 0.6 : 0.3) * (possede(e, "cafe_premium") ? 2 : 1));
       }
       if (a.activite === "formation") a.competence = clamp(a.competence + 0.25, 0, 95);
       continue;
@@ -723,7 +756,7 @@ function quart(e: Etat) {
       if (autres.length) {
         const b = pick(autres);
         a.activite = b.activite = "reunion";
-        a.activiteJusqua = b.activiteJusqua = e.minute + 30 + Math.floor(rnd() * 30);
+        a.activiteJusqua = b.activiteJusqua = e.minute + Math.round((30 + Math.floor(rnd() * 30)) * (possede(e, "visio") ? 0.6 : 1));
         dire(e, a, `Point avec ${b.prenom}`, 25);
         continue;
       }
@@ -732,7 +765,7 @@ function quart(e: Etat) {
       .filter((d) => d.agent === a.id && d.phase < 5 && !d.bloque && !(d.phase === 3 && d.progression >= 100))
       .sort((p, q) => p.echeance - q.echeance);
     const d = dossiers[0];
-    if (d && d.phase === 1 && x < 0.085) {
+    if (d && d.phase === 1 && x < 0.085 && pieceOuverte(e, "archives")) {
       a.activite = "archives";
       a.activiteJusqua = e.minute + 30;
       dire(e, a, "Je cherche les pièces", 25);
@@ -752,6 +785,9 @@ function quart(e: Etat) {
     // Avancement du dossier.
     let v = 2.8 * (a.competence / 60) * (1 - a.fatigue / 160) * (1 - Math.max(0, a.stress - 70) / 90) * VITESSE_TYPE[d.type] * r.vitesse / Math.sqrt(d.difficulte);
     if (rush) v *= 1.8;
+    if (possede(e, "babyfoot")) v *= 0.97;
+    if (possede(e, "imprimante") && d.phase <= 2) v *= 1.08;
+    if (possede(e, "biblio")) a.competence = clamp(a.competence + 0.02, 0, 95);
     // mentorat
     const mentor = e.relations.find((rel) => rel.type === "mentorat" && rel.b === a.id);
     if (mentor && e.agents.find((b) => b.id === mentor.a)?.activite === "travaille") {
@@ -760,6 +796,11 @@ function quart(e: Etat) {
     }
     avancerDossier(e, d, v);
     if (rnd() < 0.03) dire(e, a, pick([`Je suis sur ${nomClient(e, d.client)}`, "Ça avance", "Rapprochement en cours", "Je lettre les comptes"]), 25);
+    // Cas pratique : le collaborateur bloque et te demande de trancher.
+    if (d.phase >= 2 && d.phase <= 3 && !d.bloque && rnd() < 0.0016 * r.evenements && !messageEnAttente(e, "cas")) {
+      lancerCas(e, a, d);
+      continue;
+    }
     // Pièces manquantes
     if (d.phase === 1 && !d.bloque && rnd() < 0.006 * r.evenements) {
       d.bloque = "Pièces manquantes";
@@ -784,9 +825,11 @@ function quart(e: Etat) {
 
   // Évolution du stress, de la fatigue, du moral.
   const prochains = jour + 7;
+  const ete = [7, 8].includes(moisDe(jour));
+  const bonusMoral = (possede(e, "babyfoot") ? 4 : 0) + (possede(e, "mur_vegetal") ? 2 : 0) + (e.niveauLocaux >= 4 ? 5 : 0);
   for (const a of e.agents) {
     if (a.activite === "absent" || a.activite === "conge" || a.activite === "malade") continue;
-    if (a.activite === "travaille" || a.activite === "reunion") a.fatigue = clamp(a.fatigue + 0.38 + (rush ? 0.3 : 0) + (a.stress > 60 ? 0.15 : 0));
+    if (a.activite === "travaille" || a.activite === "reunion") a.fatigue = clamp(a.fatigue + (0.38 + (rush ? 0.3 : 0) + (a.stress > 60 ? 0.15 : 0)) * (possede(e, "assis_debout") ? 0.85 : 1));
     const urgents = e.dossiers.filter((d) => d.agent === a.id && d.phase < 4 && d.echeance <= prochains).length;
     const rivalProche = e.relations.some((rel) => {
       if (rel.type !== "rivalite") return false;
@@ -795,9 +838,9 @@ function quart(e: Etat) {
       return b && b.activite === a.activite;
     });
     const charge = e.dossiers.filter((d) => d.agent === a.id && d.phase < 5).reduce((s, d) => s + (d.type === "bilan" ? 2 : 1), 0);
-    const cible = clamp(20 + charge * 5 + urgents * 10 + (a.fatigue - 40) * 0.3 + (rivalProche ? 8 : 0) + (a.personnalite === "anxieux" ? 10 : 0) - (a.personnalite === "nonchalant" ? 10 : 0) + (rush ? 15 : 0));
+    const cible = clamp(20 + charge * 5 + urgents * 10 + (a.fatigue - 40) * 0.3 + (rivalProche ? 8 : 0) + (a.personnalite === "anxieux" ? 10 : 0) - (a.personnalite === "nonchalant" ? 10 : 0) + (rush ? 15 : 0) + (ete && !possede(e, "clim") ? 8 : 0));
     a.stress = clamp(a.stress + (cible - a.stress) * 0.06);
-    const cibleMoral = clamp((aUnRH(e) ? 62 : 58) + (a.confiance - 50) * 0.3 - (a.stress - 35) * 0.5 - (a.fatigue - 35) * 0.4 + (e.moodGlobal - 50) * 0.1);
+    const cibleMoral = clamp((aUnRH(e) ? 62 : 58) + bonusMoral + (a.confiance - 50) * 0.3 - (a.stress - 35) * 0.5 - (a.fatigue - 35) * 0.4 + (e.moodGlobal - 50) * 0.1);
     a.moral = clamp(a.moral + (cibleMoral - a.moral) * 0.03);
   }
   if (e.agents.length) {
@@ -806,6 +849,7 @@ function quart(e: Etat) {
   }
 
   evenements(e, r.evenements);
+  mettreAJourVisiteurs(e);
 }
 
 function evenements(e: Etat, f: number) {
@@ -862,18 +906,16 @@ function evenements(e: Etat, f: number) {
   for (const c of e.clients) {
     if (c.satisfaction < 45 && rnd() < 0.004 * f && !messageEnAttente(e, "client_colere") && jour - dernierMessage(e, "client_colere") > 3) {
       const d = e.dossiers.find((x) => x.client === c.id && x.phase < 5);
-      envoyer(e, "client_colere", quiPrevient(), { client: c.nom, dossier: d?.titre ?? "ses dossiers" });
+      const msg = envoyer(e, "client_colere", quiPrevient(), { client: c.nom, dossier: d?.titre ?? "ses dossiers" });
+      if (msg && rnd() < 0.6) ajouterVisiteur(e, c.dirigeant, msg.id);
     }
   }
   if (rnd() < 0.0007 * f && e.clients.length && !messageEnAttente(e, "controle")) {
     const c = pick(e.clients);
-    envoyer(e, "controle", "cabinet", { client: c.nom });
+    const msg = envoyer(e, "controle", "cabinet", { client: c.nom });
+    if (msg) ajouterVisiteur(e, c.dirigeant, msg.id);
   }
-  const appelProspect = e.mode === "creation" && e.clients.length < 8 ? 0.005 : 0.0018;
-  if (rnd() < appelProspect && e.reputation > 35 && !messageEnAttente(e, "prospect") && e.clients.length < 16) {
-    const p = pick(PROSPECTS.filter((x) => !e.clients.some((c) => c.nom === x.nom)) || []);
-    if (p) envoyer(e, "prospect", quiPrevient(), { client: p.nom });
-  }
+  genererPropositions(e, f);
   // Dilemmes.
   if (rnd() < 0.0055 * f && !messageEnAttente(e, "dilemme") && jour - dernierMessage(e, "dilemme") >= 2) {
     lancerDilemme(e);
@@ -885,14 +927,6 @@ function autreAgent(e: Etat, id: string) {
   return autres.length ? pick(autres).prenom : "quelqu'un";
 }
 
-const PROSPECTS: Omit<Client, "id">[] = [
-  { nom: "Fromagerie Lucas", dirigeant: "Lucas Bernard", secteur: "Commerce alimentaire", trait: "parle de ses fromages pendant des heures", satisfaction: 70, forfait: 1200, tvaMensuelle: true, paie: false },
-  { nom: "Studio Pixel", dirigeant: "Jade Morel", secteur: "Agence web", trait: "factures en anglais, devis en emojis", satisfaction: 70, forfait: 1700, tvaMensuelle: true, paie: true },
-  { nom: "Cabinet Kiné Rives", dirigeant: "Olivier Rives", secteur: "Profession libérale", trait: "BNC, recettes-dépenses et beaucoup de questions", satisfaction: 70, forfait: 900, tvaMensuelle: false, paie: false },
-  { nom: "Hôtel des Alpes", dirigeant: "Martine Giraud", secteur: "Hôtellerie", trait: "saisonnalité extrême, extras à déclarer", satisfaction: 70, forfait: 2600, tvaMensuelle: true, paie: true },
-  { nom: "GreenWatt", dirigeant: "Samir Haddad", secteur: "Installateur solaire", trait: "croissance de 200 % et zéro process", satisfaction: 70, forfait: 2200, tvaMensuelle: true, paie: true },
-  { nom: "Librairie Les Mots", dirigeant: "Paul Lenoir", secteur: "Librairie", trait: "romantique, marges minuscules", satisfaction: 70, forfait: 800, tvaMensuelle: false, paie: true },
-];
 
 function lancerDilemme(e: Etat) {
   const modele = pick(DILEMMES);
@@ -934,6 +968,7 @@ function ctxDilemme(m: Message) {
 function appliquerOption(e: Etat, m: Message, opt: NonNullable<Message["dilemme"]>["options"][number]) {
   const ctx = ctxDilemme(m);
   appliquerEffets(e, opt.effets, ctx);
+  if (opt.action) actionArc(e, opt.action, { ...(e.arcs.find((x) => x.id === m.arc?.id)?.ctx ?? {}), ...ctx });
   if (opt.differe) e.differes.push({ jour: ajouterJoursOuvres(jourDe(e.minute), opt.differe.delai), effets: opt.differe.effets, texte: opt.differe.texte, ...ctx });
 }
 
@@ -946,7 +981,14 @@ export function choisirDilemme(e: Etat, msgId: string, index: number): string | 
   appliquerOption(e, m, opt);
   m.statut = "repondu";
   m.reponse = opt.label;
-  if (index === 0) inc(e, "integre");
+  if (m.theme === "dilemme") {
+    if (index === 0) {
+      inc(e, "integre");
+      inc(e, "deonto_ok");
+    }
+    if ((opt.differe?.effets.reputation ?? 0) < 0) inc(e, "deonto_ko");
+  }
+  if (m.arc) suiteArc(e, m, index);
   log(e, `⚖️ ${m.dilemme.titre} : ${opt.resultat}`, "neutre");
   verifierBadges(e);
   return null;
@@ -1067,13 +1109,13 @@ export function repondre(e: Etat, msgId: string, style: Style, texte: string): s
       }
       break;
     case "prospect": {
-      const p = PROSPECTS.find((x) => m.texte.includes(x.nom));
+      const p = PROSPECTS_NOUVEAUX.find((x) => m.texte.includes(x.nom));
       if (p) {
-        const nc: Client = { ...p, id: uid(e, "cl"), satisfaction: style === "pedagogue" ? 80 : style === "ferme" ? 55 : 70, forfait: Math.round(p.forfait * (style === "ferme" ? 1.25 : 1)) };
+        const nc = clientDepuis(e, p, style === "pedagogue" ? 80 : style === "ferme" ? 55 : 70, style === "ferme" ? 1.25 : 1);
         e.clients.push(nc);
         const nd = creerDossier(e, nc, "conseil", ajouterJoursOuvres(jourDe(e.minute), 12), jourDe(e.minute), `Reprise du dossier — ${nc.nom}`);
         nd.honoraires = 1500;
-        const liasse = e.echeances.find((x) => x.id === "liasse-2026");
+        const liasse = prochaineLiasse(e);
         if (liasse && !liasse.resolue && liasse.jour > jourDe(e.minute) + 10) creerDossier(e, nc, "bilan", liasse.jour, jourDe(e.minute));
         repartir(e);
         log(e, `🤝 Nouveau client : ${nc.nom} (${nc.forfait.toLocaleString("fr-FR")} €/mois).`, "bien");
@@ -1146,7 +1188,7 @@ export function actionBoss(e: Etat, action: "rush" | "renfort"): string | null {
 export function recruter(e: Etat, candidatId: string): string | null {
   const c = e.candidats.find((x) => x.id === candidatId);
   if (!c) return "Candidat introuvable.";
-  if (e.agents.length >= MAX_POSTES) return "Plus de bureau libre dans l'open space.";
+  if (e.agents.length >= capacitePostes(e)) return "Plus de bureau libre : agrandis tes locaux.";
   if (e.pa < 1) return "Il te faut 1 PA.";
   const frais = fraisRecrutement(e);
   if (e.tresorerie < frais) return `Trésorerie insuffisante (${frais.toLocaleString("fr-FR")} € de frais).`;
@@ -1154,8 +1196,7 @@ export function recruter(e: Etat, candidatId: string): string | null {
   e.tresorerie -= frais;
   e.periode.charges += frais;
   const occupes = new Set(e.agents.map((a) => a.bureau));
-  let bureau = 0;
-  while (occupes.has(bureau)) bureau++;
+  const bureau = ORDRE_POSTES.find((b) => !occupes.has(b)) ?? 0;
   const jour = jourDe(e.minute);
   e.agents.push({
     id: uid(e, "a"),
@@ -1231,6 +1272,7 @@ export function envoyerEnFormation(e: Etat, agentId: string): string | null {
   const a = e.agents.find((x) => x.id === agentId);
   if (!a) return "Introuvable.";
   if (a.activite === "absent" || a.activite === "conge" || a.activite === "malade") return `${a.prenom} n'est pas au cabinet.`;
+  if (!pieceOuverte(e, "formation")) return "Il faut d'abord une salle de formation (agrandis tes locaux).";
   if (e.pa < 1) return "Il te faut 1 PA.";
   if (e.tresorerie < 600) return "Trésorerie insuffisante (600 €).";
   e.pa -= 1;
@@ -1303,6 +1345,8 @@ export function verifierBadges(e: Etat) {
   if (e.tresorerie >= 60000) donnerBadge(e, "tresor");
   if (e.reputation >= 85) donnerBadge(e, "reputation");
   if ((k.integre ?? 0) >= 3) donnerBadge(e, "integre");
+  if (e.niveauLocaux >= 4) donnerBadge(e, "batisseuse");
+  if ((k.cas_ok ?? 0) >= 10) donnerBadge(e, "cas_10");
 }
 
 // ---------- absence ----------
@@ -1330,4 +1374,552 @@ export function rattraper(e: Etat, maintenant: number) {
   if (avances) recap.push({ ...ici, texte: `🗂️ ${avances} dossier(s) ont avancé d'une phase.`, ton: "bien" });
   if (aValider) recap.push({ ...ici, texte: `✔ ${aValider} révision(s) attendent ta validation.`, ton: "neutre" });
   e.absence.evenements.unshift(...recap);
+}
+
+
+// =====================================================================
+// Ajouts : locaux, boutique, visiteurs, demandes, cas pratiques, carnet,
+// contrôle qualité, gazette, arcs narratifs.
+// =====================================================================
+
+/** Complète une ancienne sauvegarde avec les champs ajoutés depuis. */
+export function migrer(e: Etat): Etat {
+  e.niveauLocaux ??= e.mode === "creation" ? 1 : 3;
+  e.propositions ??= [];
+  e.achats ??= [];
+  e.visiteurs ??= [];
+  e.carnet ??= [];
+  e.gazettes ??= [];
+  e.gazetteNonLue ??= false;
+  e.arcs ??= [];
+  e.arcsFinis ??= [];
+  e.controleJour ??= ouvreOuApres(jourDeLaDate(2026, 9, 15));
+  e.controleResultat ??= null;
+  if (e.controleJour <= jourDe(e.minute)) e.controleJour = ouvreOuApres(e.controleJour + 365);
+  return e;
+}
+
+export const possede = (e: Etat, id: string) => e.achats.includes(id);
+export const pieceOuverte = (e: Etat, p: PieceId) => p === "dehors" || niveauLocaux(e.niveauLocaux).pieces.includes(p);
+export const capacitePostes = (e: Etat) => niveauLocaux(e.niveauLocaux).postes;
+export const postesOuverts = (e: Etat) => ORDRE_POSTES.slice(0, capacitePostes(e));
+
+function clientDepuis(e: Etat, p: (typeof PROSPECTS_NOUVEAUX)[number], satisfaction: number, multForfait = 1): Client {
+  const c: Client = {
+    id: uid(e, "cl"),
+    nom: p.nom,
+    dirigeant: p.dirigeant,
+    secteur: p.secteur,
+    trait: p.trait,
+    satisfaction,
+    forfait: Math.round((p.forfait * multForfait) / 50) * 50,
+    tvaMensuelle: p.tvaMensuelle,
+    paie: p.paie,
+  };
+  e.clients.push(c);
+  return c;
+}
+
+// ---------- locaux et boutique ----------
+
+export function agrandirLocaux(e: Etat): string | null {
+  const suivant = LOCAUX[e.niveauLocaux];
+  if (!suivant) return "Tes locaux sont déjà au maximum.";
+  if (e.pa < 1) return "Il te faut 1 PA.";
+  if (e.tresorerie < suivant.travaux) return `Il faut ${suivant.travaux.toLocaleString("fr-FR")} € de travaux.`;
+  e.pa -= 1;
+  e.tresorerie -= suivant.travaux;
+  e.periode.charges += suivant.travaux;
+  e.niveauLocaux = suivant.niveau;
+  e.loyer = suivant.loyer;
+  if (suivant.niveau === 4) e.reputation = clamp(e.reputation + 10);
+  for (const a of e.agents) a.moral = clamp(a.moral + 6);
+  log(e, `🏗️ Travaux terminés : bienvenue dans le « ${suivant.nom} » ! Nouveau loyer : ${suivant.loyer.toLocaleString("fr-FR")} €/mois.`, "bien");
+  return null;
+}
+
+export function acheter(e: Etat, id: string): string | null {
+  const a = article(id);
+  if (!a) return "Article introuvable.";
+  if (possede(e, id)) return "Déjà installé.";
+  if (!pieceOuverte(e, a.piece)) return "Cette pièce n'existe pas encore dans tes locaux.";
+  if (e.tresorerie < a.prix) return "Trésorerie insuffisante.";
+  e.tresorerie -= a.prix;
+  e.periode.charges += a.prix;
+  e.achats.push(id);
+  for (const x of e.agents) x.moral = clamp(x.moral + 2);
+  log(e, `${a.icone} ${a.nom} installé(e) !`, "bien");
+  return null;
+}
+
+// ---------- visiteurs ----------
+
+const COULEURS_VISITEURS = ["#6c757d", "#8d6e63", "#5c6bc0", "#26a69a", "#ef6c00", "#7e57c2"];
+
+function ajouterVisiteur(e: Etat, nom: string, lien: string) {
+  if (e.visiteurs.length >= 4) return;
+  const m = minuteDuJour(e.minute);
+  if (m < 9 * 60 || m > 17 * 60 + 30) return;
+  e.visiteurs.push({ id: uid(e, "v"), nom, couleur: pick(COULEURS_VISITEURS), message: lien, etat: "attend", jusqua: e.minute + 240 });
+}
+
+function mettreAJourVisiteurs(e: Etat) {
+  for (const v of e.visiteurs) {
+    const enAttente =
+      e.propositions.some((p) => p.id === v.message) || e.messages.some((m) => m.id === v.message && m.statut === "attente");
+    if (v.etat === "attend" && !enAttente) {
+      const traite = e.messages.find((m) => m.id === v.message)?.statut === "repondu" || e.compteurs[`accepte:${v.message}`];
+      v.etat = traite ? "reunion" : "part";
+      v.jusqua = e.minute + (traite ? 40 : 20);
+    } else if (v.etat === "attend" && e.minute > v.jusqua) {
+      v.etat = "part";
+      v.jusqua = e.minute + 20;
+    } else if (v.etat === "reunion" && e.minute > v.jusqua) {
+      v.etat = "part";
+      v.jusqua = e.minute + 20;
+    }
+  }
+  e.visiteurs = e.visiteurs.filter((v) => !(v.etat === "part" && e.minute > v.jusqua));
+}
+
+// ---------- demandes (prospects et missions ponctuelles) ----------
+
+function genererPropositions(e: Etat, f: number) {
+  const jour = jourDe(e.minute);
+  if (e.propositions.length >= 6) return;
+  const premium = e.niveauLocaux >= 4 ? 1.15 : 1;
+  const chanceNouveau = (e.mode === "creation" && e.clients.length < 8 ? 0.006 : 0.0025) * (e.reputation > 30 ? 1 : 0.3);
+  if (rnd() < chanceNouveau && e.clients.length + e.propositions.length < 18) {
+    const libres = PROSPECTS_NOUVEAUX.filter((x) => !e.clients.some((c) => c.nom === x.nom) && !e.propositions.some((p) => p.nouveau?.nom === x.nom) && !e.compteurs[`refus:${x.nom}`]);
+    if (libres.length) {
+      const p = pick(libres);
+      const visite = rnd() < 0.45;
+      const missions: Etat["propositions"][number]["missions"] = [{ type: "conseil", titre: `Reprise du dossier — ${p.nom}`, honoraires: 1200, delai: 12 }];
+      const liasse = prochaineLiasse(e);
+      if (liasse && liasse.jour > jour + 15 && liasse.jour - jour < 120) missions.push({ type: "bilan", titre: `Bilan ${anneeDe(liasse.jour) - 1} — ${p.nom}`, honoraires: Math.round((1500 + p.forfait * 0.8) / 50) * 50, delai: -1 });
+      const prop = {
+        id: uid(e, "p"),
+        origine: visite ? ("visite" as const) : ("courrier" as const),
+        clientId: null,
+        nouveau: { nom: p.nom, dirigeant: p.dirigeant, secteur: p.secteur, trait: p.trait, satisfaction: 70, forfait: Math.round((p.forfait * premium) / 50) * 50, tvaMensuelle: p.tvaMensuelle, paie: p.paie },
+        titre: `${p.nom} cherche un expert-comptable`,
+        description: `${p.dirigeant} (${p.secteur.toLowerCase()}) : « ${p.trait} ». ${p.tvaMensuelle ? "TVA mensuelle. " : ""}${p.paie ? "Paie à gérer. " : ""}`,
+        missions,
+        forfait: Math.round((p.forfait * premium) / 50) * 50,
+        difficulte: p.difficulte,
+        risque: p.risque ?? null,
+        recue: jour,
+        expire: visite ? jour + 1 : ajouterJoursOuvres(jour, 4),
+      };
+      e.propositions.push(prop);
+      if (visite) ajouterVisiteur(e, p.dirigeant, prop.id);
+      log(e, visite ? `🚪 ${p.dirigeant} (${p.nom}) passe à l'accueil et demande à être reçu·e.` : `📨 Nouvelle demande par courrier : ${p.nom}.`);
+    }
+  }
+  if (rnd() < 0.0016 * f && e.clients.length) {
+    const c = pick(e.clients);
+    const mi = pick(MISSIONS_PONCTUELLES);
+    if (!e.propositions.some((p) => p.clientId === c.id)) {
+      e.propositions.push({
+        id: uid(e, "p"),
+        origine: "client",
+        clientId: c.id,
+        nouveau: null,
+        titre: `${c.nom} : ${mi.titre.toLowerCase()}`,
+        description: mi.description,
+        missions: [{ type: mi.type, titre: `${mi.titre} — ${c.nom}`, honoraires: Math.round((mi.honoraires * premium) / 50) * 50, delai: mi.delai }],
+        forfait: 0,
+        difficulte: 2,
+        risque: null,
+        recue: jour,
+        expire: ajouterJoursOuvres(jour, 4),
+      });
+      log(e, `📋 ${c.nom} te demande une mission : ${mi.titre.toLowerCase()}.`);
+    }
+  }
+}
+
+export function accepterProposition(e: Etat, id: string, verifier: boolean): string | null {
+  const p = e.propositions.find((x) => x.id === id);
+  if (!p) return "Cette demande n'est plus d'actualité.";
+  const cout = p.nouveau ? 1 : 0;
+  if (e.pa < cout) return "Il te faut 1 PA pour recevoir ce prospect.";
+  e.pa -= cout;
+  e.propositions = e.propositions.filter((x) => x.id !== id);
+  const jour = jourDe(e.minute);
+  if (p.nouveau) {
+    if (verifier) {
+      inc(e, "lcbft_ok");
+      if (p.risque) {
+        e.reputation = clamp(e.reputation + 3);
+        e.compteurs[`refus:${p.nouveau.nom}`] = 1;
+        log(e, `🔎 Vérifications LCB-FT sur ${p.nouveau.nom} : ${p.risque} Tu refuses la mission et tu documentes ta décision.`, "bien");
+        return null;
+      }
+    } else {
+      inc(e, "lcbft_ko");
+      if (p.risque)
+        e.differes.push({ jour: ajouterJoursOuvres(jour, 12), effets: { reputation: -15, tresorerie: -4000 }, texte: `Enquête sur ${p.nouveau.nom} : le cabinet n'avait fait aucune vérification d'identité. Sanction disciplinaire.` });
+    }
+    const modele = PROSPECTS_NOUVEAUX.find((x) => x.nom === p.nouveau!.nom);
+    const c = modele ? clientDepuis(e, modele, 72, p.forfait / modele.forfait) : null;
+    if (!c) return null;
+    for (const mi of p.missions) {
+      const ech = mi.delai < 0 ? (prochaineLiasse(e)?.jour ?? ajouterJoursOuvres(jour, 30)) : ajouterJoursOuvres(jour, mi.delai);
+      const d = creerDossier(e, c, mi.type, ech, jour, mi.titre);
+      d.honoraires = mi.honoraires;
+      d.difficulte = Math.max(d.difficulte, p.difficulte);
+    }
+    log(e, `🤝 Nouveau client : ${c.nom} (${c.forfait.toLocaleString("fr-FR")} €/mois)${verifier ? ", après vérifications d'usage" : ""}.`, "bien");
+    e.reputation = clamp(e.reputation + 1);
+  } else {
+    const c = e.clients.find((x) => x.id === p.clientId);
+    if (!c) return null;
+    for (const mi of p.missions) {
+      const d = creerDossier(e, c, mi.type, ajouterJoursOuvres(jour, mi.delai), jour, mi.titre);
+      d.honoraires = mi.honoraires;
+    }
+    c.satisfaction = clamp(c.satisfaction + 5);
+    log(e, `📋 Mission acceptée : ${p.missions[0].titre}.`, "bien");
+  }
+  e.compteurs[`accepte:${p.id}`] = 1;
+  repartir(e);
+  return null;
+}
+
+export function refuserProposition(e: Etat, id: string): string | null {
+  const p = e.propositions.find((x) => x.id === id);
+  if (!p) return null;
+  e.propositions = e.propositions.filter((x) => x.id !== id);
+  if (p.nouveau) e.compteurs[`refus:${p.nouveau.nom}`] = 1;
+  if (p.clientId) {
+    const c = e.clients.find((x) => x.id === p.clientId);
+    if (c) c.satisfaction = clamp(c.satisfaction - 3);
+  }
+  log(e, `Tu déclines : ${p.titre}.`);
+  return null;
+}
+
+// ---------- cas pratiques et carnet ----------
+
+function lancerCas(e: Etat, a: Agent, d: Dossier) {
+  const modele = pick(CAS);
+  const client = nomClient(e, d.client);
+  d.bloque = "Cas pratique à trancher";
+  const jour = jourDe(e.minute);
+  e.messages.unshift({
+    id: uid(e, "m"),
+    de: a.id,
+    niveau: 3,
+    sujet: `Cas pratique — ${modele.theme} (${client})`,
+    texte: `Je bloque sur ${d.titre}. Tu peux trancher ?`,
+    jour,
+    minute: e.minute,
+    lu: false,
+    statut: "attente",
+    expire: ajouterJoursOuvres(jour, 2),
+    theme: "cas",
+    dossier: d.id,
+    cas: { ...modele, enonce: modele.enonce.replace(/\{client\}/g, client) },
+  });
+  dire(e, a, "J'ai besoin de toi !", 40);
+}
+
+export function resoudreCas(e: Etat, msgId: string, choix: number): string | null {
+  const m = e.messages.find((x) => x.id === msgId);
+  if (!m || !m.cas || m.statut !== "attente") return "Ce cas est déjà réglé.";
+  const bon = choix === m.cas.bonne;
+  m.statut = "repondu";
+  m.reponse = m.cas.choix[choix];
+  const d = e.dossiers.find((x) => x.id === m.dossier);
+  const a = e.agents.find((x) => x.id === m.de);
+  if (d) d.bloque = null;
+  if (bon) {
+    if (d) avancerDossier(e, d, 40);
+    if (a) {
+      a.competence = clamp(a.competence + 3, 0, 95);
+      a.confiance = clamp(a.confiance + 4);
+      dire(e, a, "Merci, c'est limpide !", 40);
+    }
+    e.niveauDec = clamp(e.niveauDec + 2);
+    inc(e, "cas_ok");
+    log(e, `🧮 Cas pratique résolu (${m.cas.theme}) : le dossier avance.`, "bien");
+  } else {
+    if (d) d.progression = Math.max(0, d.progression - 30);
+    if (a) dire(e, a, "Hmm, le réviseur a trouvé une erreur…", 40);
+    e.niveauDec = clamp(e.niveauDec - 1);
+    ajouterCarnet(e, [{ theme: m.cas.theme, question: m.cas.enonce, explication: m.cas.explication, jour: jourDe(e.minute) }]);
+    log(e, `🧮 Cas pratique raté (${m.cas.theme}) : la révision repart en arrière. Notion ajoutée à ton carnet.`, "mal");
+  }
+  return null;
+}
+
+export function ajouterCarnet(e: Etat, notes: NoteCarnet[]) {
+  for (const n of notes) if (!e.carnet.some((x) => x.question === n.question)) e.carnet.unshift(n);
+  if (e.carnet.length > 80) e.carnet.length = 80;
+}
+
+export function retirerCarnet(e: Etat, question: string) {
+  e.carnet = e.carnet.filter((x) => x.question !== question);
+  inc(e, "carnet_revu");
+}
+
+// ---------- contrôle qualité de l'Ordre ----------
+
+function controleQualite(e: Etat, jour: number) {
+  const dans = joursOuvresEntre(jour, e.controleJour);
+  if (dans === 10 && e.compteurs.controleAnnonce !== e.controleJour) {
+    e.compteurs.controleAnnonce = e.controleJour;
+    e.messages.unshift({
+      id: uid(e, "m"),
+      de: "cabinet",
+      niveau: 4,
+      sujet: `🏛️ Contrôle qualité de l'Ordre le ${dateCourte(e.controleJour)}`,
+      texte: "Le contrôleur examinera ta vigilance anti-blanchiment, tes choix déontologiques, le respect des délais, le suivi de ton équipe et ta formation continue. Tes décisions passées comptent : il est encore temps de traiter tes messages en attente et de passer un QCM.",
+      jour,
+      minute: e.minute,
+      lu: false,
+      statut: "info",
+      expire: e.controleJour,
+      theme: "echeance",
+    });
+  }
+  if (jour !== e.controleJour) return;
+  const k = e.compteurs;
+  const totalMessages = Math.max(1, e.messages.length);
+  const points = [
+    { label: "Vigilance LCB-FT sur les nouveaux clients", ok: (k.lcbft_ko ?? 0) <= (k.lcbft_ok ?? 0) },
+    { label: "Choix déontologiques dans les dilemmes", ok: (k.deonto_ko ?? 0) <= (k.deonto_ok ?? 0) },
+    { label: "Dossiers livrés dans les délais", ok: (k.retards ?? 0) <= Math.max(3, (k.livres ?? 0) * 0.1) },
+    { label: "Suivi de l'équipe (messages traités)", ok: (k.ignores ?? 0) <= Math.max(5, totalMessages * 0.15) },
+    { label: "Formation continue (QCM, oraux)", ok: e.qcm.length >= 3 || e.oraux.length >= 2 },
+  ];
+  const ok = points.filter((p) => p.ok).length;
+  let note: string, effet: string;
+  if (ok >= 4) {
+    note = "Satisfaisant";
+    effet = "Réputation +6. Le contrôleur salue la tenue du cabinet.";
+    e.reputation = clamp(e.reputation + 6);
+    donnerBadge(e, "qualite");
+  } else if (ok >= 2) {
+    note = "Avec réserves";
+    effet = "Réputation –3. Un plan d'action est demandé.";
+    e.reputation = clamp(e.reputation - 3);
+  } else {
+    note = "Insuffisant";
+    effet = "Réputation –12 et 3 000 € de frais de mise en conformité.";
+    e.reputation = clamp(e.reputation - 12);
+    e.tresorerie -= 3000;
+    e.periode.charges += 3000;
+  }
+  const res: ResultatControle = { jour, note, points, effet };
+  e.controleResultat = res;
+  log(e, `🏛️ Contrôle qualité de l'Ordre : ${note} (${ok}/5).`, ok >= 4 ? "bien" : "mal");
+  e.controleJour = ouvreOuApres(e.controleJour + 365);
+}
+
+// ---------- gazette du lundi ----------
+
+function genererGazette(e: Etat) {
+  const p = e.periode;
+  const evts = e.journal.filter((j) => j.jour >= p.debut);
+  const marquants = evts.filter((j) => /^(🏆|💥|👋|🤝|🚪|🏗️|🏛️|🎓|🤒)/.test(j.texte));
+  const mood = e.moodGlobal;
+  const ton: Gazette["ton"] = mood >= 65 ? "enjoue" : mood < 42 ? "sombre" : "neutre";
+  const une = marquants[0]?.texte.replace(/^\S+\s/, "") ?? (p.livres ? `${p.livres} dossier(s) livré(s) cette semaine : l'équipe tient le rythme.` : "Semaine studieuse : les dossiers avancent en silence.");
+  const potins = e.messages
+    .filter((m) => m.theme === "rumeur" && m.jour >= p.debut)
+    .slice(0, 2)
+    .map((m) => m.texte);
+  const amis = e.relations.find((r) => r.type === "amitie");
+  if (potins.length < 2 && amis) {
+    const a = e.agents.find((x) => x.id === amis.a);
+    const b = e.agents.find((x) => x.id === amis.b);
+    if (a && b) potins.push(`On a encore vu ${a.prenom} et ${b.prenom} refaire le monde à la pause déjeuner.`);
+  }
+  if (!potins.length) potins.push("Rien à signaler à la machine à café… pour l'instant.");
+  const q = pick(QCM);
+  const g: Gazette = {
+    jour: jourDe(e.minute),
+    titre: ton === "enjoue" ? "Le cabinet a le vent en poupe" : ton === "sombre" ? "Semaine sous tension au cabinet" : "Une semaine au cabinet",
+    ton,
+    une,
+    chiffres: [
+      `${p.ca.toLocaleString("fr-FR")} € encaissés, ${p.charges.toLocaleString("fr-FR")} € de charges`,
+      `${p.livres} dossier(s) livré(s)`,
+      `${p.echeancesGagnees} échéance(s) gagnée(s), ${p.echeancesPerdues} perdue(s)`,
+      p.qcm !== null ? `QCM blanc de l'associée : ${p.qcm}/10` : "Pas de QCM blanc cette semaine",
+    ],
+    potins,
+    humeur:
+      ton === "enjoue"
+        ? "L'ambiance est au beau fixe : on rit fort à la machine à café et personne ne compte ses heures."
+        : ton === "sombre"
+          ? "Les visages sont fermés, les pauses s'allongent et certains regardent les offres d'emploi. Il est temps d'agir."
+          : "Ambiance studieuse : chacun dans ses dossiers, quelques soupirs devant les relevés bancaires.",
+    motDuDec: `${q.theme} — ${q.explication}`,
+  };
+  e.gazettes.unshift(g);
+  if (e.gazettes.length > 12) e.gazettes.length = 12;
+  e.gazetteNonLue = true;
+}
+
+// ---------- arcs narratifs ----------
+
+function avancerArcs(e: Etat, jour: number) {
+  for (const arc of [...e.arcs]) {
+    if (arc.prochain > jour) continue;
+    if (e.messages.some((m) => m.arc?.id === arc.id && m.statut === "attente")) continue;
+    publierEpisode(e, arc, jour);
+  }
+  if (!e.arcs.length && jour >= 8 && jour - (e.compteurs.dernierArc ?? -99) >= 20 && rnd() < 0.15) {
+    const dispo = ARCS.filter((x) => !e.arcsFinis.includes(x.id));
+    const pool = dispo.length ? dispo : ARCS;
+    for (const def of [...pool].sort(() => rnd() - 0.5)) {
+      const ctx = def.condition(e);
+      if (!ctx) continue;
+      const arc = { id: def.id, etape: 0, prochain: jour, ctx, choix: [] as number[] };
+      e.compteurs.dernierArc = jour;
+      e.arcs.push(arc);
+      publierEpisode(e, arc, jour);
+      break;
+    }
+  }
+}
+
+function publierEpisode(e: Etat, arc: Etat["arcs"][number], jour: number) {
+  const def = ARCS.find((x) => x.id === arc.id);
+  if (!def || arc.etape >= def.etapes.length) {
+    e.arcs = e.arcs.filter((x) => x !== arc);
+    return;
+  }
+  const ep = def.etapes[arc.etape].construire(arc.ctx, arc.choix, e);
+  if ("fin" in ep) {
+    log(e, `📖 ${def.titre} — ${ep.fin}`, ep.ton);
+    if (ep.effets) appliquerEffets(e, ep.effets, { client: arc.ctx.client, agent: arc.ctx.agent });
+    if (ep.action) actionArc(e, ep.action, arc.ctx);
+    e.arcs = e.arcs.filter((x) => x !== arc);
+    if (!e.arcsFinis.includes(arc.id)) e.arcsFinis.push(arc.id);
+    return;
+  }
+  e.messages.unshift({
+    id: uid(e, "m"),
+    de: arc.ctx.agent && e.agents.some((a) => a.id === arc.ctx.agent) ? arc.ctx.agent : "cabinet",
+    niveau: 4,
+    sujet: `📖 ${def.titre} — ${ep.titre}`,
+    texte: ep.texte,
+    jour,
+    minute: e.minute,
+    lu: false,
+    statut: "attente",
+    expire: ajouterJoursOuvres(jour, 3),
+    theme: "arc",
+    dossier: `client:${arc.ctx.client ?? ""}|agent:${arc.ctx.agent ?? ""}`,
+    dilemme: { titre: ep.titre, options: ep.options },
+    arc: { id: arc.id, etape: arc.etape },
+  });
+  arc.prochain = 99999;
+}
+
+function suiteArc(e: Etat, m: Message, index: number) {
+  const arc = e.arcs.find((x) => x.id === m.arc?.id);
+  const def = ARCS.find((x) => x.id === m.arc?.id);
+  if (!arc || !def) return;
+  arc.choix.push(index);
+  arc.etape++;
+  const jour = jourDe(e.minute);
+  if (arc.etape >= def.etapes.length) {
+    e.arcs = e.arcs.filter((x) => x !== arc);
+    if (!e.arcsFinis.includes(arc.id)) e.arcsFinis.push(arc.id);
+    return;
+  }
+  arc.prochain = ajouterJoursOuvres(jour, Math.max(1, def.etapes[arc.etape].delai));
+}
+
+function actionArc(e: Etat, action: NonNullable<OptionDilemme["action"]>, ctx: Record<string, string | undefined>) {
+  const a = e.agents.find((x) => x.id === ctx.agent);
+  const c = e.clients.find((x) => x.id === ctx.client);
+  switch (action) {
+    case "promouvoir":
+      if (a) {
+        a.salaire += 300;
+        a.competence = clamp(a.competence + 5, 0, 95);
+        a.poste = a.poste.startsWith("Stagiaire") ? "Assistant comptable" : a.poste.startsWith("Assistant") ? "Collaborateur confirmé" : a.poste;
+        log(e, `🎓 ${a.prenom} devient ${a.poste.toLowerCase()} (${a.salaire.toLocaleString("fr-FR")} € brut).`, "bien");
+      }
+      break;
+    case "reconcilier": {
+      const rel = e.relations.find((r) => (r.a === ctx.agent && r.b === ctx.agentB) || (r.b === ctx.agent && r.a === ctx.agentB));
+      if (rel) {
+        rel.intensite = clamp(rel.intensite - 30);
+        if (rel.intensite < 25 && rel.type === "rivalite") rel.type = "amitie";
+      }
+      break;
+    }
+    case "mission_conseil":
+      if (c) {
+        const d = creerDossier(e, c, "conseil", ajouterJoursOuvres(jourDe(e.minute), 10), jourDe(e.minute), `Accompagnement conciliation — ${c.nom}`);
+        d.honoraires = 2500;
+        repartir(e);
+      }
+      break;
+    case "client_part":
+    case "client_part_perte":
+      if (c) {
+        e.clients = e.clients.filter((x) => x.id !== c.id);
+        e.dossiers = e.dossiers.filter((d) => d.client !== c.id || d.phase === 5);
+        if (action === "client_part_perte") {
+          e.tresorerie -= 2000;
+          e.periode.charges += 2000;
+        }
+        log(e, `🚪 ${c.nom} ne fait plus partie des clients du cabinet.`, "mal");
+      }
+      break;
+  }
+}
+
+// Exposé pour l'interface : les niveaux de locaux.
+export { LOCAUX };
+
+// ---------- cycle annuel ----------
+
+function echeancesAnnuelles(e: Etat, annee: number) {
+  const ajoute = (id: string, nom: string, type: TypeMission, jour: number) => {
+    if (!e.echeances.some((x) => x.id === id)) e.echeances.push({ id, nom, type, jour, annoncee: false, resolue: false });
+  };
+  ajoute(`liasse-${annee}`, `Liasse fiscale IS ${annee}`, "bilan", ouvreOuApres(jourDeLaDate(annee, 5, 20)));
+  ajoute(`ag-${annee}`, `Approbation des comptes ${annee}`, "juridique", ouvreOuApres(jourDeLaDate(annee, 6, 30)));
+  e.echeances.sort((a, b) => a.jour - b.jour);
+}
+
+function echeancesDuMois(e: Etat, jour: number) {
+  const mois = moisDe(jour);
+  const annee = anneeDe(jour);
+  for (const [id, nom, type, j] of [
+    [`tva-${annee}-${mois}`, `TVA de ${nomMois(mois)}`, "tva", 24],
+    [`dsn-${annee}-${mois}`, `DSN de ${nomMois(mois)}`, "paie", 15],
+  ] as const) {
+    if (!e.echeances.some((x) => x.id === id)) e.echeances.push({ id, nom, type, jour: ouvreOuApres(jourDeLaDate(annee, mois, j)), annoncee: false, resolue: false });
+  }
+  e.echeances.sort((a, b) => a.jour - b.jour);
+  // On garde l'historique raisonnable.
+  if (e.echeances.length > 80) e.echeances = e.echeances.filter((x) => !x.resolue || x.jour > jour - 200);
+}
+
+export function prochaineLiasse(e: Etat) {
+  return e.echeances.find((x) => x.type === "bilan" && !x.resolue && x.jour >= jourDe(e.minute));
+}
+
+/** Janvier : nouvelle saison des bilans pour tous les clients. */
+function nouvelleAnnee(e: Etat, jour: number) {
+  const annee = anneeDe(jour);
+  echeancesAnnuelles(e, annee);
+  const liasse = e.echeances.find((x) => x.id === `liasse-${annee}`)!;
+  for (const c of e.clients) {
+    if (!e.dossiers.some((d) => d.client === c.id && d.type === "bilan" && d.echeance === liasse.jour))
+      creerDossier(e, c, "bilan", liasse.jour, jour, `Bilan ${annee - 1} — ${c.nom}`);
+  }
+  // On allège l'historique des dossiers livrés depuis longtemps.
+  e.dossiers = e.dossiers.filter((d) => d.phase < 5 || (d.livre ?? 0) > jour - 120);
+  log(e, `🎆 Bonne année ${annee} ! La saison des bilans ${annee - 1} commence : liasse le ${dateCourte(liasse.jour)}.`, "neutre");
 }

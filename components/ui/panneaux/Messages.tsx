@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { dateCourte, heure } from "@/lib/calendrier";
-import { choisirDilemme, coutMessage, repondre, versionsGhostWriter, type Style } from "@/lib/moteur";
+import { choisirDilemme, coutMessage, repondre, resoudreCas, versionsGhostWriter, type Style } from "@/lib/moteur";
 import { useJeu } from "@/lib/store";
 import type { Etat, Message } from "@/lib/types";
 
@@ -121,7 +121,9 @@ function Detail({ m, retour }: { m: Message; retour: () => void }) {
         </div>
       )}
 
-      {!m.dilemme && peutRepondre && (
+      {m.cas && <Cas m={m} />}
+
+      {!m.dilemme && !m.cas && peutRepondre && (
         <div className="ghost-writer">
           <h4>✍️ Ghost Writer</h4>
           <textarea
@@ -151,6 +153,43 @@ function Detail({ m, retour }: { m: Message; retour: () => void }) {
           {e.pa < cout && <p className="aide">Plus assez de PA aujourd&apos;hui. Ils reviennent demain matin.</p>}
         </div>
       )}
+    </div>
+  );
+}
+
+function Cas({ m }: { m: Message }) {
+  const agir = useJeu((s) => s.agir);
+  const [choix, setChoix] = useState<number | null>(null);
+  const cas = m.cas!;
+  const repondu = m.statut !== "attente";
+  const reponseIndex = repondu ? cas.choix.indexOf(m.reponse ?? "") : choix;
+  const montre = repondu || choix !== null;
+  return (
+    <div className="cas-pratique">
+      <h4>🧮 Cas pratique — {cas.theme}</h4>
+      <p className="enonce">{cas.enonce}</p>
+      <div className="choix">
+        {cas.choix.map((c, k) => (
+          <button
+            key={k}
+            disabled={montre}
+            className={`choix-btn ${montre && k === cas.bonne ? "bon" : ""} ${montre && k === reponseIndex && k !== cas.bonne ? "faux" : ""}`}
+            onClick={() => {
+              setChoix(k);
+              agir(resoudreCas, m.id, k);
+            }}
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+      {montre && (
+        <div className="explication">
+          <strong>{reponseIndex === cas.bonne ? "✔ Bien tranché : le dossier avance." : "✘ Raté : la révision repart en arrière, la notion part dans ton carnet."}</strong>
+          <p>{cas.explication}</p>
+        </div>
+      )}
+      {!montre && <p className="aide">Gratuit (pas de PA). Bonne réponse : le dossier avance et ton collaborateur progresse.</p>}
     </div>
   );
 }

@@ -77,4 +77,7 @@ export const BADGES: Badge[] = [
   { id: "tresor", nom: "Trésor de guerre", description: "Atteindre 60 000 € de trésorerie", icone: "💰" },
   { id: "reputation", nom: "Réputation en or", description: "Atteindre 85 de réputation", icone: "⭐" },
   { id: "integre", nom: "Intègre", description: "Choisir 3 fois l'option déontologique d'un dilemme", icone: "⚖️" },
+  { id: "qualite", nom: "Contrôle réussi", description: "Obtenir « Satisfaisant » au contrôle qualité de l'Ordre", icone: "🏛️" },
+  { id: "batisseuse", nom: "Bâtisseuse", description: "Atteindre le cabinet premium", icone: "🏗️" },
+  { id: "cas_10", nom: "Réviseuse", description: "Résoudre 10 cas pratiques", icone: "🧮" },
 ];

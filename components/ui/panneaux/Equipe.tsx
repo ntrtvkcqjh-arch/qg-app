@@ -2,8 +2,7 @@
 
 import { dateCourte } from "@/lib/calendrier";
 import { LIBELLE_FILIERE, LIBELLE_PERSO } from "@/lib/data/equipe";
-import { aUnRH, besoins, fraisRecrutement, publierAnnonce, recruter } from "@/lib/moteur";
-import { MAX_POSTES } from "@/lib/plan";
+import { aUnRH, besoins, capacitePostes, fraisRecrutement, publierAnnonce, recruter } from "@/lib/moteur";
 import { useJeu } from "@/lib/store";
 import { LIBELLE_ACTIVITE, euros } from "../textes";
 
@@ -16,7 +15,7 @@ export default function Equipe() {
   return (
     <div>
       <h3 className="titre-section">
-        Collaborateurs ({e.agents.length}/{MAX_POSTES} bureaux)
+        Collaborateurs ({e.agents.length}/{capacitePostes(e)} bureaux)
       </h3>
       <p className="aide">Masse salariale chargée : {euros(masse)} par mois. Clique sur une ligne pour ouvrir la fiche.</p>
       <table className="tableau">

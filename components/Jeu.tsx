@@ -12,6 +12,7 @@ import Tiroir from "./ui/Tiroir";
 import Boss from "./ui/Boss";
 import Absence from "./ui/Absence";
 import Toast from "./ui/Toast";
+import Modales from "./ui/Modales";
 
 const Cabinet3D = dynamic(() => import("./scene/Cabinet3D"), {
   ssr: false,
@@ -65,6 +66,7 @@ export default function Jeu() {
         </div>
       </div>
       <Absence />
+      <Modales />
       <Toast />
     </div>
   );

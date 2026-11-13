@@ -3,6 +3,7 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { Vector3 } from "three";
 import { PIECES } from "@/lib/plan";
+import { niveauLocaux } from "@/lib/data/locaux";
 import { useJeu } from "@/lib/store";
 import { ETIQUETTES, POSITIONS } from "./positions";
 
@@ -54,6 +55,10 @@ export function CoucheEtiquettes() {
     return d ? s.etat?.clients.find((c) => c.id === d.client)?.nom ?? null : null;
   });
   const ouvrir = useJeu((s) => s.ouvrir);
+  const ouvrirMessage = useJeu((s) => s.ouvrirMessage);
+  const pieces = useJeu((s) => niveauLocaux(s.etat?.niveauLocaux ?? 3).pieces);
+  const visiteurs = useJeu((s) => s.etat?.visiteurs ?? []);
+  const propositions = useJeu((s) => s.etat?.propositions ?? []);
 
   return (
     <div className="couche-etiquettes">
@@ -64,13 +69,27 @@ export function CoucheEtiquettes() {
           className="etiquette-piece pos"
           onClick={() => selectionnerPiece(p.id)}
         >
-          {p.nom}
+          {pieces.includes(p.id) ? p.nom : `🔒 ${p.nom}`}
         </button>
       ))}
       <div ref={enregistrer("a:toi")} className="etiquette pos" onClick={() => ouvrir("dossiers")}>
         {monClient && <div className="bulle">Je traite {monClient}</div>}
         <div className="nom toi">Toi</div>
       </div>
+      {visiteurs.map((v) => {
+        const prop = propositions.find((x) => x.id === v.message);
+        return (
+          <div
+            key={v.id}
+            ref={enregistrer(`a:v_${v.id}`)}
+            className="etiquette pos"
+            onClick={() => (prop ? ouvrir("demandes") : ouvrirMessage(v.message))}
+          >
+            {v.etat === "attend" && <div className="bulle visiteur">{prop ? "Je voudrais être reçu·e" : "Je dois vous parler !"}</div>}
+            <div className="nom visiteur">👤 {v.nom}</div>
+          </div>
+        );
+      })}
       {agents.map((a) => (
         <div
           key={a.id}

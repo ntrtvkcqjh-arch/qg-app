@@ -1624,3 +1624,291 @@ h4 {
   background: #121a2e;
   color: white;
 }
+
+.conseil-demandes {
+  margin-top: 10px;
+  border-radius: 12px;
+  padding: 9px 12px;
+  width: 100%;
+  text-align: left;
+  background: #fff6e8;
+  color: #a86500;
+  font-weight: 600;
+  font-size: 12.5px;
+}
+.bulle.visiteur {
+  background: #a86500;
+}
+.etiquette .nom.visiteur {
+  background: #fff6e8;
+  color: #7a4a00;
+}
+.alerte-charge {
+  background: #fdecea;
+  color: var(--rouge);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+.liste-demandes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.demande {
+  border: 1px solid var(--ligne);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.demande.o-visite {
+  border-color: #f5c77e;
+  background: #fffaf0;
+}
+.demande .ligne1 {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--doux);
+}
+.demande .origine {
+  font-weight: 700;
+  color: var(--texte);
+}
+.demande p {
+  margin: 0;
+  color: var(--doux);
+  line-height: 1.5;
+}
+.demande ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+.chiffres-demande {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12.5px;
+}
+.actions-demande {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.locaux-actuels {
+  background: var(--bleu-clair);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.locaux-actuels div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.locaux-actuels small {
+  color: var(--bleu);
+  font-weight: 600;
+}
+.locaux-actuels strong {
+  font-size: 16px;
+}
+.locaux-actuels span {
+  color: var(--doux);
+  font-size: 13px;
+}
+.frise-locaux {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.etape-locaux {
+  border: 1px solid var(--ligne);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+.etape-locaux span {
+  color: var(--doux);
+  line-height: 1.4;
+}
+.etape-locaux small {
+  color: var(--doux);
+  margin-top: auto;
+}
+.etape-locaux.faite {
+  background: #e6f6ee;
+  border-color: #b7e4cc;
+}
+.grille-boutique {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.article {
+  border: 1px solid var(--ligne);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.article small {
+  color: var(--doux);
+  line-height: 1.4;
+}
+.article em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--doux);
+}
+.article .bouton,
+.article .etat {
+  margin-top: auto;
+  align-self: flex-start;
+}
+.article.achete {
+  background: #f1faf5;
+  border-color: #b7e4cc;
+}
+.cas-pratique {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--ligne);
+  padding-top: 14px;
+}
+.cas-pratique .enonce {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  font-weight: 600;
+}
+.note-carnet {
+  border-left: 3px solid var(--orange);
+  background: #fffaf0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.note-carnet p {
+  margin: 0;
+  line-height: 1.5;
+}
+.note-carnet .q {
+  font-weight: 600;
+}
+.note-carnet .r {
+  color: var(--doux);
+}
+.note-carnet .bouton {
+  align-self: flex-start;
+}
+.modale.large {
+  width: min(760px, 100%);
+}
+.gazette {
+  font-family: Georgia, "Times New Roman", serif;
+  border: 1px solid #d9d2c3;
+  background: #fbf8f1;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.gazette header {
+  border-bottom: 3px double #333;
+  padding-bottom: 8px;
+  text-align: center;
+}
+.gazette header small {
+  font-family: var(--police), sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+  color: var(--doux);
+}
+.gazette h2 {
+  font-size: 26px;
+  margin-top: 4px;
+}
+.gazette h4 {
+  font-family: var(--police), sans-serif;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #8a6d3b;
+  margin-bottom: 4px;
+}
+.gazette p,
+.gazette li {
+  margin: 0;
+  line-height: 1.55;
+  font-size: 14.5px;
+}
+.gazette .une p {
+  font-size: 18px;
+  font-weight: 700;
+}
+.gazette .colonnes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.gazette .potin {
+  font-style: italic;
+  margin-bottom: 4px;
+}
+.gazette .mot-dec {
+  background: #f1e9d6;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.g-sombre header h2 {
+  color: #6d2b2b;
+}
+.g-enjoue header h2 {
+  color: #1d5e3a;
+}
+.verdict {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0;
+}
+.v-ok {
+  color: var(--vert);
+}
+.v-moyen {
+  color: var(--orange);
+}
+.v-ko {
+  color: var(--rouge);
+}
+.points-controle {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.points-controle li.ok {
+  color: var(--vert);
+}
+.points-controle li.ko {
+  color: var(--rouge);
+}
