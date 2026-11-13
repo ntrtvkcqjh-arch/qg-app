@@ -33,11 +33,11 @@ export default function Boss() {
         <div style={{ width: `${pct}%` }} />
       </div>
       <div className="boss-actions">
-        <button className="bouton" disabled={rush || e.pa < 1} onClick={() => agir(actionBoss, "rush")}>
-          🔥 Rush collectif (1 PA){rush ? " — lancé" : ""}
+        <button className="bouton" disabled={rush} onClick={() => agir(actionBoss, "rush")}>
+          🔥 Rush collectif{rush ? " — lancé" : ""}
         </button>
-        <button className="bouton" disabled={e.pa < 1 || !restants.length} onClick={() => agir(actionBoss, "renfort")}>
-          💪 Mettre la main à la pâte (1 PA)
+        <button className="bouton" disabled={!restants.length} onClick={() => agir(actionBoss, "renfort")}>
+          💪 Mettre la main à la pâte
         </button>
         {aValider.map((d) => (
           <button key={d.id} className="bouton principal-btn" onClick={() => agir(validerDossier, d.id)}>

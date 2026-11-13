@@ -47,7 +47,7 @@ export default function EquipePlus() {
           🍻 Afterwork (600 €)
         </button>
         <button className="bouton" onClick={() => agir(evenementEquipe, "seminaire")}>
-          🏔️ Séminaire annuel (4 000 €, 2 PA, cabinet fermé le reste de la journée)
+          🏔️ Séminaire annuel (4 000 €, cabinet fermé le reste de la journée)
         </button>
       </div>
       <p className="aide">Les anniversaires arrivent tout seuls dans ta messagerie 🎂.</p>

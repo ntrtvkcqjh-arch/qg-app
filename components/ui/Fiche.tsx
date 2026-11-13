@@ -114,7 +114,7 @@ function FicheAgent({ id }: { id: string }) {
           +100 € de salaire
         </button>
         <button className="bouton" onClick={() => agir(envoyerEnFormation, a.id)}>
-          Formation (1 PA, 600 €)
+          Formation (600 €)
         </button>
         <button className="bouton" onClick={() => agir(imposerRepos, a.id)}>
           2 jours de repos
@@ -131,7 +131,7 @@ function FicheAgent({ id }: { id: string }) {
               setConfirmer(false);
             }}
           >
-            Confirmer (1 PA, {euros(a.salaire * 2)})
+            Confirmer ({euros(a.salaire * 2)} d&apos;indemnités)
           </button>
         )}
       </div>

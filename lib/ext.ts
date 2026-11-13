@@ -183,6 +183,7 @@ export function debutJourneeExt(e: Etat, jour: number, lundi: boolean, premierDu
   }
   if (anneeDe(jour) === 2026 && moisDe(jour) === 9 && !e.compteurs.reformeFE) reformeFacturation(e, jour);
   anniversaires(e, jour);
+  saisons(e, jour, premierDuMois);
   encaisserFactures(e, jour);
   sessionsDuJour(e, jour);
   for (const a of e.agents) {
@@ -874,3 +875,52 @@ export { DOMAINES };
 void dire;
 void avancerDossier;
 void ajouterVisiteur;
+
+// ---------- saisonnalité ----------
+
+/** Intensité de l'activité selon le mois (rush de mai, creux d'août, fin d'année). */
+export function facteurSaison(e: Etat): number {
+  const m = moisDe(jourDe(e.minute));
+  return { 1: 1.05, 2: 1, 3: 1.1, 4: 1.15, 5: 1.25, 6: 1, 7: 0.75, 8: 0.4, 9: 1.05, 10: 1, 11: 1, 12: 1.15 }[m] ?? 1;
+}
+
+function saisons(e: Etat, jour: number, premierDuMois: boolean) {
+  const mois = moisDe(jour);
+  const annee = anneeDe(jour);
+  if (premierDuMois && jour > 0) {
+    if (mois === 5) log(e, "📈 Mai : c'est le rush de la liasse fiscale. Les soirées vont être longues…", "neutre");
+    if (mois === 7) log(e, "🏖️ Juillet : les vacances d'été commencent. Chacun prendra deux semaines en juillet ou en août.", "neutre");
+    if (mois === 8) log(e, "🌞 Août : le cabinet tourne au ralenti, les clients aussi.", "neutre");
+    if (mois === 9) log(e, "🍂 Rentrée : retour de tout le monde, et les dossiers repartent.", "neutre");
+  }
+  // Vacances d'été : deux semaines par collaborateur, réparties sur juillet et août.
+  if (mois === 7 || mois === 8) {
+    const lundi = dateDe(jour).getUTCDay() === 1;
+    if (lundi) {
+      const semaine = Math.floor((jour - jourDeLaDate(annee, 7, 1)) / 7); // 0 à 8
+      for (const a of e.agents) {
+        const cle = `vacances:${a.id}:${annee}`;
+        if (e.compteurs[cle] || a.activite === "conge" || a.activite === "malade" || a.filiere === "associe") continue;
+        const voulue = hash(a.id + annee) % 7;
+        if (semaine >= voulue) {
+          e.compteurs[cle] = 1;
+          a.activite = "conge";
+          a.absentJusquau = ajouterJoursOuvres(jour, 10);
+          a.fatigue = clamp(a.fatigue - 50);
+          a.stress = clamp(a.stress - 30);
+          a.moral = clamp(a.moral + 15);
+          log(e, `🏖️ ${a.prenom} part en vacances pour deux semaines.`);
+        }
+      }
+    }
+  }
+  // Fête de fin d'année, mi-décembre.
+  if (mois === 12 && dateDe(jour).getUTCDate() >= 12 && !e.compteurs[`fete:${annee}`] && e.agents.length) {
+    e.compteurs[`fete:${annee}`] = 1;
+    messageSpecial(e, "cabinet", 3, "🎄 La fête de fin d'année", "L'équipe demande si une fête de fin d'année est prévue. C'est l'occasion de remercier tout le monde après une année chargée.", "client:|agent:", {}, [
+      { label: "Grande soirée dans un restaurant (3 000 €)", cout: 1, effets: { tresorerie: -3000, moralEquipe: 15, confianceEquipe: 6 }, resultat: "Une soirée mémorable : on en parlera longtemps." },
+      { label: "Repas d'équipe au cabinet (1 200 €)", cout: 0, effets: { tresorerie: -1200, moralEquipe: 8, confianceEquipe: 3 }, resultat: "Simple et chaleureux." },
+      { label: "Pas de fête cette année", cout: 0, effets: { moralEquipe: -8, confianceEquipe: -4 }, resultat: "L'équipe est déçue." },
+    ]);
+  }
+}

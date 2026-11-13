@@ -196,6 +196,7 @@ export type Message = {
   cas?: CasPratique; // cas pratique à résoudre toi-même
   arc?: { id: string; etape: number }; // étape d'un arc narratif
   payload?: Record<string, string | number>; // données d'un événement spécial
+  canal?: "mail" | "appel" | "interne"; // e-mail, appel téléphonique ou message interne
   reponse?: string;
 };
 

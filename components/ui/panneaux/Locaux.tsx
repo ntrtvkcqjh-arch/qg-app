@@ -39,8 +39,8 @@ export default function Locaux() {
         ))}
       </div>
       {suivant ? (
-        <button className="bouton principal-btn" disabled={e.tresorerie < suivant.travaux || e.pa < 1} onClick={() => agir(agrandirLocaux)}>
-          🏗️ Passer au « {suivant.nom} » ({euros(suivant.travaux)} de travaux, 1 PA)
+        <button className="bouton principal-btn" disabled={e.tresorerie < suivant.travaux} onClick={() => agir(agrandirLocaux)}>
+          🏗️ Passer au « {suivant.nom} » ({euros(suivant.travaux)} de travaux)
         </button>
       ) : (
         <p className="aide">Tu as le plus beau cabinet de la ville. 🏆</p>

@@ -39,6 +39,8 @@ export function Projecteur() {
   return null;
 }
 
+const CACHE = { display: "none" } as const;
+
 const enregistrer = (cle: string) => (el: HTMLElement | null) => {
   if (el) ETIQUETTES.set(cle, el);
   else ETIQUETTES.delete(cle);
@@ -59,6 +61,10 @@ export function CoucheEtiquettes() {
   const pieces = useJeu((s) => niveauLocaux(s.etat?.niveauLocaux ?? 3).pieces);
   const niveau = useJeu((s) => s.etat?.niveauLocaux ?? 3);
   const visiteurs = useJeu((s) => s.etat?.visiteurs ?? []);
+  const menage = useJeu((s) => {
+    const m = (s.etat?.minute ?? 0) % 1440;
+    return m >= 20 * 60 + 30 && m < 22 * 60 + 30;
+  });
   const propositions = useJeu((s) => s.etat?.propositions ?? []);
 
   return (
@@ -76,6 +82,9 @@ export function CoucheEtiquettes() {
       <div ref={enregistrer("a:toi")} className="etiquette pos" onClick={() => ouvrir("dossiers")}>
         {monClient && <div className="bulle">Je traite {monClient}</div>}
         <div className="nom toi">Toi</div>
+      </div>
+      <div ref={enregistrer("a:menage")} className="etiquette pos" style={menage ? undefined : CACHE}>
+        <div className="nom visiteur">🧹 Ménage</div>
       </div>
       {visiteurs.map((v) => {
         const prop = propositions.find((x) => x.id === v.message);

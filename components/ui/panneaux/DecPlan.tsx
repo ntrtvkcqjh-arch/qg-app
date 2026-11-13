@@ -39,7 +39,7 @@ export default function DecPlan() {
         <ul>
           <li className={e.qcmDisponible ? "" : "fait"}>{e.qcmDisponible ? "☐" : "☑"} QCM blanc (orienté sur tes thèmes faibles)</li>
           <li>☐ Un oral blanc tous les 15 jours</li>
-          <li className={m.soutenu ? "fait" : ""}>{m.soutenu ? "☑" : "☐"} Avancer le mémoire (1 étape par jour, 1 PA)</li>
+          <li className={m.soutenu ? "fait" : ""}>{m.soutenu ? "☑" : "☐"} Avancer le mémoire (1 étape par jour)</li>
           <li>☐ Relire ton carnet de révision ({e.carnet.length} notion{e.carnet.length > 1 ? "s" : ""})</li>
         </ul>
         {faibles.length > 0 && <p className="aide">Tes thèmes les plus fragiles : {faibles.join(", ")}.</p>}
@@ -87,7 +87,7 @@ export default function DecPlan() {
                     setChoix(null);
                   }}
                 >
-                  Travailler sur cette étape (1 PA)
+                  Travailler sur cette étape
                 </button>
                 <p className="aide">💡 {etape.conseil}</p>
               </div>

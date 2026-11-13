@@ -5,9 +5,9 @@ import { useJeu } from "@/lib/store";
 import type { Difficulte, ModeDepart } from "@/lib/types";
 
 const NIVEAUX: { id: Difficulte; nom: string; texte: string }[] = [
-  { id: "facile", nom: "Facile", texte: "4 PA par jour, 40 000 € de trésorerie, peu d'imprévus." },
-  { id: "normal", nom: "Normal", texte: "3 PA par jour, 25 000 € de trésorerie. L'expérience prévue." },
-  { id: "expert", nom: "Expert", texte: "3 PA, 15 000 €, plus d'imprévus et des pénalités plus lourdes." },
+  { id: "facile", nom: "Facile", texte: "40 000 € de trésorerie, peu d'imprévus." },
+  { id: "normal", nom: "Normal", texte: "25 000 € de trésorerie. L'expérience prévue." },
+  { id: "expert", nom: "Expert", texte: "15 000 €, plus d'imprévus et des pénalités plus lourdes." },
 ];
 
 const MODES: { id: ModeDepart; nom: string; texte: string }[] = [

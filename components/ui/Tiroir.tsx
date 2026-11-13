@@ -13,7 +13,7 @@ import Locaux from "./panneaux/Locaux";
 import Reglages from "./panneaux/Reglages";
 
 const TITRES = {
-  messages: "Messagerie",
+  messages: "Boîte mail et appels",
   demandes: "Demandes de prospects et de clients",
   locaux: "Locaux et mobilier",
   dossiers: "Dossiers",

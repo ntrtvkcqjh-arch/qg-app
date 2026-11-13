@@ -73,11 +73,11 @@ export default function Equipe() {
 
       <h3 className="titre-section">Recrutement</h3>
       <p className="aide">
-        Nouveaux candidats chaque lundi, en priorité dans les métiers qui manquent. Recruter coûte 1 PA et {euros(fraisRecrutement(e))} de frais.
+        Nouveaux candidats chaque lundi, en priorité dans les métiers qui manquent. Recruter coûte {euros(fraisRecrutement(e))} de frais.
         {aUnRH(e) ? " Ta ou ton responsable RH attire de meilleurs profils et divise les frais par deux." : " Un·e responsable RH attirerait de meilleurs profils et diviserait les frais par deux."}
       </p>
       <button className="bouton petit annonce" onClick={() => agir(publierAnnonce)}>
-        📢 Publier une annonce maintenant (1 PA, 300 €)
+        📢 Publier une annonce maintenant (300 €)
       </button>
       <div className="candidats">
         {e.candidats.length === 0 && <p className="vide">Plus de candidats cette semaine.</p>}

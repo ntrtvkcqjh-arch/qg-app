@@ -11,6 +11,7 @@ import Associee from "./Associee";
 import Visiteurs from "./Visiteurs";
 import AileEst from "./AileEst";
 import Meteo from "./Meteo";
+import { FemmeDeMenage, LampesBureaux } from "./Soiree";
 import { CoucheEtiquettes, Projecteur } from "./Etiquettes";
 import { jourDe, minuteDuJour, moisDe } from "@/lib/calendrier";
 import { POLES } from "@/lib/data/developpement";
@@ -86,6 +87,11 @@ export default function Cabinet3D() {
     const t = Array(16).fill("");
     for (const a of e.agents) t[a.bureau] = POLES.find((p) => p.filiere === a.filiere)?.couleur ?? "";
     return t.join(",");
+  });
+  const postesAllumes = useJeu((s) => {
+    const e = s.etat;
+    if (!e || minuteDuJour(e.minute) < 18 * 60 + 45) return "";
+    return e.agents.filter((a) => a.activite === "travaille" && a.filiere !== "rh" && a.filiere !== "associe").map((a) => a.bureau).join(",");
   });
   const selection = useJeu((s) => s.selectionAgent);
   const selectionner = useJeu((s) => s.selectionner);
@@ -166,9 +172,11 @@ export default function Cabinet3D() {
         </Suspense>
         <Meteo type={meteo} largeurBatiment={aile ? 22 : 12} />
         {agents.map((a, i) => (
-          <Personnage key={a.id} agent={a} index={i} selectionne={selection === a.id} vitesseJeu={vitesse} onClick={selectionner} piecesOuvertes={piecesListe} />
+          <Personnage key={a.id} minute={minute} agent={a} index={i} selectionne={selection === a.id} vitesseJeu={vitesse} onClick={selectionner} piecesOuvertes={piecesListe} />
         ))}
         <Associee />
+        {postesAllumes && <LampesBureaux postes={postesAllumes.split(",").map(Number)} />}
+        {m >= 20 * 60 + 30 && m < 22 * 60 + 30 && <FemmeDeMenage pieces={piecesListe} />}
         <Visiteurs visiteurs={visiteurs} reunionOuverte={piecesListe.includes("reunion")} />
         <Projecteur />
       </Canvas>

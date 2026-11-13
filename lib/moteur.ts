@@ -21,7 +21,7 @@ import { CLIENTS_CREATION, CLIENTS_INITIAUX, CHEVEUX, COULEURS, EQUIPE_INITIALE,
 import { DILEMMES } from "@/lib/data/dilemmes";
 import { BADGES } from "@/lib/data/formation";
 import { MODELES } from "@/lib/data/messages";
-import { actionSpeciale, arriveeAssocie, debutJourneeExt, estTeletravail, facteurCompetence, facturer, finJourneeExt, horairesAgent, initSkills, migrerExt, noterArrivee, noterDepart, progresserSkill, quartAgent } from "@/lib/ext";
+import { actionSpeciale, arriveeAssocie, facteurSaison, debutJourneeExt, estTeletravail, facteurCompetence, facturer, finJourneeExt, horairesAgent, initSkills, migrerExt, noterArrivee, noterDepart, progresserSkill, quartAgent } from "@/lib/ext";
 import { ARCS } from "@/lib/data/arcs";
 import { article } from "@/lib/data/boutique";
 import { CAS } from "@/lib/data/cas";
@@ -81,8 +81,8 @@ export function nouvellePartie(difficulte: Difficulte, nomCabinet: string, mode:
     travailToi: null,
     minute: DEBUT_JOURNEE,
     vitesse: 1,
-    pa: r.pa,
-    paMax: r.pa,
+    pa: 999999,
+    paMax: 999999,
     gratuitsUtilises: 0,
     tresorerie: tresorerieDepart ?? (creation ? Math.round(r.tresorerie * 0.8) : r.tresorerie),
     reputation: creation ? 40 : 60,
@@ -309,6 +309,7 @@ export function envoyer(
     statut: niveau === 1 ? "info" : "attente",
     expire: ajouterJoursOuvres(jour, niveau >= 5 ? 1 : 3),
     theme,
+    canal: ["client_colere", "controle", "prospect"].includes(theme) ? (rnd() < 0.7 ? "appel" : "mail") : agent ? "interne" : "mail",
     ...extra,
   };
   e.messages.unshift(msg);
@@ -360,7 +361,9 @@ export function appliquerEffets(e: Etat, eff: Effets, ctx: { agent?: string; cli
   if (d && eff.progression) avancerDossier(e, d, eff.progression);
 }
 
-// ---------- coûts en PA ----------
+// ---------- coûts (anciens points d'action, désormais illimités) ----------
+
+export const SANS_LIMITE = 999999;
 
 export function coutMessage(e: Etat, niveau: Niveau): number {
   if (niveau <= 2) return e.gratuitsUtilises < 3 ? 0 : 1;
@@ -481,8 +484,7 @@ export function avancer(e: Etat, minutes: number) {
 
 function debutJournee(e: Etat) {
   const jour = jourDe(e.minute);
-  const r = REGLAGES[e.difficulte];
-  e.pa = e.paMax = r.pa;
+  e.pa = e.paMax = SANS_LIMITE; // les points d'action ont été supprimés
   e.gratuitsUtilises = 0;
   const lundi = dateDe(jour).getUTCDay() === 1;
 
@@ -879,7 +881,7 @@ function quart(e: Etat) {
     e.moodGlobal = clamp(e.moodGlobal + (moy - e.moodGlobal) * 0.02);
   }
 
-  evenements(e, r.evenements);
+  evenements(e, r.evenements * facteurSaison(e));
   mettreAJourVisiteurs(e);
 }
 
@@ -1431,6 +1433,7 @@ export function migrer(e: Etat): Etat {
   e.controleResultat ??= null;
   if (e.controleJour <= jourDe(e.minute)) e.controleJour = ouvreOuApres(e.controleJour + 365);
   migrerExt(e);
+  e.pa = e.paMax = SANS_LIMITE;
   return e;
 }
 

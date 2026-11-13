@@ -2229,3 +2229,51 @@ td.objectif .niveau-skill {
   font-weight: 600;
   font-size: 12.5px;
 }
+
+.telephone {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 55;
+  background: #121a2e;
+  color: white;
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--ombre);
+  animation: vibre 1.2s ease-in-out infinite;
+}
+.telephone div {
+  display: flex;
+  flex-direction: column;
+}
+.telephone small {
+  opacity: 0.7;
+  font-size: 11px;
+}
+.telephone .combine {
+  font-size: 26px;
+}
+.telephone .bouton:not(.principal-btn) {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+@keyframes vibre {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  5%,
+  15% {
+    transform: translateX(-3px);
+  }
+  10%,
+  20% {
+    transform: translateX(3px);
+  }
+  25% {
+    transform: translateX(0);
+  }
+}

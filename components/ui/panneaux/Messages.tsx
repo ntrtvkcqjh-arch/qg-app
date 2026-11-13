@@ -2,16 +2,25 @@
 
 import { useMemo, useState } from "react";
 import { dateCourte, heure } from "@/lib/calendrier";
-import { choisirDilemme, coutMessage, repondre, resoudreCas, versionsGhostWriter, type Style } from "@/lib/moteur";
+import { choisirDilemme, repondre, resoudreCas, versionsGhostWriter, type Style } from "@/lib/moteur";
 import { useJeu } from "@/lib/store";
 import type { Etat, Message } from "@/lib/types";
 
 const NIVEAU_LIB = ["", "N1", "N2", "N3", "N4", "N5"];
 
+const CANAL = { mail: "✉️", appel: "📞", interne: "💬" } as const;
+const canalDe = (m: Message) => m.canal ?? (m.de === "cabinet" ? "mail" : "interne");
+const adresse = (prenom: string, nom: string) =>
+  `${prenom}.${nom}`
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z.]/g, "") + "@cabinet-ez.fr";
+
 function expediteur(e: Etat, m: Message) {
-  if (m.de === "cabinet") return { nom: "Le cabinet", couleur: "#3d405b", initiales: "EZ" };
+  if (m.de === "cabinet") return { nom: "Le cabinet", couleur: "#3d405b", initiales: "EZ", mail: "secretariat@cabinet-ez.fr" };
   const a = e.agents.find((x) => x.id === m.de);
-  if (a) return { nom: `${a.prenom} ${a.nom}`, couleur: a.couleur, initiales: a.prenom[0] + a.nom[0] };
+  if (a) return { nom: `${a.prenom} ${a.nom}`, couleur: a.couleur, initiales: a.prenom[0] + a.nom[0], mail: adresse(a.prenom, a.nom) };
   return { nom: "Ancien collaborateur", couleur: "#999", initiales: "?" };
 }
 
@@ -29,14 +38,14 @@ export default function Messages() {
     <div>
       <div className="onglets">
         <button className={filtre === "attente" ? "actif" : ""} onClick={() => setFiltre("attente")}>
-          À traiter ({e.messages.filter((x) => x.statut === "attente").length})
+          📥 Boîte de réception · à traiter ({e.messages.filter((x) => x.statut === "attente").length})
         </button>
         <button className={filtre === "tous" ? "actif" : ""} onClick={() => setFiltre("tous")}>
           Tous
         </button>
       </div>
       <p className="aide">
-        N1/N2 : gratuits (3 par jour, {Math.max(0, 3 - e.gratuitsUtilises)} restants) · N3/N4 : 1 PA · N5 : 2 PA. Sans réponse
+        N1 à N5 : du moins urgent au plus urgent. Sans réponse
         avant l&apos;expiration, la confiance baisse.
       </p>
       {liste.length === 0 && <p className="vide">Rien à traiter. Profite du calme.</p>}
@@ -51,7 +60,8 @@ export default function Messages() {
                 </span>
                 <span className="contenu">
                   <span className="haut">
-                    <strong>{ex.nom}</strong>
+                    <span title={canalDe(x) === "appel" ? "Appel téléphonique" : canalDe(x) === "mail" ? "E-mail" : "Message interne"}>{CANAL[canalDe(x)]}</span>
+                    <strong>{canalDe(x) === "appel" ? (x.lu ? "Appel" : "Appel manqué") : ex.nom}</strong>
                     <span className={`niveau-badge n${x.niveau}`}>{NIVEAU_LIB[x.niveau]}</span>
                     <small>
                       {dateCourte(x.jour)} {heure(x.minute)}
@@ -77,7 +87,6 @@ function Detail({ m, retour }: { m: Message; retour: () => void }) {
   const [brouillon, setBrouillon] = useState("");
   const [style, setStyle] = useState<Style>("standard");
   const ex = expediteur(e, m);
-  const cout = coutMessage(e, m.niveau);
   const versions = useMemo(() => versionsGhostWriter(e, m, brouillon), [e, m, brouillon]);
   const peutRepondre = m.statut === "attente" || (m.statut === "info" && ["rumeur", "merci"].includes(m.theme));
 
@@ -91,7 +100,8 @@ function Detail({ m, retour }: { m: Message; retour: () => void }) {
           {ex.initiales}
         </span>
         <div>
-          <strong>{ex.nom}</strong>
+          <strong>{canalDe(m) === "appel" ? "📞 Appel téléphonique" : ex.nom}</strong>
+          {canalDe(m) !== "appel" && "mail" in ex && <small>{CANAL[canalDe(m)]} {ex.mail}</small>}
           <small>
             {dateCourte(m.jour)} à {heure(m.minute)} · <span className={`niveau-badge n${m.niveau}`}>{NIVEAU_LIB[m.niveau]}</span>
             {m.statut === "attente" && <> · expire le {dateCourte(m.expire)}</>}
@@ -112,9 +122,8 @@ function Detail({ m, retour }: { m: Message; retour: () => void }) {
         <div className="options-dilemme">
           <h4>Que décides-tu ?</h4>
           {m.dilemme.options.map((o, i) => (
-            <button key={i} className="option" disabled={e.pa < o.cout} onClick={() => agir(choisirDilemme, m.id, i)}>
+            <button key={i} className="option" onClick={() => agir(choisirDilemme, m.id, i)}>
               <span>{o.label}</span>
-              <em>{o.cout === 0 ? "Gratuit" : `${o.cout} PA`}</em>
             </button>
           ))}
           <p className="aide">Chaque choix a une conséquence immédiate… et une autre, invisible, qui tombera plus tard.</p>
@@ -143,14 +152,12 @@ function Detail({ m, retour }: { m: Message; retour: () => void }) {
           </div>
           <button
             className="bouton principal-btn"
-            disabled={e.pa < cout}
             onClick={() => {
               agir(repondre, m.id, style, versions[style]);
             }}
           >
-            Envoyer {cout === 0 ? "(gratuit)" : `(${cout} PA)`}
+            Envoyer
           </button>
-          {e.pa < cout && <p className="aide">Plus assez de PA aujourd&apos;hui. Ils reviennent demain matin.</p>}
         </div>
       )}
     </div>
@@ -189,7 +196,7 @@ function Cas({ m }: { m: Message }) {
           <p>{cas.explication}</p>
         </div>
       )}
-      {!montre && <p className="aide">Gratuit (pas de PA). Bonne réponse : le dossier avance et ton collaborateur progresse.</p>}
+      {!montre && <p className="aide">Bonne réponse : le dossier avance et ton collaborateur progresse.</p>}
     </div>
   );
 }

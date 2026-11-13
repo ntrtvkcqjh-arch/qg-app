@@ -16,8 +16,7 @@ export default function Demandes() {
   return (
     <div>
       <p className="aide">
-        Prospects et clients te sollicitent. À toi de choisir selon ta charge : accepter un nouveau client coûte 1 PA (rendez-vous et
-        lettre de mission). Les vérifications d&apos;usage (identité, bénéficiaire effectif) protègent le cabinet et comptent au
+        Prospects et clients te sollicitent. À toi de choisir selon ta charge : Les vérifications d&apos;usage (identité, bénéficiaire effectif) protègent le cabinet et comptent au
         contrôle qualité. Un prospect venu en personne n&apos;attend que jusqu&apos;au soir.
       </p>
       {surcharge.length > 0 && (
@@ -54,10 +53,10 @@ export default function Demandes() {
                 {p.nouveau ? (
                   <>
                     <button className="bouton principal-btn petit" onClick={() => agir(accepterProposition, p.id, true)}>
-                      🔎 Vérifier puis accepter (1 PA)
+                      🔎 Vérifier puis accepter
                     </button>
                     <button className="bouton petit" onClick={() => agir(accepterProposition, p.id, false)}>
-                      Accepter directement (1 PA)
+                      Accepter directement
                     </button>
                   </>
                 ) : (

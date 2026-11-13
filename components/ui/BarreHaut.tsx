@@ -41,12 +41,6 @@ export default function BarreHaut() {
         </button>
       )}
       <div className="bh-stats">
-        <div className="pa" title="Points d'action du jour">
-          {Array.from({ length: e.paMax }).map((_, i) => (
-            <span key={i} className={i < e.pa ? "plein" : ""} />
-          ))}
-          <em>PA</em>
-        </div>
         <Stat label="Mood" valeur={Math.round(e.moodGlobal)} couleur={e.moodGlobal > 60 ? "vert" : e.moodGlobal > 40 ? "orange" : "rouge"} />
         <Stat label="Réputation" valeur={Math.round(e.reputation)} couleur="bleu" />
         <div className="tresorerie" title="Trésorerie">
