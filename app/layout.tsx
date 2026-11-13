@@ -1,23 +1,18 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: { default: "QG", template: "%s · QG" },
-  description: "Le QG de Marjana",
-  robots: { index: false, follow: false },
-  appleWebApp: { capable: true, title: "QG", statusBarStyle: "default" },
-};
+const inter = Inter({ subsets: ["latin"], variable: "--police" });
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  viewportFit: "cover",
-  themeColor: "#FBFAF7",
+export const metadata: Metadata = {
+  title: "Cabinet EZ",
+  description: "Simulation de cabinet d'expertise comptable pour préparer le DEC.",
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
+    <html lang="fr" className={inter.variable}>
       <body>{children}</body>
     </html>
   );

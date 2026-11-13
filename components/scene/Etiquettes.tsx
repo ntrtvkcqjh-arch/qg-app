@@ -1,0 +1,91 @@
+"use client";
+
+import { useFrame, useThree } from "@react-three/fiber";
+import { Vector3 } from "three";
+import { PIECES } from "@/lib/plan";
+import { useJeu } from "@/lib/store";
+import { ETIQUETTES, POSITIONS } from "./positions";
+
+const v = new Vector3();
+
+/** À placer dans le <Canvas> : projette les positions 3D vers l'écran. */
+export function Projecteur() {
+  const size = useThree((s) => s.size);
+  useFrame(({ camera }) => {
+    for (const [cle, el] of ETIQUETTES) {
+      let p: { x: number; y: number; z: number; visible: boolean } | undefined;
+      if (cle.startsWith("p:")) {
+        const piece = PIECES.find((x) => x.id === cle.slice(2));
+        if (piece)
+          p = {
+            x: (piece.x0 + piece.x1) / 2,
+            y: 0.05,
+            z: piece.z1 - 0.5,
+            visible: true,
+          };
+      } else p = POSITIONS.get(cle.slice(2));
+      if (!p || !p.visible) {
+        el.style.visibility = "hidden";
+        continue;
+      }
+      v.set(p.x, p.y, p.z).project(camera);
+      const x = ((v.x + 1) / 2) * size.width;
+      const y = ((1 - v.y) / 2) * size.height;
+      el.style.visibility = "visible";
+      el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, ${cle.startsWith("p:") ? "-50%" : "-100%"})`;
+    }
+  });
+  return null;
+}
+
+const enregistrer = (cle: string) => (el: HTMLElement | null) => {
+  if (el) ETIQUETTES.set(cle, el);
+  else ETIQUETTES.delete(cle);
+};
+
+/** Couche HTML au-dessus du canvas : noms, bulles et noms des pièces. */
+export function CoucheEtiquettes() {
+  const agents = useJeu((s) => s.etat?.agents ?? []);
+  const selection = useJeu((s) => s.selectionAgent);
+  const selectionner = useJeu((s) => s.selectionner);
+  const selectionnerPiece = useJeu((s) => s.selectionnerPiece);
+
+  return (
+    <div className="couche-etiquettes">
+      {PIECES.map((p) => (
+        <button
+          key={p.id}
+          ref={enregistrer(`p:${p.id}`)}
+          className="etiquette-piece pos"
+          onClick={() => selectionnerPiece(p.id)}
+        >
+          {p.nom}
+        </button>
+      ))}
+      {agents.map((a) => (
+        <div
+          key={a.id}
+          ref={enregistrer(`a:${a.id}`)}
+          className="etiquette pos"
+          onClick={() => selectionner(a.id)}
+        >
+          {a.bulle && <div className="bulle">{a.bulle}</div>}
+          <div className={`nom ${selection === a.id ? "actif" : ""}`}>
+            <span
+              className="pastille"
+              style={{
+                background:
+                  a.stress > 70
+                    ? "#e4572e"
+                    : a.stress > 45
+                      ? "#f2a541"
+                      : "#43aa8b",
+              }}
+            />
+            {a.prenom}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
