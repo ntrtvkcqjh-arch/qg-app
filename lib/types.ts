@@ -254,6 +254,8 @@ export type CasPratique = {
   choix: string[];
   bonne: number;
   explication: string;
+  cle?: string; // identifiant de la question (répétition espacée)
+  saisie?: { reponse: number; tolerance: number; unite: string }; // question de calcul à saisir
 };
 
 export type NoteCarnet = { theme: string; question: string; explication: string; jour: number };
@@ -410,7 +412,8 @@ export type Etat = {
   controles?: { id: string; client: string; etape: number; prochain: number; score: number; rappel: number }[]; // contrôles fiscaux de clients
   logiciels?: { production: number; paie: number; pdp: number; migrationJusqua: number };
   agenda?: { semaine: number; blocs: { id: string; jour: number; creneau: number; type: "rdv" | "reunion" | "signature" | "banque" | "production"; titre: string; ref?: string }[] };
-  questionsVues?: string[]; // dernières questions DEC posées (évite les répétitions)
+  questionsVues?: string[];
+  aRevoir?: { cle: string; jour: number; niveau: number }[]; // répétition espacée des questions ratées // dernières questions DEC posées (évite les répétitions)
   dateDec: number; // jour de l'épreuve écrite visée
   memoire: Memoire;
   chefsPoles: Partial<Record<Filiere, string>>;

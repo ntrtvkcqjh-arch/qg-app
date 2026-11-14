@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { dateCourte, heure } from "@/lib/calendrier";
-import { choisirDilemme, repondre, resoudreCas, versionsGhostWriter, type Style } from "@/lib/moteur";
+import { choisirDilemme, repondre, resoudreCas, resoudreSaisie, versionsGhostWriter, type Style } from "@/lib/moteur";
 import { resoudreRevue } from "@/lib/vie3";
 import { useJeu } from "@/lib/store";
 import type { Etat, Message } from "@/lib/types";
@@ -172,10 +172,32 @@ export function Detail({ m, retour }: { m: Message; retour?: () => void }) {
 function Cas({ m }: { m: Message }) {
   const agir = useJeu((s) => s.agir);
   const [choix, setChoix] = useState<number | null>(null);
+  const [saisie, setSaisie] = useState("");
   const cas = m.cas!;
   const repondu = m.statut !== "attente";
   const reponseIndex = repondu ? cas.choix.indexOf(m.reponse ?? "") : choix;
   const montre = repondu || choix !== null;
+  if (cas.saisie)
+    return (
+      <div className="cas-pratique">
+        <h4>🧮 Calcul — {cas.theme}</h4>
+        <p className="enonce">{cas.enonce}</p>
+        <form
+          className="saisie-calcul"
+          onSubmit={(ev) => {
+            ev.preventDefault();
+            agir(resoudreSaisie, m.id, Number(saisie.replace(/\s/g, "").replace(",", ".")));
+          }}
+        >
+          <input inputMode="decimal" autoFocus placeholder="Ta réponse" value={saisie} onChange={(ev) => setSaisie(ev.target.value)} disabled={repondu} />
+          <span>{cas.saisie.unite}</span>
+          <button className="bouton principal-btn" type="submit" disabled={repondu || !saisie.trim()}>
+            Valider
+          </button>
+        </form>
+        <p className="aide">Saisis le résultat (les arrondis à l&apos;unité près sont acceptés). Comme à l&apos;écrit du DEC, prends le temps de poser le calcul.</p>
+      </div>
+    );
   return (
     <div className="cas-pratique">
       <h4>🧮 Cas pratique — {cas.theme}</h4>

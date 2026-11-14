@@ -25,6 +25,8 @@ import { facteurMeteo, fatiguerToi } from "@/lib/vie2";
 import { facteurAgent, genererRevue, migrerCarriere } from "@/lib/vie3";
 import { facteurOutils, lettreDeMission } from "@/lib/vie4";
 import { actionVie, debutJourneeVie, nouvelleRecrue, potDeDepart, quartVie, rendezVousClient } from "@/lib/vie";
+import { enregistrerThemes } from "@/lib/ext";
+import { CALCULS } from "@/lib/data/calculs";
 import { actionSpeciale, arriveeAssocie, facteurSaison, debutJourneeExt, estTeletravail, facteurCompetence, facturer, finJourneeExt, horairesAgent, initSkills, migrerExt, noterArrivee, noterDepart, progresserSkill, quartAgent } from "@/lib/ext";
 import { ARCS } from "@/lib/data/arcs";
 import { article } from "@/lib/data/boutique";
@@ -446,7 +448,9 @@ const THEMES_MISSION: Record<TypeMission, string[]> = {
   audit: ["Audit", "Principes", "Déontologie"],
 };
 
-type QuestionPool = { theme: string; question: string; choix: string[]; bonne: number; explication: string; s?: string[] };
+type QuestionPool = { theme: string; question: string; choix: string[]; bonne: number; explication: string; s?: string[]; saisie?: { reponse: number; tolerance: number; unite: string } };
+
+const CALCULS_POOL: QuestionPool[] = CALCULS.map((q) => ({ theme: q.theme, question: q.question, choix: [String(q.reponse), "Réponse erronée"], bonne: 0, explication: q.explication, s: q.s, saisie: { reponse: q.reponse, tolerance: q.tolerance, unite: q.unite } }));
 
 /** Choisit une question DEC adaptée au type de mission et au secteur du client, sans répéter les dernières. */
 export function choisirQuestion(e: Etat, themes: string[] | null, clientId: string | null | undefined) {
@@ -459,6 +463,26 @@ export function choisirQuestion(e: Etat, themes: string[] | null, clientId: stri
   ];
   const vues = new Set(e.questionsVues ?? []);
   const cle = (x: QuestionPool) => x.question.slice(0, 60);
+  const nom = c?.nom ?? "le client";
+  const sortie = (q: QuestionPool) => {
+    e.questionsVues = [...(e.questionsVues ?? []), cle(q)].slice(-60);
+    return { theme: q.theme, enonce: q.question.replace(/\{client\}/g, nom), choix: q.choix, bonne: q.bonne, explication: q.explication, cle: cle(q), ...(q.saisie ? { saisie: q.saisie } : {}) };
+  };
+  // Répétition espacée : une notion ratée revient au bout de 1, puis 3, 7 et 21 jours.
+  const jour = jourDe(e.minute);
+  const dues = (e.aRevoir ?? []).filter((x) => x.jour <= jour);
+  if (dues.length && rnd() < 0.5) {
+    const tout = [...base, ...CALCULS_POOL];
+    const q = tout.find((x) => cle(x) === dues[0].cle);
+    if (q) return sortie(q);
+  }
+  // Un contrôle sur trois est un calcul à saisir, comme à l'écrit.
+  if (rnd() < 0.33) {
+    const calc = CALCULS_POOL.filter((x) => (!themes || themes.includes(x.theme)) && (!x.s || (secteur && x.s.includes(secteur))));
+    const parSecteur = calc.filter((x) => secteur && x.s?.includes(secteur));
+    const l = parSecteur.length && rnd() < 0.6 ? parSecteur : calc;
+    if (l.length) return sortie(pick(neuvesCalc(l, vues, cle)));
+  }
   const neuves = (l: QuestionPool[]) => (l.filter((x) => !vues.has(cle(x))).length ? l.filter((x) => !vues.has(cle(x))) : l);
   const duTheme = themes ? base.filter((x) => themes.includes(x.theme)) : base;
   const duSecteur = secteur ? base.filter((x) => x.s?.includes(secteur)) : [];
@@ -469,10 +493,43 @@ export function choisirQuestion(e: Etat, themes: string[] | null, clientId: stri
   else if (duSecteur.length && r < 0.8) pool = duSecteur;
   else pool = duTheme.filter((x) => !x.s || (secteur && x.s.includes(secteur)));
   if (!pool.length) pool = duTheme.length ? duTheme : base;
-  const q = pick(neuves(pool));
-  e.questionsVues = [...(e.questionsVues ?? []), cle(q)].slice(-60);
-  const nom = c?.nom ?? "le client";
-  return { theme: q.theme, enonce: q.question.replace(/\{client\}/g, nom), choix: q.choix, bonne: q.bonne, explication: q.explication };
+  return sortie(pick(neuves(pool)));
+}
+
+function neuvesCalc(l: QuestionPool[], vues: Set<string>, cle: (x: QuestionPool) => string) {
+  const n = l.filter((x) => !vues.has(cle(x)));
+  return n.length ? n : l;
+}
+
+/** Met à jour la répétition espacée et les statistiques de maîtrise après une réponse. */
+function suiviApprentissage(e: Etat, theme: string, cle: string | undefined, bon: boolean) {
+  enregistrerThemes(e, [{ theme, ok: bon }]);
+  if (!cle) return;
+  const jour = jourDe(e.minute);
+  const liste = (e.aRevoir ??= []);
+  const x = liste.find((y) => y.cle === cle);
+  if (!bon) {
+    if (x) {
+      x.niveau = 0;
+      x.jour = jour + 1;
+    } else liste.push({ cle, jour: jour + 1, niveau: 0 });
+  } else if (x) {
+    x.niveau++;
+    if (x.niveau >= 4) e.aRevoir = liste.filter((y) => y !== x);
+    else x.jour = jour + [1, 3, 7, 21][x.niveau];
+  }
+  if (e.aRevoir!.length > 80) e.aRevoir = e.aRevoir!.slice(-80);
+}
+
+/** Réponse à une question de calcul saisie au clavier. */
+export function resoudreSaisie(e: Etat, msgId: string, valeur: number): string | null {
+  const m = e.messages.find((x) => x.id === msgId);
+  if (!m || !m.cas?.saisie || m.statut !== "attente") return "Cette question est déjà traitée.";
+  if (!Number.isFinite(valeur)) return "Saisis un nombre.";
+  const ok = Math.abs(valeur - m.cas.saisie.reponse) <= m.cas.saisie.tolerance;
+  const r = resoudreCas(e, msgId, ok ? 0 : 1);
+  m.reponse = ok ? m.cas.choix[0] : `${valeur.toLocaleString("fr-FR")} ${m.cas.saisie.unite}`.trim();
+  return r;
 }
 
 function questionPour(e: Etat, d: Dossier) {
@@ -1880,6 +1937,7 @@ export function resoudreCas(e: Etat, msgId: string, choix: number): string | nul
   const bon = choix === m.cas.bonne;
   m.statut = "repondu";
   m.reponse = m.cas.choix[choix];
+  suiviApprentissage(e, m.cas.theme, m.cas.cle, bon);
   const d = e.dossiers.find((x) => x.id === m.dossier);
   const a = e.agents.find((x) => x.id === m.de);
   if (m.theme === "validation") {

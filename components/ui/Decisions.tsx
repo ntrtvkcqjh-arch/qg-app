@@ -47,7 +47,8 @@ export default function Decisions() {
     let texte = "✔ Décision enregistrée.";
     if (courant.cas) {
       const bon = courant.reponse === courant.cas.choix[courant.cas.bonne];
-      texte = `${bon ? "✔ Bonne réponse" : `✘ Raté — la bonne réponse : ${courant.cas.choix[courant.cas.bonne]}`}. ${courant.cas.explication}`;
+      const attendu = courant.cas.saisie ? `${courant.cas.saisie.reponse.toLocaleString("fr-FR")} ${courant.cas.saisie.unite}`.trim() : courant.cas.choix[courant.cas.bonne];
+      texte = `${bon ? "✔ Bonne réponse" : `✘ Raté — la bonne réponse : ${attendu}`}. ${courant.cas.explication}${bon ? "" : " 🔁 Cette notion reviendra dans quelques jours ; la fiche est dans Mon DEC."}`;
     } else if (courant.revue) {
       texte = courant.reponse ?? texte;
     } else if (courant.dilemme) {

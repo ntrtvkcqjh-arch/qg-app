@@ -2632,3 +2632,22 @@ td.objectif .niveau-skill {
 .comptes .num { text-align: right; font-variant-numeric: tabular-nums; }
 .comptes tr.total td { font-weight: 700; background: #f7f8fb; }
 .bilan-deux { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Apprentissage DEC */
+.onglets-dec { flex-wrap: wrap; }
+.saisie-calcul { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+.saisie-calcul input { flex: 1; font-size: 18px; padding: 10px 12px; border-radius: 10px; border: 2px solid #2f5bea; font-variant-numeric: tabular-nums; }
+.saisie-calcul span { font-weight: 700; color: #3d405b; }
+.ligne-maitrise { display: grid; grid-template-columns: 130px 1fr 48px 52px; gap: 8px; align-items: center; font-size: 13px; margin-bottom: 6px; }
+.ligne-maitrise .jauge { height: 8px; background: #eef0f5; border-radius: 99px; overflow: hidden; }
+.ligne-maitrise .jauge div { height: 100%; }
+.ligne-maitrise small { color: #6b7385; }
+.fiche-cours { border: 1px solid #e6e9f0; border-radius: 12px; margin-bottom: 8px; background: #fff; }
+.fiche-cours > button { width: 100%; display: flex; justify-content: space-between; align-items: center; background: none; border: 0; padding: 10px 12px; cursor: pointer; font: inherit; text-align: left; }
+.fiche-cours > div { padding: 0 14px 12px; font-size: 13px; line-height: 1.55; }
+.fiche-cours ul { padding-left: 18px; margin: 0 0 6px; }
+.fiche-cours small { color: #6b7385; }
+.glossaire input { width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid #dfe3ec; margin-bottom: 10px; font: inherit; }
+.glossaire dl { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.glossaire dt { font-weight: 700; }
+.glossaire dd { margin: 0; font-size: 13px; color: #3d405b; }

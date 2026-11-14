@@ -5,6 +5,7 @@ import { JURY, soutenir } from "@/lib/vie3";
 import { useJeu } from "@/lib/store";
 import DecPlan from "./DecPlan";
 import Examen from "./Examen";
+import { ARevoir, Fiches, Glossaire, Maitrise } from "./Apprendre";
 
 // Ton DEC : mémoire étape par étape (avec ton directeur de mémoire), puis
 // soutenance devant le jury.
@@ -12,9 +13,40 @@ import Examen from "./Examen";
 export default function Memoire() {
   const e = useJeu((s) => s.etat)!;
   const [jury, setJury] = useState(false);
+  const [onglet, setOnglet] = useState<"memoire" | "examen" | "maitrise" | "fiches" | "revoir" | "glossaire">("memoire");
   const diplomee = !!e.compteurs.diplomee;
+  const onglets = (
+    <div className="onglets onglets-dec">
+      {(
+        [
+          ["memoire", "📘 Mémoire"],
+          ["examen", "📝 Examen blanc"],
+          ["maitrise", "📊 Maîtrise"],
+          ["fiches", "📚 Fiches"],
+          ["revoir", `🔁 À revoir (${(e.aRevoir ?? []).length})`],
+          ["glossaire", "🔤 Glossaire"],
+        ] as const
+      ).map(([k, l]) => (
+        <button key={k} className={onglet === k ? "actif" : ""} onClick={() => setOnglet(k)}>
+          {l}
+        </button>
+      ))}
+    </div>
+  );
+  if (onglet !== "memoire")
+    return (
+      <div>
+        {onglets}
+        {onglet === "examen" && <Examen />}
+        {onglet === "maitrise" && <Maitrise />}
+        {onglet === "fiches" && <Fiches />}
+        {onglet === "revoir" && <ARevoir />}
+        {onglet === "glossaire" && <Glossaire />}
+      </div>
+    );
   return (
     <div>
+      {onglets}
       {diplomee ? (
         <div className="diplome">
           <span>🎓</span>
@@ -44,7 +76,6 @@ export default function Memoire() {
         </button>
       )}
       {jury && <Soutenance fin={() => setJury(false)} />}
-      {!jury && <Examen />}
       {!jury && <DecPlan />}
     </div>
   );
