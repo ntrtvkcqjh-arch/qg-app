@@ -180,6 +180,8 @@ export type Client = {
   taille?: number; // 1 TPE, 2 PME, 3 ETI (le client grandit)
   manager?: string; // senior, manager ou associé qui suit le client (portefeuille)
   abonnement?: number; // abonnement de conseil : 1 Pilotage, 2 Stratégie, 3 Direction financière externalisée
+  mission?: "cac" | "juridique"; // client hors tenue : mandat de commissaire aux comptes ou secrétariat juridique seul
+  mandat?: number; // honoraires annuels du mandat (CAC ou juridique)
   historique?: { jour: number; texte: string }[];
 };
 

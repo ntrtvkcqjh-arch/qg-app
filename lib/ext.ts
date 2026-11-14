@@ -581,7 +581,7 @@ function concurrentsDuMois(e: Etat, jour: number) {
 
 export function messageSpecial(e: Etat, de: string, niveau: 1 | 2 | 3 | 4 | 5, sujet: string, texte: string, dossier: string, payload: Record<string, string | number>, options: OptionDilemme[]) {
   // Mode calme : une partie des événements secondaires n'arrive pas.
-  if (niveau <= 3 && !sujet.startsWith("✍️") && rnd() > (e.compteurs.frequence ?? 100) / 100) return;
+  if (niveau <= 3 && !sujet.startsWith("✍️") && rnd() > (e.compteurs.frequence ?? 50) / 100) return;
   const jour = jourDe(e.minute);
   e.messages.unshift({
     id: uid(e, "m"),

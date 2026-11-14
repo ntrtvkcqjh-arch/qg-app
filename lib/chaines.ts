@@ -638,10 +638,10 @@ export function chainesDuMois(e: Etat) {
     ["perte_client", 0.015, n >= 10],
   ];
   let lancees = 0;
-  const intense = (e.compteurs.frequence ?? 100) > 100;
+  const intense = (e.compteurs.frequence ?? 50) > 100;
   for (const [type, p, ok] of tirages) {
     if (lancees >= 2) break;
-    if (ok && rnd() < p * (intense ? 1.8 : (e.compteurs.frequence ?? 100) / 100) && !lancerChaine(e, type)) lancees++;
+    if (ok && rnd() < p * (intense ? 1.8 : (e.compteurs.frequence ?? 50) / 100) && !lancerChaine(e, type)) lancees++;
   }
 }
 

@@ -207,6 +207,7 @@ export function proposerAbonnement(e: Etat, clientId: string, idx: number): stri
   const c = e.clients.find((x) => x.id === clientId);
   const a = ABONNEMENTS[idx];
   if (!c || !a) return null;
+  if (c.mission === "cac") return `Impossible : tu es commissaire aux comptes de ${c.nom}. L'indépendance interdit de lui vendre du conseil.`;
   const jour = jourDe(e.minute);
   if ((c.abonnement ?? 0) > idx) return `${c.nom} a déjà un abonnement de niveau supérieur.`;
   if ((e.compteurs[`abo:${c.id}`] ?? -99) > jour - 30) return `${c.nom} a déjà reçu une proposition d'abonnement ce mois-ci.`;
@@ -256,7 +257,7 @@ const SITUATIONS: { titre: string; texte: string; options: [string, number][] }[
 ];
 
 function comitesStrategiques(e: Etat) {
-  const abonnes = e.clients.filter((c) => (c.abonnement ?? 0) >= 2);
+  const abonnes = e.clients.filter((c) => (c.abonnement ?? 0) >= 2 && c.mission !== "cac");
   for (const c of abonnes.sort(() => rnd() - 0.5).slice(0, 2)) {
     const s = pick(SITUATIONS);
     const ordre = s.options.map((_, i) => i).sort(() => rnd() - 0.5);
@@ -290,6 +291,7 @@ export function proposerMission(e: Etat, clientId: string, idx: number, premium:
   const c = e.clients.find((x) => x.id === clientId);
   const m = MISSIONS_CONSEIL[idx];
   if (!c || !m) return null;
+  if (c.mission === "cac") return `Impossible : tu es commissaire aux comptes de ${c.nom}. L'indépendance interdit de lui vendre du conseil.`;
   const jour = jourDe(e.minute);
   if ((e.compteurs[`vente:${c.id}`] ?? -99) > jour - 30) return `${c.nom} a déjà reçu une proposition ce mois-ci.`;
   e.compteurs[`vente:${c.id}`] = jour;
@@ -315,7 +317,7 @@ export function proposerMission(e: Etat, clientId: string, idx: number, premium:
 
 /** Chaque mois, tes managers repèrent des opportunités de conseil. */
 function opportunites(e: Etat) {
-  const cibles = e.clients.filter((c) => c.satisfaction > 55 && (e.compteurs[`vente:${c.id}`] ?? -99) < jourDe(e.minute) - 30);
+  const cibles = e.clients.filter((c) => c.mission !== "cac" && c.satisfaction > 55 && (e.compteurs[`vente:${c.id}`] ?? -99) < jourDe(e.minute) - 30);
   for (let k = 0; k < 4 && cibles.length; k++) {
     const c = cibles.splice(Math.floor(rnd() * cibles.length), 1)[0];
     const idx = (c.taille ?? 1) >= 2 ? pick([3, 4, 5, 6, 9, 10, 11]) : pick([0, 1, 2, 7, 8, 12]);

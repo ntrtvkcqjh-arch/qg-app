@@ -14,30 +14,52 @@ import { Detail } from "./panneaux/Messages";
 const aTraiter = (m: Message) => m.statut === "attente" || (m.statut === "info" && !m.lu);
 const priorite = (m: Message) => (m.theme === "validation" ? 3.5 : m.niveau);
 
+// Mode zen : au plus une ouverture automatique toutes les 2 heures de jeu (120 s),
+// sauf urgence (niveau 4-5). Le reste attend dans la cloche.
+const ECART_ZEN = 120_000;
+
 export default function Decisions() {
   const messages = useJeu((s) => s.etat?.messages);
+  const zen = useJeu((s) => s.etat?.compteurs.popupsTous !== 1);
   const courantId = useJeu((s) => s.messageOuvert);
   const ouvrirMessage = useJeu((s) => s.ouvrirMessage);
   const notifier = useJeu((s) => s.notifier);
   const reunion = useJeu((s) => s.reunionOuverte || s.timelapse || s.bilanAnnee || tutorielActif(s.etat) || (!!s.etat && s.etat.compteurs.matinVu !== jourDe(s.etat.minute) && minuteDuJour(s.etat.minute) >= 480 && minuteDuJour(s.etat.minute) <= 720));
   const [masque, setMasque] = useState(false);
   const pauseJusqua = useRef(0);
+  const prochaineAuto = useRef(0);
   const vus = useRef(new Set<string>());
+  const [, setTic] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTic((x) => x + 1), 5000);
+    return () => clearInterval(t);
+  }, []);
 
-  const file = (messages ?? []).filter(aTraiter).sort((a, b) => priorite(b) - priorite(a) || a.jour * 1440 + a.minute - (b.jour * 1440 + b.minute));
+  const file = (messages ?? []).filter((m) => aTraiter(m) && !(zen && m.statut === "info")).sort((a, b) => priorite(b) - priorite(a) || a.jour * 1440 + a.minute - (b.jour * 1440 + b.minute));
   const courant = messages?.find((m) => m.id === courantId) ?? null;
 
   // Une nouvelle décision importante rouvre la fenêtre.
   useEffect(() => {
     const nouvelles = file.filter((m) => !vus.current.has(m.id));
     for (const m of nouvelles) vus.current.add(m.id);
-    if (nouvelles.some((m) => m.niveau >= 3 || m.theme === "validation")) setMasque(false);
-  }, [file]);
+    if (!zen && nouvelles.some((m) => m.niveau >= 3 || m.theme === "validation")) setMasque(false);
+  }, [file, zen]);
 
   // Ouvre automatiquement la première décision en attente (après une courte pause).
+  // En zen : seulement l'important, et pas plus d'une fois toutes les 2 heures de jeu.
   useEffect(() => {
-    if (!reunion && !masque && !courant && file.length && Date.now() > pauseJusqua.current) ouvrirMessage(file[0].id);
-  }, [reunion, masque, courant, file, ouvrirMessage]);
+    if (reunion || courant || !file.length || Date.now() < pauseJusqua.current) return;
+    if (!zen) {
+      if (!masque) ouvrirMessage(file[0].id);
+      return;
+    }
+    const urgent = file.find((m) => m.niveau >= 4 && m.statut === "attente");
+    const important = file.find((m) => m.statut === "attente" && (m.niveau >= 3 || m.theme === "validation"));
+    const cible = urgent ?? (!masque && Date.now() > prochaineAuto.current ? important : undefined);
+    if (!cible) return;
+    prochaineAuto.current = Date.now() + ECART_ZEN;
+    ouvrirMessage(cible.id);
+  });
 
   // Une fois la réponse donnée, la fenêtre se ferme toute seule et le
   // résultat (avec la correction pour les questions DEC) s'affiche en bandeau.
@@ -75,7 +97,7 @@ export default function Decisions() {
           ouvrirMessage(file[0].id);
         }}
       >
-        🔔 {file.length} décision{file.length > 1 ? "s" : ""} en attente
+        {zen ? "📬" : "🔔"} {file.length} décision{file.length > 1 ? "s" : ""} en attente
       </button>
     );
   }
@@ -94,6 +116,7 @@ export default function Decisions() {
             className="bouton"
             onClick={() => {
               setMasque(true);
+              setTimeout(() => setMasque(false), 3 * ECART_ZEN);
               ouvrirMessage(null);
             }}
           >

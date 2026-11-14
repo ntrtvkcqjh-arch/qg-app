@@ -74,6 +74,7 @@ export default function Clients() {
                 <small>
                   {x.secteur} · {TAILLE[x.taille ?? 1]}
                   {x.abonnement ? " · 📈 abonné conseil" : ""}
+                  {x.mission === "cac" ? " · 🔍 mandat CAC" : x.mission === "juridique" ? " · ⚖️ juridique seul" : ""}
                 </small>
               </span>
               <span className="sat">
@@ -82,7 +83,7 @@ export default function Clients() {
                 </span>
                 {x.satisfaction < 40 && <em>⚠️ risque de départ</em>}
               </span>
-              <span className="forfait">{euros(x.forfait)}/mois</span>
+              <span className="forfait">{x.mission ? `${euros(x.mandat ?? 0)}/an` : `${euros(x.forfait)}/mois`}</span>
             </button>
           </li>
         ))}
@@ -120,8 +121,8 @@ function FicheClient({ id, retour }: { id: string; retour: () => void }) {
           <strong>{humeur}</strong>
         </div>
         <div className="kpi">
-          <span>Forfait</span>
-          <strong>{euros(c.forfait)}</strong>
+          <span>{c.mission === "cac" ? "Mandat CAC" : c.mission === "juridique" ? "Juridique" : "Forfait"}</span>
+          <strong>{c.mission ? `${euros(c.mandat ?? 0)}/an` : euros(c.forfait)}</strong>
         </div>
         <div className="kpi">
           <span>Rentabilité</span>

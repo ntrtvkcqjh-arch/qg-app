@@ -20,7 +20,15 @@ const jourSemaine = (jour: number) => dateDe(jour).getUTCDay();
 export function lettreDeMission(e: Etat, c: Client) {
   const t = (e.compteurs.tarif ?? 100) / 100;
   if (t !== 1) c.forfait = Math.round((c.forfait * t) / 50) * 50;
-  messageSpecial(e, "cabinet", 3, `✍️ Lettre de mission — ${c.nom}`, `${c.dirigeant} est prêt·e à signer. Comment rédiges-tu la lettre de mission (${euros(c.forfait)} / mois) ?`, `client:${c.id}|agent:`, {}, [
+  if (c.mission === "cac") {
+    messageSpecial(e, "cabinet", 3, `🔍 Acceptation du mandat de CAC — ${c.nom}`, `Avant d'accepter le mandat de ${c.nom} (${euros(c.mandat ?? 0)} par exercice), que fais-tu ?`, `client:${c.id}|agent:`, {}, [
+      opt("Vérifier l'indépendance (aucune tenue, aucun conseil, pas de lien avec le dirigeant), contacter le prédécesseur, puis lettre de mission", "lm:complete", {}, "Mandat accepté dans les règles : nomination par l'AG pour toute la durée du mandat."),
+      opt("Accepter tout de suite, on fera les vérifications pendant l'intérim", "lm:standard", {}, "Mandat accepté, un peu vite."),
+      opt("Proposer aussi de tenir sa comptabilité pour gonfler les honoraires", "lm:aucune", { reputation: -4 }, "Interdit : un commissaire aux comptes ne peut pas tenir la comptabilité de la société qu'il certifie."),
+    ]);
+    return;
+  }
+  messageSpecial(e, "cabinet", 3, `✍️ Lettre de mission — ${c.nom}`, `${c.dirigeant} est prêt·e à signer. Comment rédiges-tu la lettre de mission (${c.mission === "juridique" ? `secrétariat juridique, ${euros(c.mandat ?? 0)} / an` : `${euros(c.forfait)} / mois`}) ?`, `client:${c.id}|agent:`, {}, [
     opt("Lettre sur mesure : périmètre détaillé, répartition des tâches, révision annuelle des honoraires, travaux exceptionnels facturés à part", "lm:complete", {}, "Lettre signée : tout est clair pour les deux parties."),
     opt("Modèle standard du logiciel, sans l'adapter", "lm:standard", {}, "Signée en deux minutes."),
     opt("Pas de lettre : on se fait confiance", "lm:aucune", { reputation: -2 }, "Le code de déontologie impose pourtant une lettre de mission…"),

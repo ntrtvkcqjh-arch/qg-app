@@ -66,3 +66,63 @@ export function prospectAleatoire(r: () => number, pris: Set<string>): ModelePro
   }
   return null;
 }
+
+// Prospects hors tenue comptable : commissariat aux comptes et juridique.
+export type Specialite = { mission: "cac" | "juridique"; titre: string; raison: string; missions: { type: "audit" | "juridique"; titre: string; honoraires: number; delai: number }[]; mandat: number; difficulte: number };
+
+const RAISONS_CAC = [
+  "a franchi deux des trois seuils de nomination obligatoire d'un commissaire aux comptes",
+  "lève des fonds : les investisseurs exigent un commissaire aux comptes",
+  "fait partie d'un groupe qui doit désigner un CAC pour sa tête de groupe",
+  "reçoit plus de 153 000 € de subventions publiques par an : un CAC devient obligatoire",
+  "son commissaire aux comptes part à la retraite en cours de mandat",
+  "a une banque qui demande des comptes certifiés pour renouveler ses lignes de crédit",
+];
+const RAISONS_JUR = [
+  "tient sa comptabilité en interne mais veut confier son juridique à un cabinet",
+  "veut transformer sa SARL en SAS pour faire entrer des investisseurs",
+  "prépare une augmentation de capital et l'entrée d'un nouvel associé",
+  "a trois ans d'assemblées générales en retard et un greffe qui s'impatiente",
+  "veut transférer son siège et changer d'objet social",
+  "doit gérer la sortie d'un associé et la cession de ses parts",
+];
+
+export function specialiteAleatoire(r: () => number, nom: string, forfait: number, difficulte: number): Specialite {
+  const pickR = <T,>(t: T[]) => t[Math.floor(r() * t.length)];
+  if (r() < 0.55) {
+    // Mandat de CAC : 6 exercices (3 pour une petite entreprise en mission ALPE).
+    const mandat = Math.round((5000 + forfait * 3 + difficulte * 2500 + r() * 6000) / 100) * 100;
+    const alpe = mandat < 9000;
+    return {
+      mission: "cac",
+      titre: `${nom} cherche un commissaire aux comptes`,
+      raison: pickR(RAISONS_CAC),
+      missions: [
+        { type: "audit", titre: `Acceptation du mandat de CAC (${alpe ? "3 exercices, mission ALPE" : "6 exercices"}) — ${nom}`, honoraires: Math.round(mandat * 0.15 / 50) * 50, delai: 10 },
+        { type: "audit", titre: `Intérim : prise de connaissance et contrôle interne — ${nom}`, honoraires: Math.round(mandat * 0.35 / 50) * 50, delai: 25 },
+      ],
+      mandat,
+      difficulte: Math.min(5, difficulte + 1),
+    };
+  }
+  const raison = pickR(RAISONS_JUR);
+  const operation = raison.includes("SAS")
+    ? { titre: "Transformation de SARL en SAS", h: 2800 }
+    : raison.includes("capital")
+      ? { titre: "Augmentation de capital et pacte d'associés", h: 3200 }
+      : raison.includes("retard")
+        ? { titre: "Régularisation de trois exercices d'AG", h: 2400 }
+        : raison.includes("siège")
+          ? { titre: "Transfert de siège et modification de l'objet social", h: 1600 }
+          : raison.includes("cession")
+            ? { titre: "Cession de parts et agrément du cessionnaire", h: 2200 }
+            : { titre: "Audit juridique et mise à jour des statuts", h: 1800 };
+  return {
+    mission: "juridique",
+    titre: `${nom} cherche un juriste pour son secrétariat juridique`,
+    raison,
+    missions: [{ type: "juridique", titre: `${operation.titre} — ${nom}`, honoraires: operation.h, delai: 15 }],
+    mandat: Math.round((900 + difficulte * 300) / 50) * 50,
+    difficulte,
+  };
+}

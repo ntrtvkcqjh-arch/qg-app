@@ -37,7 +37,7 @@ import { QCM } from "@/lib/data/formation";
 import { LOCAUX, niveauLocaux } from "@/lib/data/locaux";
 import { BUREAU_ASSOCIE, OPEN_SPACES, POSTES as POSTES_PLAN } from "@/lib/plan";
 import { MISSIONS_PONCTUELLES, PROSPECTS_NOUVEAUX } from "@/lib/data/prospects";
-import { prospectAleatoire } from "@/lib/data/prospectsGen";
+import { prospectAleatoire, specialiteAleatoire } from "@/lib/data/prospectsGen";
 import type { Agent, BilanPeriode, Candidat, Client, Difficulte, Dossier, Effets, Etat, Filiere, Gazette, Journal, Message, ModeDepart, NoteCarnet, Niveau, OptionDilemme, PieceId, ResultatControle, TypeMission } from "@/lib/types";
 
 // ---------- réglages ----------
@@ -792,6 +792,8 @@ function finJournee(e: Etat) {
   for (const m of e.messages) {
     if (m.statut !== "attente" || m.expire > jour) continue;
     m.statut = "ignore";
+    // Mode zen : les petites demandes laissées dans la cloche sont gérées par l'équipe, sans pénalité.
+    if (e.compteurs.popupsTous !== 1 && m.niveau <= 2 && m.theme !== "validation") continue;
     inc(e, "ignores");
     ignorer(e, m);
   }
@@ -1789,9 +1791,34 @@ export function nouveauProspect(e: Etat): boolean {
   const p = libres.length && rnd() < 0.25 ? pick(libres) : prospectAleatoire(rnd, pris);
   if (!p) return false;
   const visite = rnd() < 0.35;
+  // Un prospect sur trois vient pour autre chose que la tenue : un mandat de
+  // commissaire aux comptes ou du juridique seul.
+  if (rnd() < 0.33) {
+    const sp = specialiteAleatoire(rnd, p.nom, p.forfait, p.difficulte);
+    const prop = {
+      id: uid(e, "p"),
+      origine: visite ? ("visite" as const) : ("courrier" as const),
+      clientId: null,
+      nouveau: { nom: p.nom, dirigeant: p.dirigeant, secteur: p.secteur, trait: p.trait, satisfaction: 70, forfait: 0, tvaMensuelle: false, paie: false, mission: sp.mission, mandat: Math.round((sp.mandat * premium) / 50) * 50 },
+      titre: sp.titre,
+      description: `${p.dirigeant} (${p.secteur.toLowerCase()}) ${sp.raison}. ${sp.mission === "cac" ? `Mandat annuel : ${Math.round(sp.mandat * premium).toLocaleString("fr-FR")} € par exercice certifié. Attention : un CAC ne peut ni tenir la comptabilité ni vendre du conseil à ce client (indépendance).` : `Secrétariat juridique annuel : ${Math.round(sp.mandat * premium).toLocaleString("fr-FR")} € par an (AG, registres, formalités).`}`,
+      missions: sp.missions.map((m) => ({ ...m, honoraires: Math.round((m.honoraires * premium) / 50) * 50 })),
+      forfait: 0,
+      difficulte: sp.difficulte,
+      risque: p.risque ?? null,
+      recue: jour,
+      expire: visite ? jour + 1 : ajouterJoursOuvres(jour, 4),
+    };
+    e.propositions.push(prop);
+    if (visite) ajouterVisiteur(e, p.dirigeant, prop.id);
+    log(e, `${sp.mission === "cac" ? "🔍" : "⚖️"} ${visite ? `${p.dirigeant} (${p.nom}) passe à l'accueil` : `Nouvelle demande par courrier de ${p.nom}`} : ${sp.mission === "cac" ? "mandat de commissaire aux comptes" : "mission juridique"}.`);
+    return true;
+  }
   const missions: Etat["propositions"][number]["missions"] = [{ type: "conseil", titre: `Reprise du dossier — ${p.nom}`, honoraires: 1200, delai: 12 }];
   const liasse = prochaineLiasse(e);
   if (liasse && liasse.jour > jour + 15 && liasse.jour - jour < 120) missions.push({ type: "bilan", titre: `Bilan ${anneeDe(liasse.jour) - 1} — ${p.nom}`, honoraires: Math.round((1500 + p.forfait * 0.8) / 50) * 50, delai: -1 });
+  // Souvent, la reprise s'accompagne d'un chantier juridique en retard.
+  if (rnd() < 0.3) missions.push({ type: "juridique", titre: `Mise à jour juridique (AG en retard, registres) — ${p.nom}`, honoraires: 900, delai: 15 });
   const prop = {
     id: uid(e, "p"),
     origine: visite ? ("visite" as const) : ("courrier" as const),
@@ -1832,8 +1859,10 @@ export function genererPropositions(e: Etat, f: number) {
   }
   if (rnd() < 0.004 * f && e.clients.length) {
     const c = pick(e.clients);
-    const mi = pick(MISSIONS_PONCTUELLES);
-    if (!e.propositions.some((p) => p.clientId === c.id)) {
+    // Mission compatible avec la relation : le CAC n'intervient que dans son rôle légal.
+    const possibles = MISSIONS_PONCTUELLES.filter((m) => (c.mission === "cac" ? m.cac : c.mission === "juridique" ? m.type === "juridique" : !m.cac));
+    const mi = pick(possibles);
+    if (mi && !e.propositions.some((p) => p.clientId === c.id)) {
       e.propositions.push({
         id: uid(e, "p"),
         origine: "client",
@@ -1886,13 +1915,23 @@ export function accepterProposition(e: Etat, id: string, verifier: boolean): str
     }
     lettreDeMission(e, c);
     if (p.origine === "visite") rendezVousClient(e, c);
+    // Mandat accepté en cours d'année : l'exercice en cours est déjà à traiter.
+    const ag = e.echeances.find((x) => x.type === "juridique" && !x.resolue && x.jour > jour + 30);
+    if (c.mission === "cac" && ag) {
+      const d = creerDossier(e, c, "audit", ouvreOuApres(ag.jour - 21), jour, `Certification des comptes ${anneeDe(ag.jour) - 1} — ${c.nom}`);
+      d.honoraires = Math.round(((c.mandat ?? 6000) * 0.5) / 50) * 50;
+      d.difficulte = Math.max(d.difficulte, 3);
+    } else if (c.mission === "juridique" && ag) {
+      const d = creerDossier(e, c, "juridique", ag.jour, jour, `Secrétariat juridique ${anneeDe(ag.jour)} (AG, registres) — ${c.nom}`);
+      d.honoraires = c.mandat ?? 900;
+    }
     for (const mi of p.missions) {
       const ech = mi.delai < 0 ? (prochaineLiasse(e)?.jour ?? ajouterJoursOuvres(jour, 30)) : ajouterJoursOuvres(jour, mi.delai);
       const d = creerDossier(e, c, mi.type, ech, jour, mi.titre);
       d.honoraires = mi.honoraires;
       d.difficulte = Math.max(d.difficulte, p.difficulte);
     }
-    log(e, `🤝 Nouveau client : ${c.nom} (${c.forfait.toLocaleString("fr-FR")} €/mois)${verifier ? ", après vérifications d'usage" : ""}.`, "bien");
+    log(e, `🤝 Nouveau client : ${c.nom} (${c.mission === "cac" ? `mandat de CAC, ${(c.mandat ?? 0).toLocaleString("fr-FR")} €/an` : c.mission === "juridique" ? `secrétariat juridique, ${(c.mandat ?? 0).toLocaleString("fr-FR")} €/an` : `${c.forfait.toLocaleString("fr-FR")} €/mois`})${verifier ? ", après vérifications d'usage" : ""}.`, "bien");
     e.reputation = clamp(e.reputation + 1);
   } else {
     const c = e.clients.find((x) => x.id === p.clientId);
@@ -2257,8 +2296,17 @@ function nouvelleAnnee(e: Etat, jour: number) {
   const annee = anneeDe(jour);
   echeancesAnnuelles(e, annee);
   const liasse = e.echeances.find((x) => x.id === `liasse-${annee}`)!;
+  const ag = e.echeances.find((x) => x.id === `ag-${annee}`)!;
   for (const c of e.clients) {
-    if (!e.dossiers.some((d) => d.client === c.id && d.type === "bilan" && d.echeance === liasse.jour))
+    if (c.mission === "cac") {
+      // Certification : rapport sur les comptes avant l'AG d'approbation.
+      const d = creerDossier(e, c, "audit", ouvreOuApres(ag.jour - 21), jour, `Certification des comptes ${annee - 1} — ${c.nom}`);
+      d.honoraires = Math.round(((c.mandat ?? 6000) * 0.5) / 50) * 50;
+      d.difficulte = Math.max(d.difficulte, 3);
+    } else if (c.mission === "juridique") {
+      const d = creerDossier(e, c, "juridique", ag.jour, jour, `Secrétariat juridique ${annee} (AG, registres) — ${c.nom}`);
+      d.honoraires = c.mandat ?? 900;
+    } else if (!e.dossiers.some((d) => d.client === c.id && d.type === "bilan" && d.echeance === liasse.jour))
       creerDossier(e, c, "bilan", liasse.jour, jour, `Bilan ${annee - 1} — ${c.nom}`);
   }
   // On allège l'historique des dossiers livrés depuis longtemps.

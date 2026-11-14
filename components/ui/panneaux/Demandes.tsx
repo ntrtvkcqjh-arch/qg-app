@@ -46,6 +46,11 @@ export default function Demandes() {
               </ul>
               <div className="chiffres-demande">
                 {p.forfait > 0 && <span>Forfait mensuel : <b>{euros(p.forfait)}</b></span>}
+                {p.nouveau?.mission && (
+                  <span>
+                    {p.nouveau.mission === "cac" ? "Mandat CAC" : "Secrétariat juridique"} : <b>{euros(p.nouveau.mandat ?? 0)}/an</b>
+                  </span>
+                )}
                 <span>Honoraires immédiats : <b>{euros(total)}</b></span>
                 <span>Difficulté : {"●".repeat(p.difficulte)}{"○".repeat(5 - p.difficulte)}</span>
               </div>

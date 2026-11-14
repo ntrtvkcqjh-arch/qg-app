@@ -20,7 +20,7 @@ export const PROSPECTS_NOUVEAUX: ModeleProspect[] = [
   { nom: "Food Truck Chez Lina", dirigeant: "Lina Haddad", secteur: "Restauration ambulante", trait: "micro-entreprise qui vient de passer en société", forfait: 900, tvaMensuelle: true, paie: false, difficulte: 1 },
 ];
 
-export type ModeleMission = { titre: string; type: TypeMission; honoraires: number; delai: number; description: string };
+export type ModeleMission = { titre: string; type: TypeMission; honoraires: number; delai: number; description: string; cac?: boolean };
 
 export const MISSIONS_PONCTUELLES: ModeleMission[] = [
   { titre: "Prévisionnel pour un prêt bancaire", type: "conseil", honoraires: 1800, delai: 10, description: "La banque veut un prévisionnel sur 3 ans pour financer un investissement." },
@@ -30,6 +30,21 @@ export const MISSIONS_PONCTUELLES: ModeleMission[] = [
   { titre: "Dossier de subvention régionale", type: "conseil", honoraires: 1200, delai: 8, description: "Montage du dossier et attestation des dépenses." },
   { titre: "Mise en place d'un tableau de bord mensuel", type: "conseil", honoraires: 1600, delai: 10, description: "Indicateurs de gestion mensuels pour le dirigeant." },
   { titre: "Embauche du premier salarié", type: "paie", honoraires: 900, delai: 6, description: "Contrat, DPAE, mutuelle et première paie." },
+  // Juridique
+  { titre: "Transformation de SARL en SAS", type: "juridique", honoraires: 2800, delai: 15, description: "Rapport du commissaire à la transformation si besoin, nouveaux statuts, AGE et formalités." },
+  { titre: "Augmentation de capital", type: "juridique", honoraires: 2400, delai: 12, description: "Un nouvel associé entre au capital : AGE, bulletins de souscription, statuts mis à jour." },
+  { titre: "Cession de parts sociales", type: "juridique", honoraires: 1800, delai: 10, description: "Acte de cession, agrément du cessionnaire et enregistrement aux impôts." },
+  { titre: "Transfert de siège social", type: "juridique", honoraires: 1200, delai: 8, description: "Décision des associés, annonce légale et formalités au guichet unique." },
+  { titre: "Mise en place d'une convention réglementée", type: "juridique", honoraires: 1100, delai: 8, description: "Le dirigeant loue ses locaux à la société : rapport spécial et approbation en AG." },
+  // Audit (sans être CAC du client : missions contractuelles et attestations)
+  { titre: "Audit d'acquisition d'une cible", type: "audit", honoraires: 8500, delai: 20, description: "Le client veut racheter un concurrent : revue des comptes, de la trésorerie et des risques de la cible." },
+  { titre: "Attestation de chiffre d'affaires", type: "audit", honoraires: 1200, delai: 6, description: "Le bailleur exige une attestation du CA pour calculer le loyer variable." },
+  { titre: "Audit du contrôle interne", type: "audit", honoraires: 4500, delai: 15, description: "Après une fraude d'un salarié, le dirigeant veut faire auditer ses procédures (achats, caisse, paiements)." },
+  { titre: "Inventaire physique supervisé", type: "audit", honoraires: 2200, delai: 8, description: "Observation de l'inventaire de fin d'année et tests de comptage." },
+  // Interventions légales du commissaire aux comptes
+  { titre: "Rapport sur une augmentation de capital", type: "audit", honoraires: 3000, delai: 10, description: "Suppression du droit préférentiel de souscription : le CAC doit émettre un rapport.", cac: true },
+  { titre: "Procédure d'alerte", type: "audit", honoraires: 2500, delai: 6, description: "Pertes répétées et retards de paiement : faut-il déclencher la procédure d'alerte ?", cac: true },
+  { titre: "Rapport sur les conventions réglementées", type: "audit", honoraires: 1500, delai: 8, description: "Nouvelle convention entre la société et son dirigeant à examiner avant l'AG.", cac: true },
 ];
 
 // Équilibrage : forfaits revalorisés de 20 %.

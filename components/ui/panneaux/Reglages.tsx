@@ -93,6 +93,17 @@ export default function Reglages() {
       </div>
       {progressionObjectif(e) && <p className="aide">En cours : {progressionObjectif(e)!.texte} ({progressionObjectif(e)!.pct} %)</p>}
 
+      <h3 className="titre-section">🧘 Popups</h3>
+      <p className="aide">Zen : seules les décisions importantes et tes contrôles DEC s&apos;ouvrent tout seuls, au plus un toutes les deux heures de jeu. Le reste t&apos;attend dans la cloche, sans pénalité pour les petites demandes.</p>
+      <div className="onglets">
+        <button className={e.compteurs.popupsTous !== 1 ? "actif" : ""} onClick={() => agir((x: Etat) => { x.compteurs.popupsTous = 0; return null; })}>
+          🧘 Zen
+        </button>
+        <button className={e.compteurs.popupsTous === 1 ? "actif" : ""} onClick={() => agir((x: Etat) => { x.compteurs.popupsTous = 1; return null; })}>
+          📣 Tout afficher
+        </button>
+      </div>
+
       <h3 className="titre-section">🔔 Fréquence des événements</h3>
       <div className="onglets">
         {(
@@ -102,7 +113,7 @@ export default function Reglages() {
             [150, "Intense"],
           ] as const
         ).map(([v, l]) => (
-          <button key={v} className={(e.compteurs.frequence ?? 100) === v ? "actif" : ""} onClick={() => agir((x: Etat) => { x.compteurs.frequence = v; return null; })}>
+          <button key={v} className={(e.compteurs.frequence ?? 50) === v ? "actif" : ""} onClick={() => agir((x: Etat) => { x.compteurs.frequence = v; return null; })}>
             {l}
           </button>
         ))}

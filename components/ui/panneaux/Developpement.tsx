@@ -431,6 +431,12 @@ export function ConseilClient({ id }: { id: string }) {
   const jour = Math.floor(e.minute / 1440);
   const attente = (e.compteurs[`vente:${c.id}`] ?? -99) > jour - 30;
   const m = MISSIONS_CONSEIL[idx];
+  if (c.mission === "cac")
+    return (
+      <div className="conseil-client">
+        <p className="aide">🔍 Tu es commissaire aux comptes de {c.nom} : tu certifies ses comptes chaque année. Pour rester indépendant·e, tu ne peux ni tenir sa comptabilité ni lui vendre du conseil.</p>
+      </div>
+    );
   return (
     <div className="conseil-client">
       <label className="ligne-logiciel">
