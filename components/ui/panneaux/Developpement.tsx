@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { COUT_AGENCE, VILLES, classement, ouvrirAgence } from "@/lib/vie3";
+import { LOGICIELS, changerLogiciel, type TypeLogiciel } from "@/lib/vie4";
 import { useJeu } from "@/lib/store";
 import { euros } from "../textes";
 
@@ -133,6 +134,34 @@ export function MurPromotions() {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+/** Logiciels du cabinet : production, paie, plateforme de facturation électronique. */
+export function Logiciels() {
+  const e = useJeu((s) => s.etat)!;
+  const agir = useJeu((s) => s.agir);
+  const l = e.logiciels ?? { production: 0, paie: 0, pdp: 0, migrationJusqua: 0 };
+  const migration = l.migrationJusqua > Math.floor(e.minute / 1440);
+  const libelles: Record<TypeLogiciel, string> = { production: "Production comptable", paie: "Paie et DSN", pdp: "Facture électronique (plateforme agréée)" };
+  return (
+    <div className="logiciels">
+      <h3 className="titre-section">💻 Logiciels du cabinet</h3>
+      <p className="aide">Un bon outil fait gagner du temps, mais chaque changement impose trois semaines de rodage (−15 % de productivité). Depuis le 1er septembre 2026, il faut une plateforme agréée pour recevoir les factures électroniques.</p>
+      {migration && <p className="verdict">⏳ Migration en cours : l&apos;équipe apprend le nouvel outil.</p>}
+      {(Object.keys(LOGICIELS) as TypeLogiciel[]).map((t) => (
+        <label key={t} className="ligne-logiciel">
+          <span>{libelles[t]}</span>
+          <select value={l[t]} onChange={(ev) => agir(changerLogiciel, t, Number(ev.target.value))}>
+            {LOGICIELS[t].map((x, i) => (
+              <option key={x.nom} value={i}>
+                {x.nom} — {x.prix ? `${x.prix} €${t === "pdp" ? "" : " / utilisateur"} / mois` : "gratuit"}
+              </option>
+            ))}
+          </select>
+        </label>
+      ))}
     </div>
   );
 }

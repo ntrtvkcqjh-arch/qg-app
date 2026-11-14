@@ -93,7 +93,8 @@ export default function Cabinet3D() {
   });
   const postesAllumes = useJeu((s) => {
     const e = s.etat;
-    if (!e || minuteDuJour(e.minute) < 18 * 60 + 45) return "";
+    const hiver = [11, 12, 1, 2].includes(moisDe(jourDe(e?.minute ?? 0)));
+    if (!e || minuteDuJour(e.minute) < (hiver ? 17 * 60 + 15 : 18 * 60 + 45)) return "";
     return e.agents.filter((a) => a.activite === "travaille" && a.filiere !== "rh" && a.filiere !== "associe").map((a) => a.bureau).join(",");
   });
   const selection = useJeu((s) => s.selectionAgent);
@@ -105,7 +106,10 @@ export default function Cabinet3D() {
   const [pret, setPret] = useState(false);
 
   const m = minuteDuJour(minute);
-  const amb = ambiance(m, meteo);
+  // Saisons : en hiver la nuit tombe plus tôt, en été plus tard.
+  const moisCourant = moisDe(jourDe(minute));
+  const decalage = [11, 12, 1, 2].includes(moisCourant) ? 75 : [6, 7, 8].includes(moisCourant) ? -60 : 0;
+  const amb = ambiance(m + decalage, meteo);
   const mois = moisDe(jourDe(minute));
   const piecesListe = niveauLocaux(niveau).pieces;
   const pieces = piecesListe.join(",");
@@ -210,7 +214,7 @@ export default function Cabinet3D() {
         />
         {formation && etageVue === ETAGE_DIRECTION && pieces.includes("formation") && <Formateur />}
         </Suspense>
-        {etageVue === 0 && <Quartier mois={mois} />}
+        {etageVue === 0 && <Quartier mois={mois} neige={meteo === "neige"} />}
         {etageVue === 0 && <DecoFetes jour={jourDe(minute)} />}
         <Meteo type={meteo} largeurBatiment={aile ? 22 : 12} />
         {agents.map((a, i) => (

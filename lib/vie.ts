@@ -26,6 +26,7 @@ import {
 import type { Agent, Client, Etat, Message, OptionDilemme } from "@/lib/types";
 import { actionVie2, debutJourneeVie2, quartVie2, souvenir } from "@/lib/vie2";
 import { actionVie3, debutJourneeVie3, quartVie3 } from "@/lib/vie3";
+import { actionVie4, debutJourneeVie4 } from "@/lib/vie4";
 
 const PRENOMS_F = new Set(["Léa", "Sophie", "Inès", "Nadia", "Camille", "Manon", "Chloé", "Emma", "Sarah", "Amina", "Zoé", "Clara", "Lina", "Jade"]);
 const opt = (label: string, code: string, effets: OptionDilemme["effets"] = {}, resultat = "C'est noté."): OptionDilemme => ({ label, cout: 0, effets, resultat, action: "vie", code });
@@ -44,6 +45,7 @@ export function debutJourneeVie(e: Etat, jour: number, premierDuMois: boolean) {
   livraisons(e);
   debutJourneeVie2(e, jour, premierDuMois);
   debutJourneeVie3(e, jour, premierDuMois);
+  debutJourneeVie4(e, jour, premierDuMois);
   if (premierDuMois && jour > 0) {
     presse(e, jour);
     reseau(e, jour);
@@ -424,7 +426,7 @@ function comiteAssocies(e: Etat, jour: number) {
 // ---------- effets des décisions ----------
 
 export function actionVie(e: Etat, code: string, m: Message) {
-  if (actionVie2(e, code, m) || actionVie3(e, code, m)) return;
+  if (actionVie2(e, code, m) || actionVie3(e, code, m) || actionVie4(e, code, m)) return;
   const [type, p1, p2] = code.split(":");
   const agentId = (m.dossier ?? "").split("|")[1]?.replace("agent:", "");
   const a = e.agents.find((x) => x.id === agentId);

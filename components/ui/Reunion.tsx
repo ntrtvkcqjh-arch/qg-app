@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { heure, jourDe } from "@/lib/calendrier";
+import { dateDe, heure, jourDe } from "@/lib/calendrier";
 import { cloreReunion, decisionReunion, interpreter, ordreDuJour, ouvrirReunion, parler, participants, repondreLibre, type Ligne, type OptionReunion, type Sujet } from "@/lib/reunion";
 import { useJeu } from "@/lib/store";
 import type { Agent } from "@/lib/types";
@@ -19,7 +19,7 @@ export default function Reunion() {
   const ouvrirMessage = useJeu((s) => s.ouvrirMessage);
   if (!e) return null;
   const jour = jourDe(e.minute);
-  const lundi = new Date(Date.UTC(1970, 0, 1 + jour)).getUTCDay() === 1;
+  const lundi = dateDe(jour).getUTCDay() === 1;
   const mdj = e.minute % 1440;
   const invitation = !ouverte && lundi && mdj >= 600 && mdj < 1080 && e.compteurs.reunionJour !== jour && e.agents.length >= 2;
   if (ouverte) return <Salle />;

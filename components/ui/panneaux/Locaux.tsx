@@ -6,7 +6,7 @@ import { SERVICES, acheter, agrandirLocaux, licencier, marqueEmployeur, pieceOuv
 import { pieceParId } from "@/lib/plan";
 import { useJeu } from "@/lib/store";
 import { euros } from "../textes";
-import { Agences } from "./Developpement";
+import { Agences, Logiciels } from "./Developpement";
 
 export default function Locaux() {
   const e = useJeu((s) => s.etat)!;
@@ -103,6 +103,7 @@ export default function Locaux() {
           );
         })}
       </div>
+      <Logiciels />
       <Agences />
     </div>
   );

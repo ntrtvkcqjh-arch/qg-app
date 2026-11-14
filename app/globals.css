@@ -2521,3 +2521,41 @@ td.objectif .niveau-skill {
 .mur-promos .cadres { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; margin-bottom: 14px; }
 .mur-promos .cadre { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; background: #fff; border: 3px solid #e8d9b5; border-radius: 6px; text-align: center; font-size: 12px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06); }
 .mur-promos .cadre small { color: #6b7385; font-size: 10px; }
+
+/* Agenda */
+.agenda .palette { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+.agenda .palette .bloc { background: #43a047; color: #fff; padding: 6px 10px; border-radius: 8px; cursor: grab; font-size: 12px; font-weight: 600; }
+.grille-agenda { display: grid; grid-template-columns: 44px repeat(5, 1fr); gap: 3px; font-size: 11px; }
+.ligne-agenda { display: contents; }
+.grille-agenda .tete-jour { text-align: center; font-weight: 700; padding: 4px 0; border-radius: 6px; display: flex; flex-direction: column; }
+.grille-agenda .tete-jour small { font-weight: 400; color: #6b7385; }
+.grille-agenda .tete-jour.aujourdhui { background: #e6edff; color: #2f5bea; }
+.grille-agenda .tete-jour.charge small { color: #e04a3a; font-weight: 700; }
+.grille-agenda .heure { color: #8a94a8; text-align: right; padding: 8px 4px 0 0; }
+.grille-agenda .case { min-height: 42px; background: #f5f7fb; border-radius: 6px; padding: 2px; cursor: pointer; }
+.grille-agenda .case.passee { opacity: 0.45; }
+.grille-agenda .case .bloc { height: 100%; min-height: 38px; border-radius: 6px; color: #fff; padding: 3px 5px; display: flex; justify-content: space-between; gap: 2px; cursor: grab; line-height: 1.2; }
+.grille-agenda .case .bloc span { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.grille-agenda .case .bloc button { background: none; border: 0; color: #fff; cursor: pointer; padding: 0; font-size: 13px; line-height: 1; opacity: 0.7; }
+.bloc.tenu { outline: 3px solid #ffca28; }
+
+/* Logiciels, entretien */
+.ligne-logiciel { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; font-size: 13px; }
+.ligne-logiciel select { padding: 7px; border-radius: 8px; border: 1px solid #dfe3ec; }
+.entretien { grid-column: 1 / -1; background: #f5f7fb; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+.entretien ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.entretien li { display: flex; flex-direction: column; font-size: 12px; }
+.entretien li span { color: #3d405b; font-style: italic; }
+.entretien .questions { display: flex; flex-direction: column; gap: 4px; }
+.actions-candidat { display: flex; gap: 6px; }
+
+/* Bilan de l'année */
+.wrapped { width: min(420px, 92vw); min-height: 520px; border-radius: 24px; color: #fff; padding: 28px 26px; display: flex; flex-direction: column; justify-content: center; gap: 14px; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35); animation: apparition-wrapped 0.5s ease; position: relative; }
+.wrapped small { text-transform: uppercase; letter-spacing: 0.12em; opacity: 0.85; font-weight: 700; }
+.wrapped h2 { font-size: 40px; line-height: 1.1; margin: 0; }
+.wrapped p { font-size: 16px; line-height: 1.5; opacity: 0.95; margin: 0; }
+.progression-wrapped { position: absolute; top: 16px; left: 20px; right: 20px; display: flex; gap: 4px; }
+.progression-wrapped span { flex: 1; height: 3px; border-radius: 3px; background: rgba(255, 255, 255, 0.3); }
+.progression-wrapped span.vu { background: #fff; }
+.pied-wrapped { position: absolute; bottom: 22px; right: 22px; display: flex; gap: 8px; }
+@keyframes apparition-wrapped { from { opacity: 0; transform: scale(0.94) translateY(12px); } to { opacity: 1; transform: none; } }

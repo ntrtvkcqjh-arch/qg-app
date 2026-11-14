@@ -118,6 +118,16 @@ export default function Bilans() {
         ))}
       </div>
       <Classement />
+      <BoutonWrapped />
     </div>
+  );
+}
+
+function BoutonWrapped() {
+  const setBilanAnnee = useJeu((s) => s.setBilanAnnee);
+  return (
+    <button className="bouton principal-btn large" onClick={() => setBilanAnnee(true)}>
+      🎁 Revoir le bilan de l&apos;année
+    </button>
   );
 }

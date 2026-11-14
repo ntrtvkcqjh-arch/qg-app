@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { dateCourte } from "@/lib/calendrier";
 import { LIBELLE_FILIERE, LIBELLE_PERSO } from "@/lib/data/equipe";
 import { aUnRH, besoins, capacitePostes, fraisRecrutement, publierAnnonce, recruter } from "@/lib/moteur";
@@ -9,8 +11,10 @@ import EquipePlus from "./EquipePlus";
 import FormationEquipe from "./FormationEquipe";
 import CarteRelations from "./CarteRelations";
 import { MurPromotions } from "./Developpement";
+import Entretien from "./Entretien";
 
 export default function Equipe() {
+  const [entretien, setEntretien] = useState<string | null>(null);
   const e = useJeu((s) => s.etat)!;
   const agir = useJeu((s) => s.agir);
   const selectionner = useJeu((s) => s.selectionner);
@@ -91,12 +95,21 @@ export default function Equipe() {
             </strong>
             <span>{c.poste}</span>
             <small>
-              {LIBELLE_FILIERE[c.filiere]} · {LIBELLE_PERSO[c.personnalite]} · compétence {c.competence}
+              {LIBELLE_FILIERE[c.filiere]} · {LIBELLE_PERSO[c.personnalite]} · compétence (CV) {c.competence}
+              {c.evalue !== undefined && <b className={c.evalue < c.competence - 6 ? "rouge-t" : ""}> · après entretien ≈ {c.evalue}</b>}
             </small>
             <em>{euros(c.salaire)} brut / mois</em>
-            <button className="bouton petit" onClick={() => agir(recruter, c.id)}>
-              Recruter
-            </button>
+            {entretien === c.id && <Entretien c={c} fin={() => setEntretien(null)} />}
+            <span className="actions-candidat">
+              {c.evalue === undefined && entretien !== c.id && (
+                <button className="bouton petit" onClick={() => setEntretien(c.id)}>
+                  🎤 Entretien
+                </button>
+              )}
+              <button className="bouton petit" onClick={() => agir(recruter, c.id)}>
+                Recruter
+              </button>
+            </span>
           </div>
         ))}
       </div>

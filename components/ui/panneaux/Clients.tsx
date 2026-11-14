@@ -5,6 +5,7 @@ import { dateCourte, jourDe } from "@/lib/calendrier";
 import { useJeu } from "@/lib/store";
 import { NOMS_PHASES, type Etat } from "@/lib/types";
 import { euros } from "../textes";
+import { controleDe } from "@/lib/vie4";
 
 // Portefeuille clients : fiche vivante de chaque client (historique,
 // humeur, dossiers, impayés) pour voir venir les départs.
@@ -108,6 +109,7 @@ function FicheClient({ id, retour }: { id: string; retour: () => void }) {
           <strong className={impayes ? "alerte" : ""}>{euros(impayes)}</strong>
         </div>
       </div>
+      {controleDe(e, id) && <p className="verdict">🔍 Contrôle fiscal en cours : étape {Math.min(4, controleDe(e, id)!.etape + 1)} sur 4.</p>}
       <div className="actions-client">
         <button
           className="bouton"

@@ -7,6 +7,7 @@ const ENTREES: { id: Panneau; icone: string; label: string }[] = [
   { id: "demandes", icone: "📥", label: "Demandes" },
   { id: "dossiers", icone: "🗂️", label: "Dossiers" },
   { id: "clients", icone: "🤝", label: "Clients" },
+  { id: "agenda", icone: "📅", label: "Agenda" },
   { id: "equipe", icone: "👥", label: "Équipe & RH" },
   { id: "locaux", icone: "🏗️", label: "Locaux" },
   { id: "bilans", icone: "📊", label: "Bilans" },

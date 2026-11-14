@@ -16,6 +16,7 @@ import Modales from "./ui/Modales";
 import Sons from "./Sons";
 import Telephone from "./ui/Telephone";
 import Reunion from "./ui/Reunion";
+import BilanAnnee from "./ui/BilanAnnee";
 import Decisions from "./ui/Decisions";
 
 const Cabinet3D = dynamic(() => import("./scene/Cabinet3D"), {
@@ -74,6 +75,7 @@ export default function Jeu() {
       <Sons />
       <Telephone />
       <Reunion />
+      <BilanAnnee />
       <Decisions />
       <Toast />
     </div>

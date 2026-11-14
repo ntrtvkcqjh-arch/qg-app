@@ -23,6 +23,7 @@ import { BADGES } from "@/lib/data/formation";
 import { MODELES } from "@/lib/data/messages";
 import { facteurMeteo, fatiguerToi } from "@/lib/vie2";
 import { facteurAgent, genererRevue, migrerCarriere } from "@/lib/vie3";
+import { facteurOutils, lettreDeMission } from "@/lib/vie4";
 import { actionVie, debutJourneeVie, nouvelleRecrue, potDeDepart, quartVie, rendezVousClient } from "@/lib/vie";
 import { actionSpeciale, arriveeAssocie, facteurSaison, debutJourneeExt, estTeletravail, facteurCompetence, facturer, finJourneeExt, horairesAgent, initSkills, migrerExt, noterArrivee, noterDepart, progresserSkill, quartAgent } from "@/lib/ext";
 import { ARCS } from "@/lib/data/arcs";
@@ -231,7 +232,10 @@ function candidatPour(e: Etat, p: (typeof POSTES_RH)[number]): Candidat {
     poste: p.poste,
     filiere: p.filiere,
     personnalite: pick(PERSONNALITES),
-    competence: Math.min(95, Math.round(p.comp[0] + rnd() * (p.comp[1] - p.comp[0])) + bonus),
+    ...(() => {
+      const vraie = Math.min(95, Math.round(p.comp[0] + rnd() * (p.comp[1] - p.comp[0])) + bonus);
+      return { vraie, competence: Math.min(95, Math.max(15, vraie + Math.round((rnd() - 0.35) * 24))) };
+    })(),
     salaire: Math.round((p.salaire[0] + rnd() * (p.salaire[1] - p.salaire[0])) / 50) * 50,
   };
 }
@@ -930,7 +934,7 @@ function quart(e: Etat) {
       continue;
     }
     // Avancement du dossier.
-    let v = 2.8 * facteurCompetence(e, a, d) * (1 - a.fatigue / 160) * (1 - Math.max(0, a.stress - 70) / 90) * facteurMeteo(e) * facteurAgent(e, a) * VITESSE_TYPE[d.type] * r.vitesse / Math.sqrt(d.difficulte);
+    let v = 2.8 * facteurCompetence(e, a, d) * (1 - a.fatigue / 160) * (1 - Math.max(0, a.stress - 70) / 90) * facteurMeteo(e) * facteurAgent(e, a) * facteurOutils(e, a) * VITESSE_TYPE[d.type] * r.vitesse / Math.sqrt(d.difficulte);
     if (rush) v *= 1.8;
     if (possede(e, "babyfoot")) v *= 0.97;
     if (possede(e, "imprimante") && d.phase <= 2) v *= 1.08;
@@ -1362,7 +1366,7 @@ export function recruter(e: Etat, candidatId: string): string | null {
     cheveux: pick(CHEVEUX),
     peau: pick(PEAUX),
     bureau,
-    competence: c.competence,
+    competence: c.vraie ?? c.competence,
     stress: 20,
     fatigue: 10,
     confiance: 55,
@@ -1790,6 +1794,7 @@ export function accepterProposition(e: Etat, id: string, verifier: boolean): str
       e.clients.push(c);
       e.reputation = clamp(e.reputation + 3);
     }
+    lettreDeMission(e, c);
     if (p.origine === "visite") rendezVousClient(e, c);
     for (const mi of p.missions) {
       const ech = mi.delai < 0 ? (prochaineLiasse(e)?.jour ?? ajouterJoursOuvres(jour, 30)) : ajouterJoursOuvres(jour, mi.delai);

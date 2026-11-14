@@ -11,12 +11,14 @@ import Locaux from "./panneaux/Locaux";
 import Reglages from "./panneaux/Reglages";
 import Clients from "./panneaux/Clients";
 import Memoire from "./panneaux/Memoire";
+import Agenda from "./panneaux/Agenda";
 
 const TITRES = {
   demandes: "Demandes de prospects et de clients",
   locaux: "Locaux et mobilier",
   dossiers: "Dossiers",
   clients: "Portefeuille clients",
+  agenda: "Ton agenda de la semaine",
   memoire: "Mon DEC : mémoire et soutenance",
   equipe: "Équipe & RH",
   bilans: "Bilans",
@@ -41,6 +43,7 @@ export default function Tiroir() {
         {panneau === "dossiers" && <Dossiers />}
         {panneau === "demandes" && <Demandes />}
         {panneau === "clients" && <Clients />}
+        {panneau === "agenda" && <Agenda />}
         {panneau === "memoire" && <Memoire />}
         {panneau === "locaux" && <Locaux />}
         {panneau === "equipe" && <Equipe />}

@@ -17,7 +17,7 @@ export default function Decisions() {
   const courantId = useJeu((s) => s.messageOuvert);
   const ouvrirMessage = useJeu((s) => s.ouvrirMessage);
   const notifier = useJeu((s) => s.notifier);
-  const reunion = useJeu((s) => s.reunionOuverte || s.timelapse);
+  const reunion = useJeu((s) => s.reunionOuverte || s.timelapse || s.bilanAnnee);
   const [masque, setMasque] = useState(false);
   const pauseJusqua = useRef(0);
   const vus = useRef(new Set<string>());

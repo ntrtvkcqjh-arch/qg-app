@@ -9,7 +9,7 @@ import type { Difficulte, Etat, ModeDepart, PieceId } from "@/lib/types";
 // Le store garde l'état du jeu (sauvegardé dans le navigateur) et l'état
 // d'interface (sélection, panneau ouvert), qui, lui, n'est pas sauvegardé.
 
-export type Panneau = "cabinet" | "demandes" | "dossiers" | "clients" | "memoire" | "equipe" | "locaux" | "bilans" | "badges" | "journal" | "reglages";
+export type Panneau = "cabinet" | "demandes" | "dossiers" | "clients" | "agenda" | "memoire" | "equipe" | "locaux" | "bilans" | "badges" | "journal" | "reglages";
 
 type Store = {
   etat: Etat | null;
@@ -20,6 +20,8 @@ type Store = {
   etageVue: number;
   reunionOuverte: boolean;
   timelapse: boolean;
+  bilanAnnee: boolean;
+  setBilanAnnee: (v: boolean) => void;
   setTimelapse: (v: boolean) => void;
   setReunion: (v: boolean) => void;
   voirEtage: (n: number) => void;
@@ -50,6 +52,8 @@ export const useJeu = create<Store>()(
       etageVue: 1,
       reunionOuverte: false,
       timelapse: false,
+      bilanAnnee: false,
+      setBilanAnnee: (v) => set({ bilanAnnee: v }),
       setTimelapse: (v) => set({ timelapse: v }),
       setReunion: (v) => set({ reunionOuverte: v }),
       voirEtage: (n) => set({ etageVue: n }),

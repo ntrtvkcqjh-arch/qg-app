@@ -340,6 +340,8 @@ export type Candidat = {
   competence: number;
   salaire: number;
   associeDe?: Filiere; // candidat associé : pôle visé
+  vraie?: number; // compétence réelle (le CV peut enjoliver)
+  evalue?: number; // estimation après entretien
 };
 
 export type Etat = {
@@ -402,6 +404,10 @@ export type Etat = {
   promotions?: { jour: number; prenom: string; nom: string; poste: string; couleur: string }[]; // mur des promotions
   risquesRC?: { jour: number; client: string; montant: number; faute: string }[]; // erreurs non détectées qui ressortiront
   agences?: Agence[];
+  litiges?: { jour: number; client: string; montant: number }[]; // litiges d'honoraires à venir
+  controles?: { id: string; client: string; etape: number; prochain: number; score: number; rappel: number }[]; // contrôles fiscaux de clients
+  logiciels?: { production: number; paie: number; pdp: number; migrationJusqua: number };
+  agenda?: { semaine: number; blocs: { id: string; jour: number; creneau: number; type: "rdv" | "reunion" | "signature" | "banque" | "production"; titre: string; ref?: string }[] };
   questionsVues?: string[]; // dernières questions DEC posées (évite les répétitions)
   dateDec: number; // jour de l'épreuve écrite visée
   memoire: Memoire;

@@ -67,7 +67,8 @@ function Passant({ depart, vitesse, couleur, z }: { depart: number; vitesse: num
   );
 }
 
-export default function Quartier({ mois }: { mois: number }) {
+export default function Quartier({ mois, neige = false }: { mois: number; neige?: boolean }) {
+  const ete = mois >= 6 && mois <= 8;
   const feuillage = mois >= 12 || mois <= 2 ? null : mois >= 9 && mois <= 11 ? "#e07b39" : mois >= 3 && mois <= 4 ? "#f8bbd0" : "#4f8a4b";
   return (
     <group>
@@ -90,6 +91,22 @@ export default function Quartier({ mois }: { mois: number }) {
         <planeGeometry args={[70, 1.6]} />
         <meshStandardMaterial color="#cfcac2" />
       </mesh>
+      {neige && (
+        <>
+          {[9.5, 14.8].map((z) => (
+            <mesh key={z} position={[0, -0.08, z]} rotation={[-Math.PI / 2, 0, 0]}>
+              <planeGeometry args={[70, z === 9.5 ? 2.2 : 1.6]} />
+              <meshStandardMaterial color="#f4f7fb" roughness={1} />
+            </mesh>
+          ))}
+          {BOUTIQUES.map((b) => (
+            <mesh key={b.nom} position={[b.x, 4.06, 17.5]}>
+              <boxGeometry args={[7.7, 0.14, 3.1]} />
+              <meshStandardMaterial color="#ffffff" roughness={1} />
+            </mesh>
+          ))}
+        </>
+      )}
       {/* arbres d'alignement */}
       {[-16, -10, -4, 2, 8, 14, 20].map((x) => (
         <group key={x} position={[x, 0, 9.2]}>
@@ -123,6 +140,18 @@ export default function Quartier({ mois }: { mois: number }) {
           {b.nom === "Brasserie" &&
             [-2, 0, 2].map((x) => (
               <group key={x} position={[x, 0, -2.6]}>
+                {ete && (
+                  <>
+                    <mesh position={[0, 1.15, 0]}>
+                      <cylinderGeometry args={[0.03, 0.03, 1.5, 6]} />
+                      <meshStandardMaterial color="#555" />
+                    </mesh>
+                    <mesh position={[0, 1.9, 0]} castShadow>
+                      <coneGeometry args={[0.95, 0.35, 10]} />
+                      <meshStandardMaterial color={x === 0 ? "#2e7d32" : "#f5f5f5"} />
+                    </mesh>
+                  </>
+                )}
                 <mesh position={[0, 0.7, 0]}>
                   <cylinderGeometry args={[0.35, 0.35, 0.04, 14]} />
                   <meshStandardMaterial color="#ffffff" />
