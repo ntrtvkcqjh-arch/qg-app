@@ -3,7 +3,8 @@
 import { setAvatar, setPolitiqueHeures, setSons, setTeletravail } from "@/lib/ext";
 import { useJeu } from "@/lib/store";
 import { useState } from "react";
-import { setAuto } from "@/lib/vie5";
+import { CATEGORIES_DELEGATION, delegueDe, setDelegue } from "@/lib/vie5";
+import { responsables } from "@/lib/associe2080";
 import { OBJECTIFS, basculer, choisirObjectif, fixerDressCode, progressionObjectif } from "@/lib/vie6";
 import { CHAINES, lancerChaine } from "@/lib/chaines";
 import type { Etat } from "@/lib/types";
@@ -146,19 +147,32 @@ export default function Reglages() {
         <input type="checkbox" checked={!e.compteurs.revueToutes} onChange={(ev) => agir((x: Etat) => { x.compteurs.revueToutes = ev.target.checked ? 0 : 1; return null; })} /> Mode associée 20/80 : tes seniors et managers revoient la production ; tu ne vois que les dossiers à enjeu et 3 contrôles par sondage par jour (décoche pour tout valider toi-même, mode entraînement)
       </label>
 
-      <h3 className="titre-section">🤖 Délégation (mode automatique)</h3>
-      <p className="aide">Coche les thèmes que tes associés et managers gèrent pour toi. Pendant tes vacances, tout est délégué. Leurs choix sont prudents, pas toujours optimaux.</p>
-      {(
-        [
-          ["dec", "Contrôles DEC, revues et missions expertes"],
-          ["rh", "Ressources humaines (promotions, alternants, événements)"],
-          ["finances", "Finances (clôture, offres, rachats, lettres de mission)"],
-        ] as const
-      ).map(([k, l]) => (
-        <label key={k} className="case-reglage">
-          <input type="checkbox" checked={!!e.auto?.[k]} onChange={(ev) => agir(setAuto, k, ev.target.checked)} /> {l}
-        </label>
-      ))}
+      <h3 className="titre-section">🤝 Matrice de délégation</h3>
+      <p className="aide">
+        Choisis qui décide quoi. Une catégorie déléguée ne t&apos;envoie plus de popups : la personne choisie tranche à ta place, avec une qualité qui dépend de sa compétence. Pendant tes vacances, tout est délégué.
+        {(e.compteurs.delegues ?? 0) > 0 && ` Déjà ${e.compteurs.delegues} décision(s) traitée(s) pour toi.`}
+      </p>
+      <div className="matrice-delegation">
+        {CATEGORIES_DELEGATION.map((c) => {
+          const qui = delegueDe(e, c.id);
+          return (
+            <div key={c.id} className="ligne-delegation">
+              <span>
+                <strong>{c.nom}</strong>
+                <small>{c.detail}</small>
+              </span>
+              <select value={e.auto?.[c.id] ? (qui?.id ?? "") : ""} onChange={(ev) => agir(setDelegue, c.id, ev.target.value)}>
+                <option value="">🙋 Moi</option>
+                {responsables(e).map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.prenom} {a.nom} — {a.poste} (niv. {Math.round(a.competence)})
+                  </option>
+                ))}
+              </select>
+            </div>
+          );
+        })}
+      </div>
 
       <h3 className="titre-section">🎬 Lancer un scénario</h3>
       <p className="aide">Missions expertes et crises en plusieurs étapes. Elles arrivent aussi toutes seules au fil des mois.</p>

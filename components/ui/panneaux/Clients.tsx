@@ -9,6 +9,7 @@ import { controleDe } from "@/lib/vie4";
 import { fixerTarif } from "@/lib/vie5";
 import { comptesClient } from "@/lib/vie6";
 import { ConseilClient, Partenaires } from "./Developpement";
+import { CarteKpi, TableauxBord } from "./TableauBord";
 
 // Portefeuille clients : fiche vivante de chaque client (historique,
 // humeur, dossiers, impayés) pour voir venir les départs.
@@ -23,7 +24,7 @@ export default function Clients() {
   const e = useJeu((s) => s.etat)!;
   const agir = useJeu((s) => s.agir);
   const [ouvert, setOuvert] = useState<string | null>(null);
-  const [tri, setTri] = useState<"risque" | "honoraires" | "nom">("risque");
+  const [tri, setTri] = useState<"risque" | "honoraires" | "nom" | "kpi">("risque");
   const c = e.clients.find((x) => x.id === ouvert);
   if (c) return <FicheClient id={c.id} retour={() => setOuvert(null)} />;
   const liste = [...e.clients].sort((a, b) => (tri === "risque" ? a.satisfaction - b.satisfaction : tri === "honoraires" ? b.forfait - a.forfait : a.nom.localeCompare(b.nom)));
@@ -64,7 +65,12 @@ export default function Clients() {
         <button className={tri === "nom" ? "actif" : ""} onClick={() => setTri("nom")}>
           A → Z
         </button>
+        <button className={tri === "kpi" ? "actif" : ""} onClick={() => setTri("kpi")}>
+          📊 Tableaux de bord
+        </button>
       </div>
+      {tri === "kpi" && <TableauxBord />}
+      {tri !== "kpi" && (
       <ul className="liste-clients">
         {liste.map((x) => (
           <li key={x.id}>
@@ -88,6 +94,7 @@ export default function Clients() {
           </li>
         ))}
       </ul>
+      )}
       <Partenaires />
     </div>
   );
@@ -164,6 +171,12 @@ function FicheClient({ id, retour }: { id: string; retour: () => void }) {
           💶 Revaloriser le forfait (+5 %)
         </button>
       </div>
+      {c.kpi && (
+        <>
+          <h4 className="titre-section">📊 Tableau de bord du dirigeant</h4>
+          <CarteKpi c={c} />
+        </>
+      )}
       <ConseilClient id={id} />
       <Comptes id={id} />
       <h4>Dossiers</h4>

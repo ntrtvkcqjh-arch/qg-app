@@ -38,6 +38,7 @@ import { LOCAUX, niveauLocaux } from "@/lib/data/locaux";
 import { BUREAU_ASSOCIE, OPEN_SPACES, POSTES as POSTES_PLAN } from "@/lib/plan";
 import { MISSIONS_PONCTUELLES, PROSPECTS_NOUVEAUX } from "@/lib/data/prospects";
 import { prospectAleatoire, specialiteAleatoire } from "@/lib/data/prospectsGen";
+import { equiperTableaux } from "@/lib/tableauBord";
 import type { Agent, BilanPeriode, Candidat, Client, Difficulte, Dossier, Effets, Etat, Filiere, Gazette, Journal, Message, ModeDepart, NoteCarnet, Niveau, OptionDilemme, PieceId, ResultatControle, TypeMission } from "@/lib/types";
 
 // ---------- réglages ----------
@@ -48,7 +49,7 @@ export const REGLAGES: Record<Difficulte, { pa: number; evenements: number; vite
   expert: { pa: 3, evenements: 1.4, vitesse: 0.9, penalites: 1.4, tresorerie: 15000 },
 };
 
-const VITESSE_TYPE: Record<TypeMission, number> = { tva: 3.2, paie: 4, bilan: 0.4, liasse: 0.8, juridique: 1.6, conseil: 1.2, audit: 0.5 };
+const VITESSE_TYPE: Record<TypeMission, number> = { tva: 3.2, paie: 4, bilan: 0.4, liasse: 0.8, juridique: 1.6, conseil: 1.2, audit: 0.8 };
 const FILIERES_TYPE: Record<TypeMission, string[]> = {
   tva: ["fiscal", "expertise", "associe"],
   paie: ["social", "associe"],
@@ -56,7 +57,7 @@ const FILIERES_TYPE: Record<TypeMission, string[]> = {
   liasse: ["fiscal", "expertise", "associe"],
   juridique: ["juridique", "associe"],
   conseil: ["fiscal", "juridique", "expertise", "associe"],
-  audit: ["audit", "associe"],
+  audit: ["audit", "associe", "expertise"], // l'expertise peut épauler sur l'audit
 };
 const LOYER = 3500;
 const CHARGES_FIXES = 600;
@@ -165,6 +166,11 @@ export function nouvellePartie(difficulte: Difficulte, nomCabinet: string, mode:
   dossiersDuMois(e, 0);
   repartir(e);
   e.candidats = creation ? candidatsDeDepart(e) : genererCandidats(e);
+  if (creation) e.compteurs.portefeuilleMixte = 1;
+  else {
+    portefeuilleMixte(e);
+    repartir(e);
+  }
   log(e, `Bienvenue chez ${nomCabinet} ! Saison des bilans : la liasse fiscale tombe le ${dateCourte(liasse)}.`, "neutre");
   migrerExt(e);
   e.compteurs.campus = 1;
@@ -242,6 +248,55 @@ function candidatPour(e: Etat, p: (typeof POSTES_RH)[number]): Candidat {
     })(),
     salaire: Math.round((p.salaire[0] + rnd() * (p.salaire[1] - p.salaire[0])) / 50) * 50,
   };
+}
+
+/** Ajoute un candidat pour un poste donné (ex. « Auditeur »). */
+export function ajouterCandidat(e: Etat, poste: string) {
+  const p = POSTES_RH.find((x) => x.poste === poste);
+  if (p) e.candidats.unshift(candidatPour(e, p));
+}
+
+/** Portefeuille mixte : dès le départ, le cabinet a des mandats de CAC, du
+ * juridique et quelques missions d'audit (une seule fois par partie). */
+export function portefeuilleMixte(e: Etat) {
+  if (e.compteurs.portefeuilleMixte) return;
+  e.compteurs.portefeuilleMixte = 1;
+  const jour = jourDe(e.minute);
+  const ag = e.echeances.find((x) => x.type === "juridique" && !x.resolue && x.jour > jour + 30);
+  const nouveaux: Client[] = [
+    { id: uid(e, "cl"), nom: "Valmont Distribution SAS", dirigeant: "Hélène Valmont", secteur: "Distribution", trait: "a franchi les seuils de nomination d'un CAC l'an dernier", satisfaction: 70, forfait: 0, tvaMensuelle: false, paie: false, taille: 2, mission: "cac", mandat: 16000 },
+    { id: uid(e, "cl"), nom: "Association Horizon Solidaire", dirigeant: "Karim Benali", secteur: "Association", trait: "plus de 153 000 € de subventions publiques par an", satisfaction: 72, forfait: 0, tvaMensuelle: false, paie: false, taille: 1, mission: "cac", mandat: 7000 },
+    { id: uid(e, "cl"), nom: "Kairos Participations SAS", dirigeant: "Thomas Lefebvre", secteur: "Holding", trait: "comptabilité faite en interne, juridique confié au cabinet", satisfaction: 72, forfait: 0, tvaMensuelle: false, paie: false, taille: 2, mission: "juridique", mandat: 1800 },
+    { id: uid(e, "cl"), nom: "SARL Les Ateliers Morel", dirigeant: "Pauline Morel", secteur: "Artisanat", trait: "trois ans d'AG en retard", satisfaction: 68, forfait: 0, tvaMensuelle: false, paie: false, taille: 1, mission: "juridique", mandat: 1200 },
+  ];
+  const ajout = (c: Client, type: TypeMission, titre: string, h: number, delai: number, diff = 3) => {
+    const d = creerDossier(e, c, type, delai < 0 ? ouvreOuApres(-delai) : ajouterJoursOuvres(jour, delai), jour, `${titre} — ${c.nom}`);
+    d.honoraires = h;
+    d.difficulte = Math.max(d.difficulte, diff);
+  };
+  for (const c of nouveaux) {
+    if (e.clients.some((x) => x.nom === c.nom)) continue;
+    e.clients.push(c);
+    if (c.mission === "cac") {
+      ajout(c, "audit", "Intérim : prise de connaissance et contrôle interne", Math.round(((c.mandat ?? 8000) * 0.3) / 50) * 50, 20);
+      if (ag) ajout(c, "audit", `Certification des comptes ${anneeDe(ag.jour) - 1}`, Math.round(((c.mandat ?? 8000) * 0.5) / 50) * 50, -(ag.jour - 21), 4);
+    } else {
+      ajout(c, "juridique", c.nom.startsWith("SARL") ? "Régularisation de trois exercices d'AG" : "Augmentation de capital et entrée d'un investisseur", c.nom.startsWith("SARL") ? 2400 : 3200, 15);
+      if (ag) ajout(c, "juridique", `Secrétariat juridique ${anneeDe(ag.jour)} (AG, registres)`, c.mandat ?? 1200, -ag.jour, 2);
+    }
+  }
+  // Missions juridiques et d'audit chez les clients en tenue.
+  const tenue = e.clients.filter((c) => !c.mission).sort((a, b) => b.forfait - a.forfait);
+  if (tenue[0]) ajout(tenue[0], "audit", "Audit d'acquisition d'une cible", 8500, 25);
+  if (tenue[2]) ajout(tenue[2], "juridique", "Transformation de SARL en SAS", 2800, 15, 2);
+  if (tenue[3]) ajout(tenue[3], "juridique", "Cession de parts et agrément du cessionnaire", 1800, 12, 2);
+  if (tenue[4]) ajout(tenue[4], "juridique", "Transfert de siège social", 1200, 10, 2);
+  // Sans auditeur, ces dossiers attendent : on propose tout de suite des profils.
+  if (!e.agents.some((a) => a.filiere === "audit")) {
+    ajouterCandidat(e, "Auditeur");
+    ajouterCandidat(e, "Auditeur");
+    log(e, "🔍 Le cabinet a des mandats de CAC et des missions d'audit : recrute un auditeur (deux candidats t'attendent dans Équipe & RH).", "neutre");
+  }
 }
 
 function candidatsDeDepart(e: Etat): Candidat[] {
@@ -1640,6 +1695,11 @@ export function migrer(e: Etat): Etat {
   e.controleResultat ??= null;
   if (e.controleJour <= jourDe(e.minute)) e.controleJour = ouvreOuApres(e.controleJour + 365);
   migrerExt(e);
+  equiperTableaux(e);
+  if (!e.compteurs.portefeuilleMixte && e.clients.length >= 5) {
+    portefeuilleMixte(e);
+    repartir(e);
+  }
   e.pa = e.paMax = SANS_LIMITE;
   if (!e.compteurs.validationsDec) {
     e.compteurs.validationsDec = 1;

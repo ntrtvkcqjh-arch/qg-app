@@ -46,7 +46,8 @@ export default function Jeu() {
     if (!pret) return;
     const id = setInterval(() => {
       const e = useJeu.getState().etat;
-      if (e && e.vitesse > 0 && !document.hidden) useJeu.getState().tic(e.vitesse);
+      // Le temps s'arrête pendant qu'une décision est ouverte : on réfléchit sans stress.
+      if (e && e.vitesse > 0 && !document.hidden && !useJeu.getState().messageOuvert) useJeu.getState().tic(e.vitesse);
     }, 1000);
     const retour = () => {
       if (!document.hidden) useJeu.getState().rattraper();

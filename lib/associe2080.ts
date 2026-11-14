@@ -11,6 +11,7 @@ import { messageSpecial } from "@/lib/ext";
 import { lancerChaine } from "@/lib/chaines";
 import { clamp, creerDossier, dire, log, pick, repartir, rnd, validerDossier } from "@/lib/moteur";
 import { gradeDe } from "@/lib/vie3";
+import { jourTableauxBord, moisTableauxBord } from "@/lib/tableauBord";
 import type { Agent, Client, Dossier, Etat, OptionDilemme } from "@/lib/types";
 
 const euros = (n: number) => `${Math.round(n).toLocaleString("fr-FR")} €`;
@@ -366,11 +367,13 @@ function moisCa(e: Etat) {
 export function debutJournee2080(e: Etat, jour: number, premierDuMois: boolean) {
   assignerPortefeuilles(e);
   if (dateDe(jour).getUTCDay() === 1) bilanSemaine(e);
+  jourTableauxBord(e, jour);
   // Ta journée d'agenda est comptée par type de créneau.
   if (premierDuMois && jour > 0) {
     moisPortefeuilles(e);
     moisCa(e);
     moisAbonnements(e);
+    moisTableauxBord(e);
     opportunites(e);
     comitesStrategiques(e);
   }

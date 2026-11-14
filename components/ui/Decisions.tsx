@@ -6,6 +6,7 @@ import { tutorielActif } from "./Tutoriel";
 import { jourDe, minuteDuJour } from "@/lib/calendrier";
 import type { Message } from "@/lib/types";
 import { Detail } from "./panneaux/Messages";
+import { estDelegue } from "@/lib/vie5";
 
 // Fenêtre de décision : remplace la messagerie. Chaque décision (validation
 // de mission avec sa question DEC, dilemme, appel, demande de l'équipe,
@@ -21,6 +22,7 @@ const ECART_ZEN = 120_000;
 export default function Decisions() {
   const messages = useJeu((s) => s.etat?.messages);
   const zen = useJeu((s) => s.etat?.compteurs.popupsTous !== 1);
+  const etat = useJeu((s) => s.etat);
   const courantId = useJeu((s) => s.messageOuvert);
   const ouvrirMessage = useJeu((s) => s.ouvrirMessage);
   const notifier = useJeu((s) => s.notifier);
@@ -35,7 +37,7 @@ export default function Decisions() {
     return () => clearInterval(t);
   }, []);
 
-  const file = (messages ?? []).filter((m) => aTraiter(m) && !(zen && m.statut === "info")).sort((a, b) => priorite(b) - priorite(a) || a.jour * 1440 + a.minute - (b.jour * 1440 + b.minute));
+  const file = (messages ?? []).filter((m) => aTraiter(m) && !(zen && m.statut === "info") && !(etat && estDelegue(etat, m))).sort((a, b) => priorite(b) - priorite(a) || a.jour * 1440 + a.minute - (b.jour * 1440 + b.minute));
   const courant = messages?.find((m) => m.id === courantId) ?? null;
 
   // Une nouvelle décision importante rouvre la fenêtre.

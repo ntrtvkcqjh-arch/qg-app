@@ -182,6 +182,10 @@ export type Client = {
   abonnement?: number; // abonnement de conseil : 1 Pilotage, 2 Stratégie, 3 Direction financière externalisée
   mission?: "cac" | "juridique"; // client hors tenue : mandat de commissaire aux comptes ou secrétariat juridique seul
   mandat?: number; // honoraires annuels du mandat (CAC ou juridique)
+  kpi?: { ca: number[]; marge: number[]; treso: number[]; dso: number[] }; // tableau de bord mensuel (12 mois)
+  signal?: { type: "marge" | "treso" | "dso" | "ca"; depuis: number; repere?: boolean }; // signal faible en cours
+  alerte?: number; // dernier jour où tu as alerté le dirigeant
+  redressement?: number; // mois de redressement après ton alerte
   historique?: { jour: number; texte: string }[];
 };
 
@@ -412,7 +416,7 @@ export type Etat = {
   agences?: Agence[];
   chaines?: { id: string; type: string; etape: number; score: number; prochain: number; ctx: { client?: string; agent?: string; montant?: number } }[]; // cas en plusieurs étapes
   litiges?: { jour: number; client: string; montant: number }[];
-  auto?: { dec?: boolean; rh?: boolean; finances?: boolean }; // thèmes délégués (gestion automatique) // litiges d'honoraires à venir
+  auto?: { dec?: boolean; rh?: boolean; finances?: boolean; conseil?: boolean; autres?: boolean; qui?: Record<string, string> }; // thèmes délégués (gestion automatique) // litiges d'honoraires à venir
   controles?: { id: string; client: string; etape: number; prochain: number; score: number; rappel: number }[]; // contrôles fiscaux de clients
   logiciels?: { production: number; paie: number; pdp: number; migrationJusqua: number };
   agenda?: { semaine: number; blocs: { id: string; jour: number; creneau: number; type: "rdv" | "reunion" | "signature" | "banque" | "production"; titre: string; ref?: string }[] };

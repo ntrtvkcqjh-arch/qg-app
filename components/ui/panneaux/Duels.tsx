@@ -6,6 +6,7 @@ import { QUESTIONS_DEC } from "@/lib/data/questionsDec";
 import { NB_ETAPES_FR, lancerFilRouge } from "@/lib/filRouge";
 import { useJeu } from "@/lib/store";
 import type { Agent, Etat } from "@/lib/types";
+import { SYNTHESES, corrigerSynthese } from "@/lib/data/syntheses";
 
 // Duels de quiz contre les collaborateurs et dossier complet « fil rouge ».
 
@@ -205,6 +206,94 @@ export function FilRouge() {
               ))}
             </ul>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function noterSynthese(e: Etat, id: string, score: number, total: number): string | null {
+  const s = SYNTHESES.find((x) => x.id === id);
+  if (!s) return null;
+  const pct = Math.round((score / total) * 100);
+  e.compteurs[`synth:${id}`] = Math.max(e.compteurs[`synth:${id}`] ?? 0, pct);
+  e.compteurs.synthesesRendues = (e.compteurs.synthesesRendues ?? 0) + 1;
+  e.niveauDec = Math.min(100, e.niveauDec + (pct >= 80 ? 3 : pct >= 50 ? 2 : 1));
+  e.statsThemes ??= {};
+  const st = (e.statsThemes[s.theme] ??= { ok: 0, total: 0 });
+  st.ok += score;
+  st.total += total;
+  return null;
+}
+
+/** Note de synthèse façon épreuve du DEC : texte libre, correction par notions clés. */
+export function NotesSynthese() {
+  const e = useJeu((s) => s.etat)!;
+  const agir = useJeu((s) => s.agir);
+  const [id, setId] = useState<string | null>(null);
+  const [texte, setTexte] = useState("");
+  const [rendu, setRendu] = useState(false);
+  const s = SYNTHESES.find((x) => x.id === id);
+  if (!s)
+    return (
+      <div className="syntheses">
+        <p className="aide">Un cas, une recommandation rédigée comme à l&apos;épreuve écrite. La correction repère les notions clés attendues et te montre un corrigé type. Ta meilleure note reste affichée.</p>
+        <div className="liste-syntheses">
+          {SYNTHESES.map((x) => {
+            const best = e.compteurs[`synth:${x.id}`];
+            return (
+              <button key={x.id} className="adversaire" onClick={() => { setId(x.id); setTexte(""); setRendu(false); }}>
+                <span>
+                  <strong>✍️ {x.titre}</strong>
+                  <small>{x.theme}</small>
+                </span>
+                {best !== undefined && <em>{best} %</em>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  const c = corrigerSynthese(s, texte);
+  return (
+    <div className="syntheses">
+      <button className="lien" onClick={() => setId(null)}>
+        ← Tous les cas
+      </button>
+      <h3 className="titre-section">✍️ {s.titre}</h3>
+      <p>{s.enonce}</p>
+      <p className="aide">
+        <strong>{s.consigne}</strong>
+      </p>
+      <textarea className="zone-synthese" rows={10} value={texte} disabled={rendu} placeholder="Ta note : diagnostic, règles applicables, recommandation…" onChange={(ev) => setTexte(ev.target.value)} />
+      {!rendu ? (
+        <button
+          className="bouton principal-btn"
+          disabled={texte.trim().length < 80}
+          onClick={() => {
+            setRendu(true);
+            agir(noterSynthese, s.id, c.score, c.total);
+          }}
+        >
+          Rendre ma note {texte.trim().length < 80 ? `(encore ${80 - texte.trim().length} caractères)` : ""}
+        </button>
+      ) : (
+        <div className="bilan-fr">
+          <h4>
+            Notions couvertes : {c.score}/{c.total} ({Math.round((c.score / c.total) * 100)} %)
+          </h4>
+          <ul className="mini-liste">
+            {c.res.map((r) => (
+              <li key={r.notion}>
+                {r.ok ? "✔" : "✘"} <strong>{r.notion}</strong> — {r.pourquoi}
+              </li>
+            ))}
+          </ul>
+          <h4>Corrigé type</h4>
+          <p>{s.corrige}</p>
+          <button className="bouton petit" onClick={() => { setTexte(""); setRendu(false); }}>
+            Réessayer
+          </button>
         </div>
       )}
     </div>

@@ -2684,3 +2684,25 @@ td.objectif .niveau-skill {
 .abonnement.actif { background: #e6edff; border-color: #2f5bea; }
 .abonnement small { color: #6b7385; }
 .abonnement em { font-style: normal; font-size: 11px; color: #2f5bea; font-weight: 700; }
+
+/* Matrice de délégation */
+.matrice-delegation { display: grid; gap: 8px; margin-bottom: 12px; }
+.ligne-delegation { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; border-radius: 10px; background: rgba(0, 0, 0, 0.04); }
+.ligne-delegation span { display: flex; flex-direction: column; }
+.ligne-delegation small { opacity: 0.65; }
+.ligne-delegation select { max-width: 55%; }
+
+/* Tableaux de bord clients */
+.bloc-kpi { margin: 10px 0 14px; }
+.bloc-kpi h4 { margin: 0 0 6px; }
+.carte-kpi { display: grid; gap: 8px; }
+.grille-kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.indic { display: flex; flex-direction: column; gap: 2px; padding: 8px; border-radius: 10px; background: rgba(0, 0, 0, 0.04); }
+.indic small { opacity: 0.7; font-size: 11px; }
+.indic strong em { font-style: normal; font-weight: 400; font-size: 11px; opacity: 0.6; }
+.indic span { font-size: 11px; opacity: 0.8; }
+.courbe-kpi { width: 100%; height: 30px; }
+
+/* Notes de synthèse */
+.liste-syntheses { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.zone-synthese { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 10px; border: 1px solid rgba(0, 0, 0, 0.15); font: inherit; resize: vertical; margin-bottom: 8px; }

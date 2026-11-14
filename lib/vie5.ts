@@ -239,28 +239,85 @@ function formeAssociee(e: Etat, jour: number) {
 const RH = ["promo_", "alternants", "eval_", "alternant_", "mitemps", "mentorat", "essai_", "contre_offre", "motivation", "seminaire", "noel", "nao", "objectifs", "astreintes", "oeth", "tournoi", "tiktok", "conge", "naissance", "veille"];
 const FIN = ["cloture", "offre", "rachat", "lm", "investir", "comite", "agenda", "retraite", "rc_", "litige", "cac_"];
 
-/** Résout les décisions courantes des thèmes délégués (ou toutes pendant tes vacances). */
-export function gestionAuto(e: Etat) {
+export type CategorieDelegation = "dec" | "rh" | "finances" | "conseil" | "autres";
+export const CATEGORIES_DELEGATION: { id: CategorieDelegation; nom: string; detail: string }[] = [
+  { id: "dec", nom: "Contrôles et missions expertes", detail: "validations de dossiers, revues, étapes des missions" },
+  { id: "rh", nom: "Ressources humaines", detail: "promotions, alternants, congés, événements d'équipe" },
+  { id: "finances", nom: "Gestion du cabinet", detail: "lettres de mission, litiges, clôture, offres, rachats" },
+  { id: "conseil", nom: "Conseil clients", detail: "opportunités de mission, comités stratégiques" },
+  { id: "autres", nom: "Petites décisions", detail: "demandes courantes de niveau 1-2" },
+];
+
+/** Catégorie d'une décision en attente (null : jamais déléguable). */
+export function categorieDe(m: Message): CategorieDelegation | null {
+  if (m.statut !== "attente") return null;
+  if (m.theme === "validation") return m.cas || m.revue ? "dec" : null;
+  if (!m.dilemme) return null;
+  const codes = m.dilemme.options.map((o) => o.code ?? "");
+  if (codes.some((c) => c.startsWith("comite:") || c.startsWith("opp:"))) return "conseil";
+  if (codes.some((c) => RH.some((p) => c.startsWith(p)))) return "rh";
+  if (codes.some((c) => FIN.some((p) => c.startsWith(p)))) return "finances";
+  if (codes.some((c) => c.startsWith("ch:"))) return "dec";
+  if (m.niveau <= 2) return "autres";
+  return null;
+}
+
+/** La personne à qui une catégorie est déléguée (null : tu la gardes). */
+export function delegueDe(e: Etat, cat: CategorieDelegation): Agent | null {
   const a = e.auto ?? {};
+  if (!a[cat]) return null;
+  const choisi = e.agents.find((x) => x.id === a.qui?.[cat]);
+  if (choisi) return choisi;
+  const cadres = e.agents.filter((x) => x.filiere === "associe" || gradeDe(x) >= 3);
+  return [...cadres].sort((x, y) => y.competence - x.competence)[0] ?? null;
+}
+
+export function estDelegue(e: Etat, m: Message): boolean {
+  if (enVacances(e)) return true;
+  const cat = categorieDe(m);
+  return !!cat && !!delegueDe(e, cat);
+}
+
+/** Résout les décisions des catégories déléguées (ou toutes pendant tes vacances).
+ * La qualité des choix dépend de la compétence de la personne à qui tu as délégué. */
+export function gestionAuto(e: Etat) {
   const vac = enVacances(e);
-  if (!vac && !a.dec && !a.rh && !a.finances) return;
-  for (const m of e.messages.filter((x) => x.statut === "attente").slice(0, 6)) {
-    if (m.theme === "validation" && (vac || a.dec)) {
-      if (m.cas) resoudreCas(e, m.id, rnd() < 0.75 ? m.cas.bonne : (m.cas.bonne + 1) % m.cas.choix.length);
-      else if (m.revue) resoudreRevue(e, m.id, m.revue.lignes.map((l, i) => (l.anomalie && rnd() < 0.8 ? i : -1)).filter((i) => i >= 0));
-      continue;
+  for (const m of e.messages.filter((x) => x.statut === "attente").slice(0, 8)) {
+    const cat = categorieDe(m);
+    if (!cat) continue;
+    const qui = delegueDe(e, cat);
+    if (!vac && !qui) continue;
+    const q = Math.min(0.95, (qui?.competence ?? 60) / 100);
+    if (m.cas) resoudreCas(e, m.id, rnd() < 0.45 + 0.5 * q ? m.cas.bonne : (m.cas.bonne + 1) % m.cas.choix.length);
+    else if (m.revue) resoudreRevue(e, m.id, m.revue.lignes.map((l, i) => (l.anomalie && rnd() < 0.5 + 0.45 * q ? i : -1)).filter((i) => i >= 0));
+    else if (m.dilemme) {
+      const o = m.dilemme.options;
+      let choix = 0;
+      if (cat === "conseil") {
+        // Un bon manager sait reconnaître la meilleure recommandation.
+        const scores = o.map((x) => Number((x.code ?? "").split(":").pop()) || 0);
+        const meilleur = scores.indexOf(Math.max(...scores));
+        const propose = o.findIndex((x) => /^opp:.*:0$/.test(x.code ?? ""));
+        choix = rnd() < q ? (propose >= 0 ? propose : meilleur) : Math.floor(rnd() * o.length);
+      } else if (cat === "dec") choix = rnd() < q ? 0 : Math.floor(rnd() * o.length);
+      else choix = rnd() < 0.6 + 0.4 * q ? 0 : Math.floor(rnd() * o.length);
+      choisirDilemme(e, m.id, choix);
+    } else continue;
+    e.compteurs.delegues = (e.compteurs.delegues ?? 0) + 1;
+    if (qui) {
+      qui.confiance = clamp(qui.confiance + 0.5);
+      log(e, `🤝 ${qui.prenom} a traité pour toi : ${m.sujet.replace(/^\S+\s/, "")}`);
     }
-    if (!m.dilemme) continue;
-    const codes = m.dilemme.options.map((o) => o.code ?? "");
-    const theme = codes.some((c) => RH.some((p) => c.startsWith(p))) ? "rh" : codes.some((c) => FIN.some((p) => c.startsWith(p))) ? "finances" : codes.some((c) => c.startsWith("ch:")) ? "dec" : "autre";
-    if (!(vac || (theme === "rh" && a.rh) || (theme === "finances" && a.finances) || (theme === "dec" && a.dec))) continue;
-    const choix = theme === "dec" ? Math.floor(rnd() * m.dilemme.options.length) : 0;
-    choisirDilemme(e, m.id, choix);
   }
 }
 
-export function setAuto(e: Etat, cle: "dec" | "rh" | "finances", v: boolean): string | null {
+export function setAuto(e: Etat, cle: CategorieDelegation, v: boolean): string | null {
   e.auto = { ...(e.auto ?? {}), [cle]: v };
+  return null;
+}
+
+export function setDelegue(e: Etat, cle: CategorieDelegation, agentId: string): string | null {
+  e.auto = { ...(e.auto ?? {}), [cle]: !!agentId, qui: { ...(e.auto?.qui ?? {}), [cle]: agentId } };
   return null;
 }
 
@@ -286,7 +343,7 @@ export function debutJourneeVie5(e: Etat, jour: number, premierDuMois: boolean) 
 }
 
 export function quartVie5(e: Etat) {
-  if (minuteDuJour(e.minute) % 60 === 0) gestionAuto(e);
+  if (minuteDuJour(e.minute) % 15 === 0) gestionAuto(e);
 }
 
 export function actionVie5(e: Etat, code: string, m: Message): boolean {
