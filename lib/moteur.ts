@@ -34,6 +34,7 @@ import { QCM } from "@/lib/data/formation";
 import { LOCAUX, niveauLocaux } from "@/lib/data/locaux";
 import { BUREAU_ASSOCIE, OPEN_SPACES, POSTES as POSTES_PLAN } from "@/lib/plan";
 import { MISSIONS_PONCTUELLES, PROSPECTS_NOUVEAUX } from "@/lib/data/prospects";
+import { prospectAleatoire } from "@/lib/data/prospectsGen";
 import type { Agent, BilanPeriode, Candidat, Client, Difficulte, Dossier, Effets, Etat, Filiere, Gazette, Journal, Message, ModeDepart, NoteCarnet, Niveau, OptionDilemme, PieceId, ResultatControle, TypeMission } from "@/lib/types";
 
 // ---------- réglages ----------
@@ -1705,40 +1706,55 @@ function mettreAJourVisiteurs(e: Etat) {
 
 // ---------- demandes (prospects et missions ponctuelles) ----------
 
+/** Crée la demande d'un nouveau prospect (courrier ou visite à l'accueil). */
+export function nouveauProspect(e: Etat): boolean {
+  const jour = jourDe(e.minute);
+  const premium = e.niveauLocaux >= 4 ? 1.15 : 1;
+  const pris = new Set([...e.clients.map((c) => c.nom), ...e.propositions.map((p) => p.nouveau?.nom ?? "")]);
+  const libres = PROSPECTS_NOUVEAUX.filter((x) => !pris.has(x.nom) && !e.compteurs[`refus:${x.nom}`]);
+  const p = libres.length && rnd() < 0.25 ? pick(libres) : prospectAleatoire(rnd, pris);
+  if (!p) return false;
+  const visite = rnd() < 0.35;
+  const missions: Etat["propositions"][number]["missions"] = [{ type: "conseil", titre: `Reprise du dossier — ${p.nom}`, honoraires: 1200, delai: 12 }];
+  const liasse = prochaineLiasse(e);
+  if (liasse && liasse.jour > jour + 15 && liasse.jour - jour < 120) missions.push({ type: "bilan", titre: `Bilan ${anneeDe(liasse.jour) - 1} — ${p.nom}`, honoraires: Math.round((1500 + p.forfait * 0.8) / 50) * 50, delai: -1 });
+  const prop = {
+    id: uid(e, "p"),
+    origine: visite ? ("visite" as const) : ("courrier" as const),
+    clientId: null,
+    nouveau: { nom: p.nom, dirigeant: p.dirigeant, secteur: p.secteur, trait: p.trait, satisfaction: 70, forfait: Math.round((p.forfait * premium) / 50) * 50, tvaMensuelle: p.tvaMensuelle, paie: p.paie },
+    titre: `${p.nom} cherche un expert-comptable`,
+    description: `${p.dirigeant} (${p.secteur.toLowerCase()}) : « ${p.trait} ». ${p.tvaMensuelle ? "TVA mensuelle. " : ""}${p.paie ? "Paie à gérer. " : ""}`,
+    missions,
+    forfait: Math.round((p.forfait * premium) / 50) * 50,
+    difficulte: p.difficulte,
+    risque: p.risque ?? null,
+    recue: jour,
+    expire: visite ? jour + 1 : ajouterJoursOuvres(jour, 4),
+  };
+  e.propositions.push(prop);
+  if (visite) ajouterVisiteur(e, p.dirigeant, prop.id);
+  log(e, visite ? `🚪 ${p.dirigeant} (${p.nom}) passe à l'accueil et demande à être reçu·e.` : `📨 Nouvelle demande par courrier : ${p.nom}.`);
+  return true;
+}
+
 export function genererPropositions(e: Etat, f: number) {
   const jour = jourDe(e.minute);
-  if (e.propositions.length >= 6) return;
   const premium = e.niveauLocaux >= 4 ? 1.15 : 1;
-  const boost = (e.compteurs.reseauBoost ?? 0) > 0 ? 12 : 1; // contacts du réseau, presse
-  const chanceNouveau = boost * (e.mode === "creation" && e.clients.length < 8 ? 0.006 : 0.0025) * (e.reputation > 30 ? 1 : 0.3) * (aService(e, "accueil") ? 1.3 : 1);
   const gel = (e.compteurs.gelProspectsJusqua ?? 0) > jour; // gel décidé en réunion
-  if (!gel && rnd() < chanceNouveau && e.clients.length + e.propositions.length < 18) {
-    const libres = PROSPECTS_NOUVEAUX.filter((x) => !e.clients.some((c) => c.nom === x.nom) && !e.propositions.some((p) => p.nouveau?.nom === x.nom) && !e.compteurs[`refus:${x.nom}`]);
-    if (libres.length) {
-      const p = pick(libres);
-      const visite = rnd() < 0.45;
-      const missions: Etat["propositions"][number]["missions"] = [{ type: "conseil", titre: `Reprise du dossier — ${p.nom}`, honoraires: 1200, delai: 12 }];
-      const liasse = prochaineLiasse(e);
-      if (liasse && liasse.jour > jour + 15 && liasse.jour - jour < 120) missions.push({ type: "bilan", titre: `Bilan ${anneeDe(liasse.jour) - 1} — ${p.nom}`, honoraires: Math.round((1500 + p.forfait * 0.8) / 50) * 50, delai: -1 });
-      const prop = {
-        id: uid(e, "p"),
-        origine: visite ? ("visite" as const) : ("courrier" as const),
-        clientId: null,
-        nouveau: { nom: p.nom, dirigeant: p.dirigeant, secteur: p.secteur, trait: p.trait, satisfaction: 70, forfait: Math.round((p.forfait * premium) / 50) * 50, tvaMensuelle: p.tvaMensuelle, paie: p.paie },
-        titre: `${p.nom} cherche un expert-comptable`,
-        description: `${p.dirigeant} (${p.secteur.toLowerCase()}) : « ${p.trait} ». ${p.tvaMensuelle ? "TVA mensuelle. " : ""}${p.paie ? "Paie à gérer. " : ""}`,
-        missions,
-        forfait: Math.round((p.forfait * premium) / 50) * 50,
-        difficulte: p.difficulte,
-        risque: p.risque ?? null,
-        recue: jour,
-        expire: visite ? jour + 1 : ajouterJoursOuvres(jour, 4),
-      };
-      e.propositions.push(prop);
-      if (boost > 1) e.compteurs.reseauBoost = Math.max(0, (e.compteurs.reseauBoost ?? 1) - 1);
-      if (visite) ajouterVisiteur(e, p.dirigeant, prop.id);
-      log(e, visite ? `🚪 ${p.dirigeant} (${p.nom}) passe à l'accueil et demande à être reçu·e.` : `📨 Nouvelle demande par courrier : ${p.nom}.`);
+  // Au moins 5 nouveaux prospects par jour ouvré, étalés entre 9h et 17h
+  // (plus avec le réseau, la presse ou une conjoncture porteuse).
+  const m = minuteDuJour(e.minute);
+  if (!gel && estOuvre(jour) && m >= 9 * 60 && m < 17 * 60) {
+    if (e.compteurs.prospectsJour !== jour) {
+      e.compteurs.prospectsJour = jour;
+      e.compteurs.prospectsCrees = 0;
+      e.compteurs.prospectsObjectif = 5 + ((e.compteurs.reseauBoost ?? 0) > 0 ? 2 : 0);
+      if ((e.compteurs.reseauBoost ?? 0) > 0) e.compteurs.reseauBoost = Math.max(0, (e.compteurs.reseauBoost ?? 1) - 1);
     }
+    const objectif = e.compteurs.prospectsObjectif ?? 5;
+    const attendu = Math.min(objectif, Math.floor(((m - 9 * 60) / (8 * 60)) * objectif) + 1);
+    if ((e.compteurs.prospectsCrees ?? 0) < attendu && e.propositions.filter((p) => p.nouveau).length < 25 && nouveauProspect(e)) e.compteurs.prospectsCrees = (e.compteurs.prospectsCrees ?? 0) + 1;
   }
   if (rnd() < 0.0016 * f && e.clients.length) {
     const c = pick(e.clients);
