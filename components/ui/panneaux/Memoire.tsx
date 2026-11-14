@@ -6,6 +6,7 @@ import { useJeu } from "@/lib/store";
 import DecPlan from "./DecPlan";
 import Examen from "./Examen";
 import { ARevoir, Fiches, Glossaire, Maitrise } from "./Apprendre";
+import { Duels, FilRouge } from "./Duels";
 
 // Ton DEC : mémoire étape par étape (avec ton directeur de mémoire), puis
 // soutenance devant le jury.
@@ -13,7 +14,7 @@ import { ARevoir, Fiches, Glossaire, Maitrise } from "./Apprendre";
 export default function Memoire() {
   const e = useJeu((s) => s.etat)!;
   const [jury, setJury] = useState(false);
-  const [onglet, setOnglet] = useState<"memoire" | "examen" | "maitrise" | "fiches" | "revoir" | "glossaire">("memoire");
+  const [onglet, setOnglet] = useState<"memoire" | "examen" | "filrouge" | "duels" | "maitrise" | "fiches" | "revoir" | "glossaire">("memoire");
   const diplomee = !!e.compteurs.diplomee;
   const onglets = (
     <div className="onglets onglets-dec">
@@ -21,6 +22,8 @@ export default function Memoire() {
         [
           ["memoire", "📘 Mémoire"],
           ["examen", "📝 Examen blanc"],
+          ["filrouge", "📒 Fil rouge"],
+          ["duels", "⚔️ Duels"],
           ["maitrise", "📊 Maîtrise"],
           ["fiches", "📚 Fiches"],
           ["revoir", `🔁 À revoir (${(e.aRevoir ?? []).length})`],
@@ -38,6 +41,8 @@ export default function Memoire() {
       <div>
         {onglets}
         {onglet === "examen" && <Examen />}
+        {onglet === "filrouge" && <FilRouge />}
+        {onglet === "duels" && <Duels />}
         {onglet === "maitrise" && <Maitrise />}
         {onglet === "fiches" && <Fiches />}
         {onglet === "revoir" && <ARevoir />}

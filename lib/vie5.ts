@@ -7,6 +7,7 @@ import { anneeDe, dateDe, jourDe, minuteDuJour, moisDe } from "@/lib/calendrier"
 import { messageSpecial } from "@/lib/ext";
 import { choisirDilemme, clamp, dire, donnerBadge, hash, inc, log, pick, resoudreCas, rnd } from "@/lib/moteur";
 import { souvenir } from "@/lib/vie2";
+import { lancerChaine } from "@/lib/chaines";
 import { gradeDe, resoudreRevue } from "@/lib/vie3";
 import type { Agent, Etat, Message, OptionDilemme, Personnalite } from "@/lib/types";
 
@@ -37,6 +38,8 @@ function veille(e: Etat, jour: number) {
     opt("Un simple mail à l'équipe", "veille:mail", {}, "L'info est passée… plus ou moins lue."),
     opt("Pas le temps, on verra plus tard", "veille:rien", {}, "L'info n'est pas diffusée."),
   ]);
+  // Le cas pratique d'actualité qui va avec.
+  lancerChaine(e, `actu_${i}`);
 }
 
 // ---------- 2. anniversaires ----------

@@ -40,6 +40,16 @@ function finMission(nom: string, honoraires: number): Fin {
   };
 }
 
+/** Issue d'un cas d'actualité : niveau DEC, et une prime de réputation si tout est juste. */
+function finActu(nom: string): Fin {
+  return (e, r) => {
+    e.niveauDec = clamp(e.niveauDec + r * 3);
+    e.compteurs.actuOk = (e.compteurs.actuOk ?? 0) + (r >= 0.75 ? 1 : 0);
+    if (r === 1) e.reputation = clamp(e.reputation + 1);
+    log(e, `📰 Actualité commentée (${nom}) : ${r === 1 ? "parfait, tu peux en faire une newsletter pour les clients !" : r >= 0.5 ? "bien compris dans l'ensemble." : "à retravailler : relis la fiche dans Mon DEC."}`, r >= 0.5 ? "bien" : "mal");
+  };
+}
+
 export const CHAINES: Record<string, Def> = {
   // ---------- missions de conseil ----------
   evaluation: {
@@ -279,6 +289,88 @@ export const CHAINES: Record<string, Def> = {
         souvenir(e, "🏆", "Trophée Employeur de l'année");
       } else log(e, `🏆 Pas de trophée cette année${moral < 60 ? " : le jury a noté un moral d'équipe moyen" : ""}.`, "neutre");
     },
+  },
+
+  // ---------- actualité commentée (un cas pratique par nouveauté) ----------
+  actu_0: {
+    emoji: "📰",
+    nom: "Actualité : flat tax à 31,4 %",
+    besoin: "rien",
+    etapes: [
+      { titre: "Le calcul", texte: () => "Le président d'une SAS cliente veut se verser 50 000 € de dividendes en 2026 et rester au prélèvement forfaitaire unique. Combien de prélèvements au total ?", options: [["15 700 € (31,4 %)", 2], ["15 000 € (30 %)", -1], ["6 400 € (12,8 %)", -1]] },
+      { titre: "Le piège du gérant majoritaire", texte: () => "Son associé, gérant majoritaire d'une SARL, envisage la même chose. Quel point de vigilance ?", options: [["La part des dividendes au-delà de 10 % du capital social, des primes d'émission et des comptes courants est soumise aux cotisations sociales des indépendants", 2], ["Aucun : même traitement qu'en SAS", -1], ["Les dividendes sont interdits en SARL", -2]] },
+    ],
+    fin: finActu("flat tax 2026"),
+  },
+  actu_1: {
+    emoji: "📰",
+    nom: "Actualité : facture électronique",
+    besoin: "rien",
+    etapes: [
+      { titre: "Les obligations", texte: () => "Une PME cliente te demande ce qu'elle doit faire en novembre 2026 pour la facture électronique. Réponse ?", options: [["Elle doit déjà pouvoir recevoir ses factures via une plateforme agréée ; elle devra les émettre électroniquement au 1er septembre 2027", 2], ["Rien avant 2030", -2], ["Tout émettre en PDF par e-mail suffit", -1]] },
+      { titre: "L'e-reporting", texte: () => "Elle vend aussi à des particuliers et à des clients étrangers. Que devra-t-elle transmettre ?", options: [["Les données de ces opérations (e-reporting) via sa plateforme, puisqu'elles ne passent pas par une facture électronique entre entreprises françaises", 2], ["Rien, ces opérations sont hors champ", -1], ["Une copie papier de chaque ticket de caisse", -1]] },
+    ],
+    fin: finActu("facture électronique"),
+  },
+  actu_2: {
+    emoji: "📰",
+    nom: "Actualité : plafond de la Sécurité sociale 2026",
+    besoin: "rien",
+    etapes: [
+      { titre: "Le plafond mensuel", texte: () => "Le PASS 2026 est de 48 060 €. Quel est le plafond mensuel (PMSS) ?", options: [["4 005 €", 2], ["3 925 €", -1], ["4 806 €", -1]] },
+      { titre: "Application en paie", texte: () => "Un cadre gagne 5 000 € brut par mois. Sur quelle base est calculée la cotisation vieillesse plafonnée ?", options: [["4 005 € (dans la limite du plafond mensuel)", 2], ["5 000 € (tout le salaire)", -1], ["995 € (la partie au-dessus du plafond)", -1]] },
+    ],
+    fin: finActu("plafond de la Sécurité sociale"),
+  },
+  actu_3: {
+    emoji: "📰",
+    nom: "Actualité : LMNP et plus-value",
+    besoin: "rien",
+    etapes: [
+      { titre: "Le calcul", texte: () => "Un client loueur en meublé au réel a acheté un appartement 200 000 €, déduit 40 000 € d'amortissements, et le revend 260 000 € en 2026. Plus-value brute (avant abattements pour durée de détention) ?", options: [["100 000 € (le prix d'acquisition est minoré des 40 000 € d'amortissements)", 2], ["60 000 €", -1], ["20 000 €", -2]] },
+      { titre: "Le conseil", texte: () => "Il hésite à vendre. Que lui dis-tu ?", options: [["Chiffrer l'impact avant la vente : la réintégration des amortissements alourdit l'impôt, à comparer avec la poursuite de la location", 2], ["Vendre vite avant que la règle s'applique", -1], ["Passer en location nue rétroactivement", -2]] },
+    ],
+    fin: finActu("réforme LMNP"),
+  },
+  actu_4: {
+    emoji: "📰",
+    nom: "Actualité : meublés de tourisme",
+    besoin: "rien",
+    etapes: [
+      { titre: "Le micro-BIC", texte: () => "Une cliente loue un studio en meublé de tourisme non classé et encaisse 14 000 € de loyers. Revenu imposable au micro-BIC ?", options: [["9 800 € (abattement de 30 %)", 2], ["7 000 € (abattement de 50 %)", -1], ["14 000 €", -1]] },
+      { titre: "Au-delà du seuil", texte: () => "L'an prochain, elle prévoit 18 000 € de loyers. Conséquence ?", options: [["Au-delà de 15 000 €, elle passe au régime réel (déduction des charges et amortissements)", 2], ["Rien ne change", -1], ["Elle devient automatiquement loueuse professionnelle", -1]] },
+    ],
+    fin: finActu("meublés de tourisme"),
+  },
+  actu_5: {
+    emoji: "📰",
+    nom: "Actualité : franchise en base de TVA",
+    besoin: "rien",
+    etapes: [
+      { titre: "Le dépassement", texte: () => "Un consultant en franchise de TVA réalise 40 000 € de chiffre d'affaires en 2026 (seuil 37 500 €, seuil majoré 41 250 €). Que se passe-t-il ?", options: [["Il reste en franchise cette année et devient redevable de la TVA à partir du 1er janvier suivant", 2], ["Il doit facturer la TVA rétroactivement depuis janvier", -2], ["Rien, jamais", -1]] },
+      { titre: "Le seuil majoré", texte: () => "Et s'il atteint 45 000 € en cours d'année ?", options: [["Il devient redevable de la TVA dès le jour du dépassement du seuil majoré", 2], ["Seulement l'année suivante", -1], ["Seulement au-delà de 85 000 €", -1]] },
+    ],
+    fin: finActu("franchise en base de TVA"),
+  },
+  actu_6: {
+    emoji: "📰",
+    nom: "Actualité : transparence salariale",
+    besoin: "rien",
+    etapes: [
+      { titre: "Les offres d'emploi", texte: () => "Un client employeur recrute. Que lui impose la directive européenne sur la transparence des rémunérations ?", options: [["Indiquer la rémunération initiale ou sa fourchette aux candidats, et ne pas leur demander leur historique salarial", 2], ["Publier les salaires de tous ses salariés", -1], ["Rien pour les PME", -1]] },
+      { titre: "Les salariés en poste", texte: () => "Une salariée demande à connaître le salaire moyen des collègues à poste égal. Réponse ?", options: [["Elle a droit à une information sur les niveaux de rémunération moyens, ventilés par sexe, pour un même travail ou un travail de valeur égale", 2], ["Refuser : c'est confidentiel", -1], ["Lui donner les salaires nominatifs", -2]] },
+    ],
+    fin: finActu("transparence salariale"),
+  },
+  actu_7: {
+    emoji: "📰",
+    nom: "Actualité : avantage nourriture 2026",
+    besoin: "rien",
+    etapes: [
+      { titre: "Cas général", texte: () => "Un salarié prend 20 repas par mois fournis gratuitement par son employeur (hors HCR). Avantage en nature mensuel ?", options: [["110 € (20 × 5,50 €)", 2], ["85 € (20 × 4,25 €)", -1], ["Aucun", -1]] },
+      { titre: "Hôtels-cafés-restaurants", texte: () => "Même situation dans un restaurant (convention HCR). Avantage ?", options: [["85 € (20 × 4,25 €, un minimum garanti par repas)", 2], ["110 €", -1], ["200 €", -1]] },
+    ],
+    fin: finActu("avantage en nature nourriture"),
   },
 
   // ---------- crises du cabinet ----------

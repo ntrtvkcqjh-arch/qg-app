@@ -413,6 +413,8 @@ export type Etat = {
   logiciels?: { production: number; paie: number; pdp: number; migrationJusqua: number };
   agenda?: { semaine: number; blocs: { id: string; jour: number; creneau: number; type: "rdv" | "reunion" | "signature" | "banque" | "production"; titre: string; ref?: string }[] };
   questionsVues?: string[];
+  filRouge?: { etape: number; prochain: number; score: number; v: { saisie?: boolean; tvaOk?: boolean; salaires?: number; cca?: number; is?: number }; erreurs: string[]; bilan?: string };
+  duels?: Record<string, { v: number; d: number }>; // duels de quiz contre les collaborateurs
   aRevoir?: { cle: string; jour: number; niveau: number }[]; // répétition espacée des questions ratées // dernières questions DEC posées (évite les répétitions)
   dateDec: number; // jour de l'épreuve écrite visée
   memoire: Memoire;

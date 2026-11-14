@@ -30,6 +30,7 @@ import { actionVie4, debutJourneeVie4 } from "@/lib/vie4";
 import { chainesDuJour, chainesDuMois, repondreChaine } from "@/lib/chaines";
 import { actionVie5, debutJourneeVie5, quartVie5 } from "@/lib/vie5";
 import { debutJourneeVie6 } from "@/lib/vie6";
+import { etapeFilRouge, repondreFilRouge } from "@/lib/filRouge";
 
 const PRENOMS_F = new Set(["Léa", "Sophie", "Inès", "Nadia", "Camille", "Manon", "Chloé", "Emma", "Sarah", "Amina", "Zoé", "Clara", "Lina", "Jade"]);
 const opt = (label: string, code: string, effets: OptionDilemme["effets"] = {}, resultat = "C'est noté."): OptionDilemme => ({ label, cout: 0, effets, resultat, action: "vie", code });
@@ -53,6 +54,7 @@ export function debutJourneeVie(e: Etat, jour: number, premierDuMois: boolean) {
   debutJourneeVie6(e, jour, premierDuMois);
   if (premierDuMois && jour > 0) chainesDuMois(e);
   chainesDuJour(e, jour);
+  etapeFilRouge(e, jour);
   if (premierDuMois && jour > 0) {
     presse(e, jour);
     reseau(e, jour);
@@ -434,6 +436,11 @@ function comiteAssocies(e: Etat, jour: number) {
 // ---------- effets des décisions ----------
 
 export function actionVie(e: Etat, code: string, m: Message) {
+  if (code.startsWith("fr:")) {
+    const [, et, i] = code.split(":");
+    repondreFilRouge(e, Number(et), Number(i));
+    return;
+  }
   if (code.startsWith("ch:")) {
     const [, id, i] = code.split(":");
     repondreChaine(e, id, Number(i));

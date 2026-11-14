@@ -2651,3 +2651,16 @@ td.objectif .niveau-skill {
 .glossaire dl { margin: 0; display: flex; flex-direction: column; gap: 8px; }
 .glossaire dt { font-weight: 700; }
 .glossaire dd { margin: 0; font-size: 13px; color: #3d405b; }
+
+/* Duels et fil rouge */
+.adversaires { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 14px; }
+.adversaire { display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid #e6e9f0; border-radius: 12px; background: #fff; cursor: pointer; text-align: left; font: inherit; }
+.adversaire:hover { border-color: #2f5bea; }
+.adversaire span:nth-child(2) { display: flex; flex-direction: column; flex: 1; }
+.adversaire small { color: #6b7385; font-size: 11px; }
+.adversaire em { font-style: normal; font-size: 11px; color: #2f5bea; font-weight: 700; }
+.classement-duels { padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.classement-duels li { display: flex; justify-content: space-between; }
+.classement-duels li.moi { font-weight: 700; color: #2f5bea; }
+.bilan-fr { margin-top: 12px; background: #f7f8fb; border-radius: 12px; padding: 12px; font-size: 13px; }
+.bilan-fr h4 { margin: 0 0 4px; }
