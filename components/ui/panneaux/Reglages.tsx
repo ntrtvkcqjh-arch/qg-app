@@ -130,6 +130,11 @@ export default function Reglages() {
         <input type="checkbox" checked={!!e.compteurs.mobilite} onChange={(ev) => agir(basculer, "mobilite", ev.target.checked)} /> 🚲 Forfait mobilités durables (vélos de fonction, covoiturage : 25 € par personne et par mois, moins de retards les jours de grève)
       </label>
 
+      <h3 className="titre-section">⚖️ Revue des dossiers</h3>
+      <label className="case-reglage">
+        <input type="checkbox" checked={!e.compteurs.revueToutes} onChange={(ev) => agir((x: Etat) => { x.compteurs.revueToutes = ev.target.checked ? 0 : 1; return null; })} /> Mode associée 20/80 : tes seniors et managers revoient la production ; tu ne vois que les dossiers à enjeu et 3 contrôles par sondage par jour (décoche pour tout valider toi-même, mode entraînement)
+      </label>
+
       <h3 className="titre-section">🤖 Délégation (mode automatique)</h3>
       <p className="aide">Coche les thèmes que tes associés et managers gèrent pour toi. Pendant tes vacances, tout est délégué. Leurs choix sont prudents, pas toujours optimaux.</p>
       {(

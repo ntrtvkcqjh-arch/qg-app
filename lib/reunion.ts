@@ -314,6 +314,7 @@ export function ouvrirReunion(e: Etat, ids: string[]): string | null {
 
 /** Fin de réunion : compte-rendu au journal, managers de retour à leur poste. */
 export function cloreReunion(e: Etat, decisions: string[]): string | null {
+  e.compteurs.t_mgmt = (e.compteurs.t_mgmt ?? 0) + 1.5;
   for (const a of e.agents) {
     if (!a.enComite) continue;
     a.enComite = false;

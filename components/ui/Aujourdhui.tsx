@@ -5,6 +5,7 @@ import { besoins } from "@/lib/moteur";
 import { enSaisonFiscale } from "@/lib/vie3";
 import { enVacances, etatDefi } from "@/lib/vie5";
 import { CONJONCTURES, progressionObjectif } from "@/lib/vie6";
+import { Barre2080 } from "./panneaux/Developpement";
 import { LIBELLE_FILIERE } from "@/lib/data/equipe";
 import { useJeu } from "@/lib/store";
 import { statutAgent } from "./textes";
@@ -44,6 +45,10 @@ export default function Aujourdhui() {
             <span>À valider</span>
             <strong className={aValider.length ? "alerte" : ""}>{aValider.length}</strong>
           </button>
+        </div>
+        <div className="carte-2080">
+          <span>⚖️ Ton temps cette semaine (objectif : production ≤ 20 %)</span>
+          <Barre2080 />
         </div>
         <div className="conjoncture" title={CONJONCTURES[e.compteurs.conjoncture ?? 0].texte}>
           {CONJONCTURES[e.compteurs.conjoncture ?? 0].emoji} {CONJONCTURES[e.compteurs.conjoncture ?? 0].nom}

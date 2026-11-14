@@ -178,6 +178,7 @@ export type Client = {
   tvaMensuelle: boolean;
   paie: boolean;
   taille?: number; // 1 TPE, 2 PME, 3 ETI (le client grandit)
+  manager?: string; // senior, manager ou associé qui suit le client (portefeuille)
   historique?: { jour: number; texte: string }[];
 };
 

@@ -10,7 +10,7 @@ import { statutAgent, euros } from "../textes";
 import EquipePlus from "./EquipePlus";
 import FormationEquipe from "./FormationEquipe";
 import CarteRelations from "./CarteRelations";
-import { AvisSalaries, MurPromotions } from "./Developpement";
+import { AvisSalaries, MurPromotions, Portefeuilles } from "./Developpement";
 import Entretien from "./Entretien";
 
 export default function Equipe() {
@@ -149,6 +149,7 @@ export default function Equipe() {
           ))}
         </>
       )}
+      <Portefeuilles />
       <MurPromotions />
       <AvisSalaries />
       <h3 className="titre-section">💞 Carte des relations</h3>

@@ -4,7 +4,7 @@ import { dateCourte } from "@/lib/calendrier";
 import { useJeu } from "@/lib/store";
 import { euros } from "../textes";
 import Finances from "./Finances";
-import { Classement, Risques } from "./Developpement";
+import { Bilan2080, Classement, Risques } from "./Developpement";
 import { useState } from "react";
 
 export default function Bilans() {
@@ -117,6 +117,7 @@ export default function Bilans() {
           </div>
         ))}
       </div>
+      <Bilan2080 />
       <Classement />
       <Risques />
       <BoutonWrapped />

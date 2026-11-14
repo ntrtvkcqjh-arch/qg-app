@@ -31,6 +31,7 @@ import { chainesDuJour, chainesDuMois, repondreChaine } from "@/lib/chaines";
 import { actionVie5, debutJourneeVie5, quartVie5 } from "@/lib/vie5";
 import { debutJourneeVie6 } from "@/lib/vie6";
 import { etapeFilRouge, repondreFilRouge } from "@/lib/filRouge";
+import { actionOpportunite, debutJournee2080, quart2080, temps } from "@/lib/associe2080";
 
 const PRENOMS_F = new Set(["Léa", "Sophie", "Inès", "Nadia", "Camille", "Manon", "Chloé", "Emma", "Sarah", "Amina", "Zoé", "Clara", "Lina", "Jade"]);
 const opt = (label: string, code: string, effets: OptionDilemme["effets"] = {}, resultat = "C'est noté."): OptionDilemme => ({ label, cout: 0, effets, resultat, action: "vie", code });
@@ -55,6 +56,7 @@ export function debutJourneeVie(e: Etat, jour: number, premierDuMois: boolean) {
   if (premierDuMois && jour > 0) chainesDuMois(e);
   chainesDuJour(e, jour);
   etapeFilRouge(e, jour);
+  debutJournee2080(e, jour, premierDuMois);
   if (premierDuMois && jour > 0) {
     presse(e, jour);
     reseau(e, jour);
@@ -69,6 +71,7 @@ export function quartVie(e: Etat) {
   quartVie2(e);
   quartVie3(e);
   quartVie5(e);
+  quart2080(e);
   const jour = jourDe(e.minute);
   const m = minuteDuJour(e.minute);
   if (e.compteurs.evacuationJour === jour && m === e.compteurs.evacuationMinute) {
@@ -441,8 +444,12 @@ export function actionVie(e: Etat, code: string, m: Message) {
     repondreFilRouge(e, Number(et), Number(i));
     return;
   }
+  if (actionOpportunite(e, code)) return;
   if (code.startsWith("ch:")) {
     const [, id, i] = code.split(":");
+    const type = (e.chaines ?? []).find((k) => k.id === id)?.type ?? "";
+    const management = ["cyber", "departs", "perte_client", "fusion", "capital", "label", "demission", "harcelement", "etranger", "trophees"].includes(type);
+    temps(e, management ? "mgmt" : "conseil", 1);
     repondreChaine(e, id, Number(i));
     return;
   }

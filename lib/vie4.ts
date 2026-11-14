@@ -408,6 +408,8 @@ function journeeAgenda(e: Etat, jour: number) {
   const blocs = e.agenda.blocs.filter((b) => b.jour === idx);
   if (!blocs.length) return;
   for (const b of blocs) {
+    const cat = b.type === "production" ? "t_prod" : b.type === "rdv" ? "t_conseil" : "t_mgmt";
+    e.compteurs[cat] = (e.compteurs[cat] ?? 0) + 1;
     if (b.type === "rdv") {
       const c = e.clients.find((x) => x.id === b.ref);
       if (c) c.satisfaction = clamp(c.satisfaction + (e.compteurs.coworking ? 6 : 4));

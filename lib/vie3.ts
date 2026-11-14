@@ -234,6 +234,7 @@ export function resoudreRevue(e: Etat, msgId: string, coches: number[]): string 
   const m = e.messages.find((x) => x.id === msgId);
   if (!m || !m.revue || m.statut !== "attente") return "Cette revue est déjà faite.";
   e.compteurs.formeToi = clamp((e.compteurs.formeToi ?? 100) - 2);
+  e.compteurs.t_prod = (e.compteurs.t_prod ?? 0) + 0.75;
   const lignes = m.revue.lignes;
   const trouvees = lignes.filter((l, i) => l.anomalie && coches.includes(i));
   const ratees = lignes.filter((l, i) => l.anomalie && !coches.includes(i));

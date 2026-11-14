@@ -2665,3 +2665,16 @@ td.objectif .niveau-skill {
 .bilan-fr { margin-top: 12px; background: #f7f8fb; border-radius: 12px; padding: 12px; font-size: 13px; }
 .bilan-fr h4 { margin: 0 0 4px; }
 .tableau tr.debut-services td { border-top: 2px solid #e2e6ee; }
+
+/* Associée 20/80 */
+.barre-2080 { display: flex; flex-direction: column; gap: 4px; }
+.barre-2080 .barre { display: flex; height: 10px; border-radius: 99px; overflow: hidden; background: #eef0f5; }
+.barre-2080 .barre span { height: 100%; transition: width 0.4s; }
+.barre-2080 small { font-size: 12px; color: #6b7385; }
+.carte-2080 { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: #f5f7fb; display: flex; flex-direction: column; gap: 6px; }
+.carte-2080 > span { font-size: 12px; font-weight: 700; color: #3d405b; }
+.conseil-client { background: #f7f8fb; border-radius: 12px; padding: 10px 12px; margin: 10px 0; }
+.conseil-client h4 { margin: 8px 0 6px; }
+.conseil-client .vente { display: flex; flex-direction: column; gap: 6px; }
+.conseil-client select { padding: 7px; border-radius: 8px; border: 1px solid #dfe3ec; }
+.bilan-2080 h4 { margin: 10px 0 4px; font-size: 13px; }

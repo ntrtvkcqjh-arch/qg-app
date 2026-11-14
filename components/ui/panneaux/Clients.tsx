@@ -8,7 +8,7 @@ import { euros } from "../textes";
 import { controleDe } from "@/lib/vie4";
 import { fixerTarif } from "@/lib/vie5";
 import { comptesClient } from "@/lib/vie6";
-import { Partenaires } from "./Developpement";
+import { ConseilClient, Partenaires } from "./Developpement";
 
 // Portefeuille clients : fiche vivante de chaque client (historique,
 // humeur, dossiers, impayés) pour voir venir les départs.
@@ -162,6 +162,7 @@ function FicheClient({ id, retour }: { id: string; retour: () => void }) {
           💶 Revaloriser le forfait (+5 %)
         </button>
       </div>
+      <ConseilClient id={id} />
       <Comptes id={id} />
       <h4>Dossiers</h4>
       {!dossiers.length && <p className="vide">Aucun dossier.</p>}

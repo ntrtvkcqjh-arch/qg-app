@@ -24,6 +24,7 @@ import { MODELES } from "@/lib/data/messages";
 import { facteurMeteo, fatiguerToi } from "@/lib/vie2";
 import { facteurAgent, genererRevue, migrerCarriere } from "@/lib/vie3";
 import { facteurOutils, lettreDeMission } from "@/lib/vie4";
+import { noterCa, orienterValidation, temps } from "@/lib/associe2080";
 import { actionVie, debutJourneeVie, nouvelleRecrue, potDeDepart, quartVie, rendezVousClient } from "@/lib/vie";
 import { enregistrerThemes } from "@/lib/ext";
 import { CALCULS } from "@/lib/data/calculs";
@@ -430,7 +431,10 @@ function finDePhase(e: Etat, d: Dossier) {
       d.progression = 0;
       return;
     }
-    if (!messageEnAttente(e, "validation", undefined, d.id) && ag) lancerValidation(e, d, ag.id);
+    if (!messageEnAttente(e, "validation", undefined, d.id) && ag) {
+      const motif = orienterValidation(e, d); // délégation de la revue (mode 20/80)
+      if (motif) lancerValidation(e, d, ag.id, motif);
+    }
   } else if (d.phase === 4) {
     livrer(e, d);
   }
@@ -537,14 +541,14 @@ function questionPour(e: Etat, d: Dossier) {
 }
 
 /** Crée la décision de validation (avec sa question DEC) pour un dossier en fin de révision. */
-export function lancerValidation(e: Etat, d: Dossier, de: string) {
+export function lancerValidation(e: Etat, d: Dossier, de: string, motif: "toi" | "enjeu" | "sondage" = "toi") {
   const jour = jourDe(e.minute);
   const revue = (d.type === "bilan" || d.type === "liasse") && rnd() < 0.45 ? genererRevue(d) : null;
   e.messages.unshift({
     id: uid(e, "m"),
     de,
     niveau: 3,
-    sujet: `Valider la révision — ${d.titre}`,
+    sujet: `${motif === "sondage" ? "🔎 Contrôle par sondage — " : motif === "enjeu" ? "⭐ Dossier à enjeu — " : ""}Valider la révision — ${d.titre}`,
     texte: revue ? `La révision de ${d.titre} est terminée. Voici la feuille de révision : coche les lignes anormales avant de signer, comme en revue de dossier.` : `La révision de ${d.titre} est terminée. Pour valider, réponds à la question de contrôle comme au DEC.`,
     jour,
     minute: e.minute,
@@ -586,6 +590,7 @@ function livrer(e: Etat, d: Dossier) {
   d.progression = 100;
   d.livre = jour;
   facturer(e, d);
+  noterCa(e, d);
   e.periode.livres++;
   inc(e, "livres");
   const c = e.clients.find((x) => x.id === d.client);
@@ -842,7 +847,10 @@ function ignorer(e: Etat, m: Message) {
     case "validation": {
       // la question revient : le dossier ne peut pas être livré sans validation
       const d = e.dossiers.find((x) => x.id === m.dossier);
-      if (d && d.phase === 3 && d.progression >= 100) lancerValidation(e, d, m.de);
+      if (d && d.phase === 3 && d.progression >= 100) {
+        const motif = orienterValidation(e, d);
+        if (motif) lancerValidation(e, d, m.de, motif);
+      }
       break;
     }
     case "special":
@@ -1190,6 +1198,7 @@ export function choisirDilemme(e: Etat, msgId: string, index: number): string | 
   if (!m || !m.dilemme || m.statut !== "attente") return "Ce dilemme n'est plus d'actualité.";
   const opt = m.dilemme.options[index];
   fatiguerToi(e);
+  if (!opt.code?.startsWith("ch:") && !opt.code?.startsWith("opp:") && !opt.code?.startsWith("fr:")) temps(e, "mgmt", 0.3);
   if (e.pa < opt.cout) return `Il te faut ${opt.cout} PA.`;
   e.pa -= opt.cout;
   appliquerOption(e, m, opt);
@@ -1946,6 +1955,7 @@ export function resoudreCas(e: Etat, msgId: string, choix: number): string | nul
   m.statut = "repondu";
   m.reponse = m.cas.choix[choix];
   suiviApprentissage(e, m.cas.theme, m.cas.cle, bon);
+  temps(e, "prod", 0.5);
   const d = e.dossiers.find((x) => x.id === m.dossier);
   const a = e.agents.find((x) => x.id === m.de);
   if (m.theme === "validation") {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { COUT_AGENCE, VILLES, classement, ouvrirAgence } from "@/lib/vie3";
 import { LOGICIELS, changerLogiciel, type TypeLogiciel } from "@/lib/vie4";
 import { ouvrirCreche } from "@/lib/vie5";
+import { MISSIONS_CONSEIL, capacitePortefeuille, chanceVente, changerManager, partConseil, pointIndividuel, proposerMission, repartitionTemps, responsables } from "@/lib/associe2080";
 import { PARTENAIRES, basculer, risquesCabinet, soignerPartenaire } from "@/lib/vie6";
 import type { Etat } from "@/lib/types";
 import { useJeu } from "@/lib/store";
@@ -310,6 +311,149 @@ export function Risques() {
           🛡️ Souscrire une assurance homme-clé (250 € / mois)
         </button>
       )}
+    </div>
+  );
+}
+
+/** Barre 20/80 : répartition de ton temps entre production, conseil et management. */
+export function Barre2080({ semaineDerniere = false }: { semaineDerniere?: boolean }) {
+  const e = useJeu((s) => s.etat)!;
+  const r = repartitionTemps(e, semaineDerniere);
+  return (
+    <div className="barre-2080">
+      <div className="barre">
+        <span style={{ width: `${r.prod}%`, background: "#e04a3a" }} title="Production" />
+        <span style={{ width: `${r.conseil}%`, background: "#2f5bea" }} title="Conseil" />
+        <span style={{ width: `${r.mgmt}%`, background: "#17a398" }} title="Management" />
+      </div>
+      <small>
+        {r.heures ? (
+          <>
+            <b style={{ color: r.prod <= 25 ? "#2e7d32" : "#e04a3a" }}>Production {r.prod} %</b> · Conseil {r.conseil} % · Management {r.mgmt} % · {r.heures} h
+          </>
+        ) : (
+          semaineDerniere ? "Pas encore de semaine complète enregistrée." : "Pas encore d'activité comptée cette semaine."
+        )}
+      </small>
+    </div>
+  );
+}
+
+/** Portefeuilles de clients par senior / manager / associé, et points individuels. */
+export function Portefeuilles() {
+  const e = useJeu((s) => s.etat)!;
+  const agir = useJeu((s) => s.agir);
+  const resp = responsables(e);
+  if (!resp.length) return <p className="vide">Pas encore de senior ou de manager : les clients remontent tous à toi. Promeus ou recrute des seniors pour déléguer.</p>;
+  return (
+    <div className="portefeuilles">
+      <h3 className="titre-section">📂 Portefeuilles clients et points individuels</h3>
+      <p className="aide">Chaque client est suivi par un senior, un manager ou un associé. Sa compétence et son moral jouent sur la satisfaction du client ; au-delà de sa capacité, il sature. Un point individuel (1 h de ton temps de management) le remotive et le fait progresser.</p>
+      {resp.map((a) => {
+        const clients = e.clients.filter((c) => c.manager === a.id);
+        const sat = clients.length ? Math.round(clients.reduce((s, c) => s + c.satisfaction, 0) / clients.length) : 0;
+        const cap = capacitePortefeuille(a);
+        return (
+          <div key={a.id} className="slot">
+            <span>
+              <strong>
+                {a.prenom} {a.nom}
+              </strong>
+              <small>
+                {a.poste} · {clients.length}/{cap} clients{clients.length ? ` · satisfaction ${sat}` : ""} · compétence {Math.round(a.competence)} · moral {Math.round(a.moral)}
+              </small>
+              <span className="jauge-mini">
+                <span style={{ width: `${Math.min(100, (clients.length / cap) * 100)}%`, background: clients.length > cap ? "#e04a3a" : "#2f5bea" }} />
+              </span>
+            </span>
+            <button className="bouton petit" onClick={() => agir(pointIndividuel, a.id)}>
+              🗣️ Point 1:1
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Bilan 20/80 : part du conseil dans le chiffre d'affaires et délégation de la revue. */
+export function Bilan2080() {
+  const e = useJeu((s) => s.etat)!;
+  const ca = partConseil(e);
+  const deleguees = e.compteurs.revuesDeleguees ?? 0;
+  const erreurs = e.compteurs.erreursDeleguees ?? 0;
+  return (
+    <div className="bilan-2080">
+      <h3 className="titre-section">⚖️ Associée 20/80</h3>
+      <p className="aide">Objectif : 20 % de ton temps en production au plus, 80 % en conseil et management.</p>
+      <h4>Ton temps cette semaine</h4>
+      <Barre2080 />
+      <h4>La semaine dernière</h4>
+      <Barre2080 semaineDerniere />
+      <div className="kpis petits">
+        <div className="kpi">
+          <span>Conseil dans le CA (mois dernier)</span>
+          <strong>{ca.pct} %</strong>
+        </div>
+        <div className="kpi">
+          <span>Revues déléguées</span>
+          <strong>{deleguees}</strong>
+        </div>
+        <div className="kpi">
+          <span>Erreurs passées à travers</span>
+          <strong className={erreurs ? "alerte" : ""}>
+            {erreurs} {deleguees ? `(${Math.round((erreurs / deleguees) * 100)} %)` : ""}
+          </strong>
+        </div>
+      </div>
+      <p className="aide">
+        Missions de conseil vendues : {e.compteurs.ventesConseil ?? 0} · semaines 20/80 réussies : {e.compteurs.semaines2080 ?? 0}. Les erreurs passent quand tes réviseurs sont peu compétents ou fatigués : forme tes seniors et fais des points individuels.
+      </p>
+    </div>
+  );
+}
+
+/** Sur la fiche client : manager responsable et vente de missions de conseil. */
+export function ConseilClient({ id }: { id: string }) {
+  const e = useJeu((s) => s.etat)!;
+  const agir = useJeu((s) => s.agir);
+  const [idx, setIdx] = useState(0);
+  const [premium, setPremium] = useState(false);
+  const c = e.clients.find((x) => x.id === id);
+  if (!c) return null;
+  const jour = Math.floor(e.minute / 1440);
+  const attente = (e.compteurs[`vente:${c.id}`] ?? -99) > jour - 30;
+  const m = MISSIONS_CONSEIL[idx];
+  return (
+    <div className="conseil-client">
+      <label className="ligne-logiciel">
+        <span>📂 Suivi par</span>
+        <select value={c.manager ?? ""} onChange={(ev) => agir(changerManager, c.id, ev.target.value)}>
+          {!c.manager && <option value="">Personne (toi)</option>}
+          {responsables(e).map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.prenom} {a.nom} ({a.poste})
+            </option>
+          ))}
+        </select>
+      </label>
+      <h4>💼 Proposer une mission de conseil</h4>
+      <div className="vente">
+        <select value={idx} onChange={(ev) => setIdx(Number(ev.target.value))}>
+          {MISSIONS_CONSEIL.map((x, i) => (
+            <option key={x.nom} value={i}>
+              {x.nom} ({Math.round(x.honoraires).toLocaleString("fr-FR")} €)
+            </option>
+          ))}
+        </select>
+        <label className="case-reglage">
+          <input type="checkbox" checked={premium} onChange={(ev) => setPremium(ev.target.checked)} /> Version premium (+30 %)
+        </label>
+        <button className="bouton principal-btn petit" disabled={attente} onClick={() => agir(proposerMission, c.id, idx, premium)}>
+          {attente ? "Déjà sollicité ce mois-ci" : `Proposer (${Math.round(chanceVente(e, c, premium) * 100)} % de chances)`}
+        </button>
+      </div>
+      <small className="aide">{m.chaine ? "Mission experte : elle se déroule en plusieurs étapes, dans tes décisions." : "Mission réalisée par ton équipe une fois signée."}</small>
     </div>
   );
 }
