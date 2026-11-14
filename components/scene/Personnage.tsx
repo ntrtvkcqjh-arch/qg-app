@@ -41,6 +41,7 @@ export function pieceAgent(agent: Agent, ouvertes: PieceId[], cuisine = false): 
     case "conge":
     case "malade":
     case "teletravail":
+    case "evacuation":
       return "dehors";
     case "travaille":
       if (agent.filiere === "service") p = PIECE_SERVICE[agent.service ?? "office"];
@@ -49,6 +50,10 @@ export function pieceAgent(agent: Agent, ouvertes: PieceId[], cuisine = false): 
       else p = sonPoste;
       break;
     case "reunion":
+      if (agent.filiere === "associe" && ouvert("conseil")) {
+        p = "conseil"; // comité des associés
+        break;
+      }
       p = BULLE_DE[sonPoste] ?? "reunion";
       if (!ouvert(p)) p = "reunion";
       break;
@@ -81,7 +86,8 @@ export default function Personnage({ minute, agent, index, selectionne, vitesseJ
   const pose = useRef<Posture>({ ...DEBOUT });
   const apparence = useMemo(() => apparencePour(agent.id, agent.prenom, agent.couleur, agent.peau, agent.cheveux), [agent.id, agent.prenom, agent.couleur, agent.peau, agent.cheveux]);
   const piece = pieceAgent(agent, piecesOuvertes, cuisine);
-  const cible = placeDans(piece, index, agent.bureau);
+  const evacue = agent.activite === "evacuation";
+  const cible = evacue ? { x: -11 + (index % 22) * 1.05, z: 10.2 + Math.floor(index / 22) * 0.7 } : placeDans(piece, index, agent.bureau);
 
   // Gestes : téléphone par moments, café en pause, tête dans les mains si très stressé.
   const tranche = Math.floor(minute / 40);
@@ -191,7 +197,7 @@ export default function Personnage({ minute, agent, index, selectionne, vitesseJ
     if (auPoste && agent.fatigue > 85) cibleP.inclinaison = 0.45; // épuisé, affalé sur le bureau
     animerSquelette(sq, pose.current, cibleP, dt, marche ? 14 : 5);
 
-    g.visible = !(s.piece === "dehors" && !s.chemin.length) && s.etage === etageVue;
+    g.visible = (evacue || !(s.piece === "dehors" && !s.chemin.length)) && s.etage === etageVue;
     ETAGES_AGENTS.set(agent.id, s.etage);
     POSITIONS.set(agent.id, { x: s.x, y: 1.55 + (1 - Math.min(1, -pose.current.hauteur / 0.42)) * 0.4, z: s.z, visible: g.visible && visibleHtml });
   });
@@ -209,7 +215,7 @@ export default function Personnage({ minute, agent, index, selectionne, vitesseJ
           <meshBasicMaterial color="#2f5bea" />
         </mesh>
       )}
-      <Corps a={apparence} sq={sq} accessoire={accessoire} />
+      <Corps a={apparence} sq={sq} accessoire={accessoire} humeur={agent.moral > 65 ? "content" : agent.moral < 35 ? "triste" : "neutre"} />
     </group>
   );
 }

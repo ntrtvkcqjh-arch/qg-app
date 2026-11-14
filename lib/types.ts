@@ -56,7 +56,8 @@ export type Activite =
   | "malade"
   | "teletravail"
   | "dejeuner"
-  | "sport";
+  | "sport"
+  | "evacuation";
 
 export type Personnalite =
   | "perfectionniste"
@@ -102,11 +103,15 @@ export type Agent = {
   anniversaire?: number; // jour de l'année (0-364)
   service?: TypeService; // personnel des services du campus
   associeDe?: Filiere; // pôle dont l'associé a la charge
+  essaiJusquau?: number; // fin de la période d'essai (jour)
+  remplace?: string; // CDD de remplacement : id de la personne remplacée
+  finContrat?: number; // CDD : dernier jour
+  parrain?: string;
 };
 
 export type Domaine = "tva" | "is" | "paie" | "juridique" | "revision" | "audit" | "outils";
 
-export type Relation = { a: string; b: string; type: "rivalite" | "mentorat" | "amitie"; intensite: number };
+export type Relation = { a: string; b: string; type: "rivalite" | "mentorat" | "amitie" | "couple"; intensite: number };
 
 export type Phase = 1 | 2 | 3 | 4 | 5;
 export const NOMS_PHASES: Record<Phase, string> = {
@@ -174,6 +179,7 @@ export type OptionDilemme = {
   effets: Effets;
   differe?: { delai: number; effets: Effets; texte: string };
   resultat: string;
+  code?: string; // paramètre de l'action "vie"
   action?:
     | "promouvoir"
     | "client_part"
@@ -193,7 +199,8 @@ export type OptionDilemme = {
     | "ao_premium"
     | "rachat"
     | "rachat_negocie"
-    | "diplome_resultat";
+    | "diplome_resultat"
+    | "vie";
 };
 
 export type Effets = {

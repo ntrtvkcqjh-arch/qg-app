@@ -84,10 +84,10 @@ function FicheAgent({ id }: { id: string }) {
           <h4>Relations</h4>
           {relations.map((r, i) => {
             const autre = r.a === a.id ? r.b : r.a;
-            const sens = r.type === "mentorat" ? (r.a === a.id ? `mentor de ${nom(autre)}` : `mentoré·e par ${nom(autre)}`) : r.type === "rivalite" ? `rivalité avec ${nom(autre)}` : `ami·e de ${nom(autre)}`;
+            const sens = r.type === "mentorat" ? (r.a === a.id ? `mentor de ${nom(autre)}` : `mentoré·e par ${nom(autre)}`) : r.type === "rivalite" ? `rivalité avec ${nom(autre)}` : r.type === "couple" ? `en couple avec ${nom(autre)}` : `ami·e de ${nom(autre)}`;
             return (
               <div key={i} className={`relation r-${r.type}`}>
-                {r.type === "rivalite" ? "⚡" : r.type === "mentorat" ? "🎓" : "🤝"} {sens}
+                {r.type === "rivalite" ? "⚡" : r.type === "mentorat" ? "🎓" : r.type === "couple" ? "💕" : "🤝"} {sens}
               </div>
             );
           })}

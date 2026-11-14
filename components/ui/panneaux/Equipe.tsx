@@ -7,6 +7,7 @@ import { useJeu } from "@/lib/store";
 import { LIBELLE_ACTIVITE, euros } from "../textes";
 import EquipePlus from "./EquipePlus";
 import FormationEquipe from "./FormationEquipe";
+import CarteRelations from "./CarteRelations";
 
 export default function Equipe() {
   const e = useJeu((s) => s.etat)!;
@@ -134,6 +135,8 @@ export default function Equipe() {
           ))}
         </>
       )}
+      <h3 className="titre-section">💞 Carte des relations</h3>
+      <CarteRelations />
       <EquipePlus />
       <h3 className="titre-section">🎓 Formations de l&apos;équipe</h3>
       <FormationEquipe />

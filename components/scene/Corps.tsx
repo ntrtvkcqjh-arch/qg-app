@@ -147,7 +147,9 @@ function Capsule({ p, r, l, c }: { p: [number, number, number]; r: number; l: nu
   );
 }
 
-export default function Corps({ a, sq, accessoire = null }: { a: Apparence; sq: Squelette; accessoire?: Accessoire }) {
+export type Humeur = "content" | "neutre" | "triste";
+
+export default function Corps({ a, sq, accessoire = null, humeur = "neutre" }: { a: Apparence; sq: Squelette; accessoire?: Accessoire; humeur?: Humeur }) {
   const manche = a.veste ? "#263238" : a.haut;
   return (
     <group ref={sq.buste}>
@@ -189,6 +191,18 @@ export default function Corps({ a, sq, accessoire = null }: { a: Apparence; sq: 
           <meshStandardMaterial color="#1b1b1b" />
         </mesh>
       ))}
+      {/* bouche : sourire, neutre ou moue selon le moral */}
+      {humeur === "neutre" ? (
+        <mesh position={[0, 1.535, 0.108]}>
+          <boxGeometry args={[0.045, 0.008, 0.008]} />
+          <meshStandardMaterial color="#7a3b2e" />
+        </mesh>
+      ) : (
+        <mesh position={[0, humeur === "content" ? 1.545 : 1.525, 0.106]} rotation={[0, 0, humeur === "content" ? Math.PI : 0]}>
+          <torusGeometry args={[0.024, 0.006, 6, 12, Math.PI]} />
+          <meshStandardMaterial color="#7a3b2e" />
+        </mesh>
+      )}
       <Cheveux a={a} />
     </group>
   );

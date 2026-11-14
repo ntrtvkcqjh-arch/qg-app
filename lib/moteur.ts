@@ -21,6 +21,7 @@ import { CLIENTS_CREATION, CLIENTS_INITIAUX, CHEVEUX, COULEURS, EQUIPE_INITIALE,
 import { DILEMMES } from "@/lib/data/dilemmes";
 import { BADGES } from "@/lib/data/formation";
 import { MODELES } from "@/lib/data/messages";
+import { actionVie, debutJourneeVie, nouvelleRecrue, potDeDepart, quartVie, rendezVousClient } from "@/lib/vie";
 import { actionSpeciale, arriveeAssocie, facteurSaison, debutJourneeExt, estTeletravail, facteurCompetence, facturer, finJourneeExt, horairesAgent, initSkills, migrerExt, noterArrivee, noterDepart, progresserSkill, quartAgent } from "@/lib/ext";
 import { ARCS } from "@/lib/data/arcs";
 import { article } from "@/lib/data/boutique";
@@ -591,6 +592,7 @@ function debutJournee(e: Etat) {
   }
 
   debutJourneeExt(e, jour, lundi, premierOuvreDuMois);
+  debutJourneeVie(e, jour, premierOuvreDuMois);
 
   // Conséquences différées.
   for (const c of e.differes.filter((x) => x.jour <= jour)) {
@@ -780,6 +782,7 @@ export function depart(e: Etat, a: Agent, raison: string) {
   for (const x of e.agents) x.moral = clamp(x.moral - 6);
   log(e, `👋 ${a.prenom} ${a.nom} ${raison}.`, "mal");
   repartir(e);
+  potDeDepart(e, a.prenom, raison);
 }
 
 function quart(e: Etat) {
@@ -788,6 +791,7 @@ function quart(e: Etat) {
   const r = REGLAGES[e.difficulte];
   const rush = e.compteurs.rushJour === jour;
 
+  quartVie(e);
   const seminaire = e.compteurs.seminaireJour === jour;
   for (const a of e.agents) {
     if (a.bulle && a.bulleJusqua < e.minute) a.bulle = null;
@@ -1085,7 +1089,8 @@ function ctxDilemme(m: Message) {
 function appliquerOption(e: Etat, m: Message, opt: NonNullable<Message["dilemme"]>["options"][number]) {
   const ctx = ctxDilemme(m);
   appliquerEffets(e, opt.effets, ctx);
-  if (opt.action && !actionSpeciale(e, opt.action, m)) actionArc(e, opt.action, { ...(e.arcs.find((x) => x.id === m.arc?.id)?.ctx ?? {}), ...ctx });
+  if (opt.action === "vie") actionVie(e, opt.code ?? "", m);
+  else if (opt.action && !actionSpeciale(e, opt.action, m)) actionArc(e, opt.action, { ...(e.arcs.find((x) => x.id === m.arc?.id)?.ctx ?? {}), ...ctx });
   if (opt.differe) e.differes.push({ jour: ajouterJoursOuvres(jourDe(e.minute), opt.differe.delai), effets: opt.differe.effets, texte: opt.differe.texte, ...ctx });
 }
 
@@ -1348,6 +1353,7 @@ export function recruter(e: Etat, candidatId: string): string | null {
   }
   initSkills(nouveau);
   if (nouveau.filiere === "associe") arriveeAssocie(e, nouveau);
+  nouvelleRecrue(e, nouveau);
   inc(e, "recrutements");
   log(e, `🤝 ${c.prenom} ${c.nom} rejoint le cabinet comme ${c.poste.toLowerCase()}.`, "bien");
   repartir(e);
@@ -1636,6 +1642,14 @@ export function ajouterVisiteur(e: Etat, nom: string, lien: string) {
 
 function mettreAJourVisiteurs(e: Etat) {
   for (const v of e.visiteurs) {
+    if (v.message === "livraison") {
+      // le livreur dépose son colis à l'accueil puis repart
+      if (v.etat === "attend" && e.minute > v.jusqua - 220) {
+        v.etat = "part";
+        v.jusqua = e.minute + 20;
+      }
+      continue;
+    }
     const enAttente =
       e.propositions.some((p) => p.id === v.message) || e.messages.some((m) => m.id === v.message && m.statut === "attente");
     if (v.etat === "attend" && !enAttente) {
@@ -1655,11 +1669,12 @@ function mettreAJourVisiteurs(e: Etat) {
 
 // ---------- demandes (prospects et missions ponctuelles) ----------
 
-function genererPropositions(e: Etat, f: number) {
+export function genererPropositions(e: Etat, f: number) {
   const jour = jourDe(e.minute);
   if (e.propositions.length >= 6) return;
   const premium = e.niveauLocaux >= 4 ? 1.15 : 1;
-  const chanceNouveau = (e.mode === "creation" && e.clients.length < 8 ? 0.006 : 0.0025) * (e.reputation > 30 ? 1 : 0.3) * (aService(e, "accueil") ? 1.3 : 1);
+  const boost = (e.compteurs.reseauBoost ?? 0) > 0 ? 12 : 1; // contacts du réseau, presse
+  const chanceNouveau = boost * (e.mode === "creation" && e.clients.length < 8 ? 0.006 : 0.0025) * (e.reputation > 30 ? 1 : 0.3) * (aService(e, "accueil") ? 1.3 : 1);
   if (rnd() < chanceNouveau && e.clients.length + e.propositions.length < 18) {
     const libres = PROSPECTS_NOUVEAUX.filter((x) => !e.clients.some((c) => c.nom === x.nom) && !e.propositions.some((p) => p.nouveau?.nom === x.nom) && !e.compteurs[`refus:${x.nom}`]);
     if (libres.length) {
@@ -1683,6 +1698,7 @@ function genererPropositions(e: Etat, f: number) {
         expire: visite ? jour + 1 : ajouterJoursOuvres(jour, 4),
       };
       e.propositions.push(prop);
+      if (boost > 1) e.compteurs.reseauBoost = Math.max(0, (e.compteurs.reseauBoost ?? 1) - 1);
       if (visite) ajouterVisiteur(e, p.dirigeant, prop.id);
       log(e, visite ? `🚪 ${p.dirigeant} (${p.nom}) passe à l'accueil et demande à être reçu·e.` : `📨 Nouvelle demande par courrier : ${p.nom}.`);
     }
@@ -1733,8 +1749,15 @@ export function accepterProposition(e: Etat, id: string, verifier: boolean): str
         e.differes.push({ jour: ajouterJoursOuvres(jour, 12), effets: { reputation: -15, tresorerie: -4000 }, texte: `Enquête sur ${p.nouveau.nom} : le cabinet n'avait fait aucune vérification d'identité. Sanction disciplinaire.` });
     }
     const modele = PROSPECTS_NOUVEAUX.find((x) => x.nom === p.nouveau!.nom);
-    const c = modele ? clientDepuis(e, modele, 72, p.forfait / modele.forfait) : null;
-    if (!c) return null;
+    let c: Client;
+    if (modele) c = clientDepuis(e, modele, 72, p.forfait / modele.forfait);
+    else {
+      // client de prestige (hors catalogue)
+      c = { ...p.nouveau, id: uid(e, "cl"), satisfaction: 65 };
+      e.clients.push(c);
+      e.reputation = clamp(e.reputation + 3);
+    }
+    if (p.origine === "visite") rendezVousClient(e, c);
     for (const mi of p.missions) {
       const ech = mi.delai < 0 ? (prochaineLiasse(e)?.jour ?? ajouterJoursOuvres(jour, 30)) : ajouterJoursOuvres(jour, mi.delai);
       const d = creerDossier(e, c, mi.type, ech, jour, mi.titre);

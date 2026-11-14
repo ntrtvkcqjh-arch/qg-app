@@ -574,7 +574,7 @@ function concurrentsDuMois(e: Etat, jour: number) {
   void jour;
 }
 
-function messageSpecial(e: Etat, de: string, niveau: 1 | 2 | 3 | 4 | 5, sujet: string, texte: string, dossier: string, payload: Record<string, string | number>, options: OptionDilemme[]) {
+export function messageSpecial(e: Etat, de: string, niveau: 1 | 2 | 3 | 4 | 5, sujet: string, texte: string, dossier: string, payload: Record<string, string | number>, options: OptionDilemme[]) {
   const jour = jourDe(e.minute);
   e.messages.unshift({
     id: uid(e, "m"),

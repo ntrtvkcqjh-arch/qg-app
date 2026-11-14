@@ -2369,3 +2369,17 @@ td.objectif .niveau-skill {
   border-top: 1px solid var(--ligne);
   padding-top: 12px;
 }
+
+.carte-relations svg {
+  width: 100%;
+  max-width: 420px;
+  display: block;
+  margin: 0 auto;
+}
+.carte-relations .legende i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 4px;
+}

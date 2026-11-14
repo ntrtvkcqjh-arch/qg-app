@@ -153,6 +153,7 @@ export const PIECE_ACTIVITE: Record<Activite, PieceId> = {
   teletravail: "dehors",
   dejeuner: "cafe",
   sport: "sport",
+  evacuation: "dehors",
 };
 
 /** Point de stationnement d'un agent dans une pièce (dispersé selon son index). */

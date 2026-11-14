@@ -10,6 +10,7 @@ import Personnage from "./Personnage";
 import Associee from "./Associee";
 import Visiteurs from "./Visiteurs";
 import Meteo from "./Meteo";
+import Quartier from "./Quartier";
 import { FemmeDeMenage, LampesBureaux } from "./Soiree";
 import { CoucheEtiquettes, Projecteur } from "./Etiquettes";
 import { jourDe, minuteDuJour, moisDe } from "@/lib/calendrier";
@@ -175,6 +176,7 @@ export default function Cabinet3D() {
         />
         {formation && etageVue === ETAGE_DIRECTION && pieces.includes("formation") && <Formateur />}
         </Suspense>
+        {etageVue === 0 && <Quartier mois={mois} />}
         <Meteo type={meteo} largeurBatiment={aile ? 22 : 12} />
         {agents.map((a, i) => (
           <Personnage key={a.id} minute={minute} agent={a} index={i} selectionne={selection === a.id} vitesseJeu={vitesse} onClick={selectionner} piecesOuvertes={piecesListe} etageVue={etageVue} cuisine={cuisine} />
