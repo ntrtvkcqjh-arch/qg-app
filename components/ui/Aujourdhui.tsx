@@ -7,7 +7,7 @@ import { enVacances, etatDefi } from "@/lib/vie5";
 import { CONJONCTURES, progressionObjectif } from "@/lib/vie6";
 import { LIBELLE_FILIERE } from "@/lib/data/equipe";
 import { useJeu } from "@/lib/store";
-import { LIBELLE_ACTIVITE } from "./textes";
+import { statutAgent } from "./textes";
 
 export default function Aujourdhui() {
   const e = useJeu((s) => s.etat)!;
@@ -145,7 +145,7 @@ export default function Aujourdhui() {
               <strong>{a.prenom}</strong>
               <small>{a.poste}</small>
             </span>
-            <span className={`statut s-${a.activite}`}>{LIBELLE_ACTIVITE[a.activite]}</span>
+            <span className={`statut s-${a.activite}`}>{statutAgent(a)}</span>
           </button>
         ))}
       </section>

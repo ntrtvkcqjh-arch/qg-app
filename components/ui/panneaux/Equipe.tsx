@@ -6,7 +6,7 @@ import { dateCourte } from "@/lib/calendrier";
 import { LIBELLE_FILIERE, LIBELLE_PERSO } from "@/lib/data/equipe";
 import { aUnRH, besoins, capacitePostes, fraisRecrutement, publierAnnonce, recruter } from "@/lib/moteur";
 import { useJeu } from "@/lib/store";
-import { LIBELLE_ACTIVITE, euros } from "../textes";
+import { statutAgent, euros } from "../textes";
 import EquipePlus from "./EquipePlus";
 import FormationEquipe from "./FormationEquipe";
 import CarteRelations from "./CarteRelations";
@@ -23,7 +23,7 @@ export default function Equipe() {
   return (
     <div>
       <h3 className="titre-section">
-        Collaborateurs ({e.agents.length}/{capacitePostes(e)} bureaux)
+        Collaborateurs ({e.agents.filter((a) => !["service", "rh", "associe"].includes(a.filiere)).length}/{capacitePostes(e)} bureaux · {e.agents.filter((a) => a.filiere === "service").length} aux services du campus)
       </h3>
       <p className="aide">Masse salariale chargée : {euros(masse)} par mois. Clique sur une ligne pour ouvrir la fiche.</p>
       <table className="tableau">
@@ -39,8 +39,8 @@ export default function Equipe() {
           </tr>
         </thead>
         <tbody>
-          {e.agents.map((a) => (
-            <tr key={a.id} onClick={() => selectionner(a.id)} className="cliquable">
+          {[...e.agents].sort((a, b) => Number(a.filiere === "service") - Number(b.filiere === "service")).map((a, i, l) => (
+            <tr key={a.id} onClick={() => selectionner(a.id)} className={`cliquable ${a.filiere === "service" && l[i - 1]?.filiere !== "service" ? "debut-services" : ""}`}>
               <td>
                 <span className="avatar petit" style={{ background: a.couleur }}>
                   {a.prenom[0]}
@@ -48,7 +48,7 @@ export default function Equipe() {
                 {a.prenom} <small>{a.poste}</small>
               </td>
               <td>
-                <span className={`statut s-${a.activite}`}>{LIBELLE_ACTIVITE[a.activite]}</span>
+                <span className={`statut s-${a.activite}`}>{statutAgent(a)}</span>
               </td>
               <td>{Math.round(a.competence)}</td>
               <td className={a.stress > 70 ? "rouge-t" : ""}>{Math.round(a.stress)}</td>

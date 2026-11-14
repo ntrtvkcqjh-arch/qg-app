@@ -2664,3 +2664,4 @@ td.objectif .niveau-skill {
 .classement-duels li.moi { font-weight: 700; color: #2f5bea; }
 .bilan-fr { margin-top: 12px; background: #f7f8fb; border-radius: 12px; padding: 12px; font-size: 13px; }
 .bilan-fr h4 { margin: 0 0 4px; }
+.tableau tr.debut-services td { border-top: 2px solid #e2e6ee; }

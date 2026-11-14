@@ -56,7 +56,7 @@ export default function FormationEquipe() {
             </tr>
           </thead>
           <tbody>
-            {e.agents.map((a) => (
+            {e.agents.filter((a) => a.filiere !== "service").map((a) => (
               <tr key={a.id}>
                 <td>
                   {a.prenom}

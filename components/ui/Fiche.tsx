@@ -7,7 +7,9 @@ import { augmenter, envoyerEnFormation, imposerRepos, licencier } from "@/lib/mo
 import { PIECE_ACTIVITE, pieceParId } from "@/lib/plan";
 import { useJeu, type Panneau } from "@/lib/store";
 import { NOMS_PHASES } from "@/lib/types";
-import { LIBELLE_ACTIVITE, euros } from "./textes";
+import { euros, statutAgent } from "./textes";
+import { pieceAgent } from "@/components/scene/Personnage";
+import { niveauLocaux } from "@/lib/data/locaux";
 import { LIBELLE_DOMAINE } from "@/lib/data/developpement";
 import { DOMAINES, designerTuteur, inscrireDiplome } from "@/lib/ext";
 import { NOMS_GRADES, gradeDe } from "@/lib/vie3";
@@ -45,7 +47,7 @@ function FicheAgent({ id }: { id: string }) {
   const dossiers = e.dossiers.filter((d) => d.agent === a.id && d.phase < 5).sort((p, q) => p.echeance - q.echeance);
   const relations = e.relations.filter((r) => r.a === a.id || r.b === a.id);
   const nom = (x: string) => e.agents.find((y) => y.id === x)?.prenom ?? "?";
-  const lieu = pieceParId(PIECE_ACTIVITE[a.activite])?.nom ?? "Hors du cabinet";
+  const lieu = ["absent", "conge", "malade", "teletravail"].includes(a.activite) ? "Hors du cabinet" : (pieceParId(pieceAgent(a, niveauLocaux(e.niveauLocaux).pieces))?.nom ?? "Hors du cabinet");
 
   return (
     <aside className="fiche">
@@ -60,7 +62,7 @@ function FicheAgent({ id }: { id: string }) {
             {a.prenom} {a.nom}
           </h2>
           <span className={`statut s-${a.activite}`}>
-            {LIBELLE_ACTIVITE[a.activite]} · {lieu}
+            {statutAgent(a)} · {lieu}
           </span>
         </div>
         <button className="fermer" onClick={() => fermer(null)} aria-label="Fermer">
@@ -222,7 +224,7 @@ function FicheDeveloppement({ id }: { id: string }) {
   const agir = useJeu((s) => s.agir);
   const a = e.agents.find((x) => x.id === id);
   if (!a) return null;
-  const tuteurs = e.agents.filter((x) => x.id !== a.id && x.competence >= 65 && x.filiere !== "associe");
+  const tuteurs = e.agents.filter((x) => x.id !== a.id && x.competence >= 65 && !["associe", "service", "rh"].includes(x.filiere));
   return (
     <>
       <div className="bloc">

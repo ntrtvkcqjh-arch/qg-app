@@ -1522,9 +1522,12 @@ export function imposerRepos(e: Etat, agentId: string): string | null {
   return null;
 }
 
-export function reassigner(e: Etat, dossierId: string, agentId: string) {
+export function reassigner(e: Etat, dossierId: string, agentId: string): string | null {
   const d = e.dossiers.find((x) => x.id === dossierId);
+  const a = e.agents.find((x) => x.id === agentId);
+  if (a && (a.filiere === "service" || a.filiere === "rh")) return `${a.prenom} n'est pas collaborateur comptable : ${a.filiere === "rh" ? "la RH" : "les services du campus"} ne traitent pas de dossiers.`;
   if (d) d.agent = agentId === "toi" ? "toi" : agentId;
+  return null;
 }
 
 export function enregistrerQcm(e: Etat, score: number, total: number) {
@@ -1608,6 +1611,11 @@ export function rattraper(e: Etat, maintenant: number) {
 /** Complète une ancienne sauvegarde avec les champs ajoutés depuis. */
 export function migrer(e: Etat): Etat {
   migrerCarriere(e);
+  // Les services du campus et la RH ne traitent jamais de dossiers.
+  const horsProduction = new Set(e.agents.filter((a) => a.filiere === "service" || a.filiere === "rh").map((a) => a.id));
+  let rendus = 0;
+  for (const d of e.dossiers ?? []) if (d.agent && horsProduction.has(d.agent) && d.phase < 5) { d.agent = null; rendus++; }
+  if (rendus) repartir(e);
   e.niveauLocaux ??= e.mode === "creation" ? 1 : 3;
   e.propositions ??= [];
   e.achats ??= [];
