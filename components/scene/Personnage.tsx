@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import type { Group } from "three";
 import { ETAGES_AGENTS, POSITIONS } from "./positions";
-import Corps, { ASSIS, DEBOUT, animerSquelette, apparencePour, postureMarche, tournerVers, useSquelette, type Accessoire, type Posture } from "./Corps";
+import Corps, { ASSIS, DEBOUT, animerSquelette, apparencePour, postureMarche, tournerVers, useSquelette, type Accessoire, type Posture, type StyleMarche } from "./Corps";
 import { BULLE_DE, BUREAU_ASSOCIE, EST_OPEN_SPACE, POSTES, chemin, etageDe, pieceParId, placeDans, type Point } from "@/lib/plan";
 import type { Agent, PieceId } from "@/lib/types";
 
@@ -18,7 +18,15 @@ type Props = {
   piecesOuvertes: PieceId[];
   etageVue: number;
   cuisine: boolean;
+  decontracte?: boolean;
 };
+
+/** Éclaircit une couleur (tenue décontractée). */
+function eclaircir(c: string, k = 0.3) {
+  const n = parseInt(c.slice(1), 16);
+  const f = (v: number) => Math.round(v + (255 - v) * k);
+  return `#${[(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => f(v).toString(16).padStart(2, "0")).join("")}`;
+}
 
 const VITESSE_MARCHE = 1.5; // m/s à vitesse ×1 (pas tranquille)
 
@@ -84,11 +92,17 @@ export function pieceAgent(agent: Agent, ouvertes: PieceId[], cuisine = false): 
   return p;
 }
 
-export default function Personnage({ minute, agent, index, selectionne, vitesseJeu, onClick, piecesOuvertes, etageVue, cuisine }: Props) {
+export default function Personnage({ minute, agent, index, selectionne, vitesseJeu, onClick, piecesOuvertes, etageVue, cuisine, decontracte = false }: Props) {
   const groupe = useRef<Group>(null);
   const sq = useSquelette();
   const pose = useRef<Posture>({ ...DEBOUT });
-  const apparence = useMemo(() => apparencePour(agent.id, agent.prenom, agent.couleur, agent.peau, agent.cheveux), [agent.id, agent.prenom, agent.couleur, agent.peau, agent.cheveux]);
+  const apparence = useMemo(() => {
+    const a = apparencePour(agent.id, agent.prenom, agent.couleur, agent.peau, agent.cheveux);
+    return decontracte ? { ...a, veste: false, haut: eclaircir(a.haut) } : a;
+  }, [agent.id, agent.prenom, agent.couleur, agent.peau, agent.cheveux, decontracte]);
+  // Allure : pressée si stressée ou au téléphone, fatiguée le soir, détendue en pause.
+  const style: StyleMarche = agent.fatigue > 70 ? "fatigue" : agent.stress > 70 ? "presse" : ["pause", "dejeuner", "sport"].includes(agent.activite) ? "detendu" : "normal";
+  const facteurAllure = { normal: 1, presse: 1.3, fatigue: 0.72, detendu: 0.85 }[style];
   const piece = pieceAgent(agent, piecesOuvertes, cuisine);
   const evacue = agent.activite === "evacuation";
   const cible = evacue ? { x: -11 + (index % 22) * 1.05, z: 10.2 + Math.floor(index / 22) * 0.7 } : placeDans(piece, index, agent.bureau);
@@ -113,6 +127,9 @@ export default function Personnage({ minute, agent, index, selectionne, vitesseJ
     t: index * 1.7,
     lacet: 0,
     vitesse: 0,
+    salut: 0,
+    salutId: "",
+    regard: 0,
   });
 
   useEffect(() => {
@@ -140,7 +157,7 @@ export default function Personnage({ minute, agent, index, selectionne, vitesseJ
       const dz = p.z - s.z;
       const dist = Math.hypot(dx, dz);
       const restant = dist + (s.chemin.length > 1 ? 1 : 0);
-      const vmax = VITESSE_MARCHE * accel * Math.min(1, 0.35 + restant / 1.2);
+      const vmax = VITESSE_MARCHE * facteurAllure * accel * Math.min(1, 0.35 + restant / 1.2);
       s.vitesse += (vmax - s.vitesse) * (1 - Math.exp(-dt * 5));
       const pas = s.vitesse * dt;
       if (dist <= pas || dist < 0.01) {
@@ -155,6 +172,28 @@ export default function Personnage({ minute, agent, index, selectionne, vitesseJ
       }
       marche = true;
     } else s.vitesse = 0;
+
+    // Évitement des collègues et salut quand on se croise.
+    let proche: { id: string; dx: number; dz: number; d: number } | null = null;
+    if (marche) {
+      for (const [id, p] of POSITIONS) {
+        if (id === agent.id || ETAGES_AGENTS.get(id) !== s.etage) continue;
+        const dx = s.x - p.x;
+        const dz = s.z - p.z;
+        const d = Math.hypot(dx, dz);
+        if (d > 0.001 && d < 0.6) {
+          const pousse = (0.6 - d) * dt * 3;
+          s.x += (dx / d) * pousse;
+          s.z += (dz / d) * pousse;
+        }
+        if (d < 1.4 && (!proche || d < proche.d)) proche = { id, dx, dz, d };
+      }
+      if (proche && proche.id !== s.salutId && hachage(agent.id + proche.id) % 3 === 0) {
+        s.salut = 1.1;
+        s.salutId = proche.id;
+      }
+    }
+    s.salut = Math.max(0, s.salut - dt);
     g.position.set(s.x, 0, s.z);
 
     const auPoste = !marche && agent.activite === "travaille" && EST_OPEN_SPACE.has(piece);
@@ -166,7 +205,20 @@ export default function Personnage({ minute, agent, index, selectionne, vitesseJ
 
     // Pose cible selon l'activité, puis transition douce.
     let cibleP: Posture;
-    if (marche) cibleP = postureMarche(s.t, 7.5);
+    if (marche) {
+      cibleP = postureMarche(s.t, 7.5, style);
+      if (proche) cibleP.teteY = Math.max(-0.7, Math.min(0.7, Math.atan2(-proche.dx, -proche.dz) - s.lacet));
+      if (s.salut > 0) {
+        cibleP.epauleG = -2.7; // petit signe de la main
+        cibleP.epauleGz = -0.3 + Math.sin(s.t * 14) * 0.25;
+        cibleP.coudeG = -0.4;
+      }
+      if (auTelephone) {
+        cibleP.epauleD = -0.25;
+        cibleP.epauleDz = 0.35;
+        cibleP.coudeD = -2.45; // téléphone à l'oreille en marchant
+      }
+    }
     else if (assis) {
       cibleP = { ...ASSIS };
       if (auPoste && !auTelephone && !stresse) {
@@ -177,10 +229,43 @@ export default function Personnage({ minute, agent, index, selectionne, vitesseJ
       if (agent.activite === "reunion") {
         cibleP.epauleG = -0.5 + Math.sin(s.t * 1.8) * 0.2; // on parle avec les mains
         cibleP.coudeG = -1.2 + Math.sin(s.t * 2.3) * 0.25;
+        cibleP.teteY = Math.sin(s.t * 0.45 + index) * 0.5; // regarde celui qui parle
+      }
+      if (auPoste && !auTelephone && !stresse) {
+        // Petits gestes du quotidien, par fenêtres de 9 secondes.
+        const fenetre = Math.floor(s.t / 9);
+        const dansFenetre = s.t % 9;
+        const geste = hachage(agent.id + fenetre) % 9;
+        cibleP.teteX = 0.12; // regard vers l'écran
+        if (dansFenetre < 2.6) {
+          if (geste === 0) {
+            cibleP.epauleG = cibleP.epauleD = -2.9; // s'étire
+            cibleP.coudeG = cibleP.coudeD = -0.3;
+            cibleP.inclinaison = -0.12;
+            cibleP.teteX = -0.25;
+          } else if (geste === 1) {
+            cibleP.epauleD = -2.2; // se gratte la tête
+            cibleP.coudeD = -2.0 + Math.sin(s.t * 10) * 0.15;
+            cibleP.teteX = 0.05;
+          } else if (geste === 2) {
+            cibleP.inclinaison = 0.28; // se penche vers l'écran
+            cibleP.teteX = 0.2;
+          } else if (geste === 3) {
+            cibleP.teteY = 0.8; // regarde la fenêtre, rêveur
+            cibleP.teteX = -0.1;
+          } else if (geste === 4) {
+            cibleP.teteY = -0.6; // échange avec le voisin
+          }
+        }
       }
     } else {
       cibleP = { ...DEBOUT };
       cibleP.hauteur = Math.sin(s.t * 1.6) * 0.004; // respiration
+      cibleP.teteY = Math.sin(s.t * 0.3 + index) * 0.35; // regarde autour
+      if (style === "detendu") {
+        cibleP.epauleGz = -0.2; // mains dans les poches
+        cibleP.coudeG = -0.55;
+      }
     }
     if (accessoire === "cafe" && !assis) {
       cibleP.epauleD = marche ? -0.2 : -0.3;

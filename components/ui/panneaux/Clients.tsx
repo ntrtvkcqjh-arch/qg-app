@@ -7,6 +7,8 @@ import { NOMS_PHASES, type Etat } from "@/lib/types";
 import { euros } from "../textes";
 import { controleDe } from "@/lib/vie4";
 import { fixerTarif } from "@/lib/vie5";
+import { comptesClient } from "@/lib/vie6";
+import { Partenaires } from "./Developpement";
 
 // Portefeuille clients : fiche vivante de chaque client (historique,
 // humeur, dossiers, impayés) pour voir venir les départs.
@@ -84,6 +86,7 @@ export default function Clients() {
           </li>
         ))}
       </ul>
+      <Partenaires />
     </div>
   );
 }
@@ -159,6 +162,7 @@ function FicheClient({ id, retour }: { id: string; retour: () => void }) {
           💶 Revaloriser le forfait (+5 %)
         </button>
       </div>
+      <Comptes id={id} />
       <h4>Dossiers</h4>
       {!dossiers.length && <p className="vide">Aucun dossier.</p>}
       <ul className="mini-liste">
@@ -188,6 +192,60 @@ function FicheClient({ id, retour }: { id: string; retour: () => void }) {
         ))}
         {!c.historique?.length && !journal.length && <li className="vide">Rien de notable pour l&apos;instant.</li>}
       </ul>
+    </div>
+  );
+}
+
+function Comptes({ id }: { id: string }) {
+  const c = useJeu((s) => s.etat?.clients.find((x) => x.id === id));
+  const [ouvert, setOuvert] = useState(false);
+  if (!c) return null;
+  const k = comptesClient(c);
+  return (
+    <div className="comptes-client">
+      <button className="bouton petit" onClick={() => setOuvert(!ouvert)}>
+        📄 {ouvert ? "Masquer" : "Voir"} les comptes simplifiés
+      </button>
+      {ouvert && (
+        <div className="comptes">
+          <table>
+            <caption>Compte de résultat</caption>
+            <tbody>
+              {k.resultat.map(([l, v]) => (
+                <tr key={l} className={/Résultat/.test(l) ? "total" : ""}>
+                  <td>{l}</td>
+                  <td className="num">{euros(v)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="bilan-deux">
+            <table>
+              <caption>Actif</caption>
+              <tbody>
+                {k.actif.map(([l, v]) => (
+                  <tr key={l}>
+                    <td>{l}</td>
+                    <td className="num">{euros(v)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <table>
+              <caption>Passif</caption>
+              <tbody>
+                {k.passif.map(([l, v]) => (
+                  <tr key={l}>
+                    <td>{l}</td>
+                    <td className="num">{euros(v)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="aide">{k.ratios.map(([l, v]) => `${l} : ${v}`).join(" · ")}</p>
+        </div>
+      )}
     </div>
   );
 }

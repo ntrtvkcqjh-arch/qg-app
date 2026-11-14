@@ -4,6 +4,7 @@ import { dateCourte, jourDe, joursOuvresEntre } from "@/lib/calendrier";
 import { besoins } from "@/lib/moteur";
 import { enSaisonFiscale } from "@/lib/vie3";
 import { enVacances, etatDefi } from "@/lib/vie5";
+import { CONJONCTURES, progressionObjectif } from "@/lib/vie6";
 import { LIBELLE_FILIERE } from "@/lib/data/equipe";
 import { useJeu } from "@/lib/store";
 import { LIBELLE_ACTIVITE } from "./textes";
@@ -44,6 +45,24 @@ export default function Aujourdhui() {
             <strong className={aValider.length ? "alerte" : ""}>{aValider.length}</strong>
           </button>
         </div>
+        <div className="conjoncture" title={CONJONCTURES[e.compteurs.conjoncture ?? 0].texte}>
+          {CONJONCTURES[e.compteurs.conjoncture ?? 0].emoji} {CONJONCTURES[e.compteurs.conjoncture ?? 0].nom}
+        </div>
+        {(() => {
+          const o = progressionObjectif(e);
+          if (!o) return null;
+          return (
+            <div className="objectif-partie">
+              <span>🎯 {o.nom}</span>
+              <div className="jauge">
+                <div style={{ width: `${o.pct}%` }} />
+              </div>
+              <em>
+                {o.detail} · {o.restant > 0 ? `${Math.ceil(o.restant / 30)} mois restants` : "délai dépassé"}
+              </em>
+            </div>
+          );
+        })()}
         {enVacances(e) && (
           <div className="saison-fiscale vacances">
             <span>🏖️ Tu es en vacances</span>

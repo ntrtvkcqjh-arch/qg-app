@@ -13,6 +13,8 @@ import Meteo from "./Meteo";
 import DecoFetes from "./DecoFetes";
 import { BureauDeco, EnfantsCreche, Gateau, PenseesSuivi, Suiveur } from "./Extras";
 import { prendrePhoto } from "@/lib/vie2";
+import { tenueDecontractee } from "@/lib/vie6";
+import Campus from "./Campus";
 import Quartier from "./Quartier";
 import { FemmeDeMenage, LampesBureaux } from "./Soiree";
 import { CoucheEtiquettes, Projecteur } from "./Etiquettes";
@@ -121,6 +123,8 @@ export default function Cabinet3D() {
   const cuisine = useJeu((s) => !!s.etat?.agents.some((a) => a.service === "cuisine"));
   const agir = useJeu((s) => s.agir);
   const notifier = useJeu((s) => s.notifier);
+  const decontracte = useJeu((s) => (s.etat ? tenueDecontractee(s.etat) : false));
+  const leger = useJeu((s) => !!s.etat?.compteurs.graphismes);
   const timelapse = useJeu((s) => s.timelapse);
   const setTimelapse = useJeu((s) => s.setTimelapse);
 
@@ -154,7 +158,7 @@ export default function Cabinet3D() {
 
   return (
     <div className="scene-3d">
-      <Canvas shadows dpr={[1, 2]} gl={{ preserveDrawingBuffer: true }} onPointerMissed={() => selectionner(null)} onCreated={() => requestAnimationFrame(() => setPret(true))}>
+      <Canvas shadows={!leger} dpr={leger ? 1 : [1, 2]} gl={{ preserveDrawingBuffer: true, antialias: !leger }} onPointerMissed={() => selectionner(null)} onCreated={() => requestAnimationFrame(() => setPret(true))}>
         <color attach="background" args={[amb.fond]} />
         <OrthographicCamera makeDefault position={[22.5, 22, 17.5]} zoom={VUE.zoom} near={-100} far={200} />
         <OrbitControls
@@ -170,11 +174,13 @@ export default function Cabinet3D() {
           autoRotateSpeed={0.6}
         />
         <Pilote controles={controles} focus={focus} aile={aile} />
+        {!leger && (
         <Environment resolution={128} frames={1}>
           <Lightformer intensity={1.2} position={[0, 10, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[20, 20, 1]} />
           <Lightformer intensity={0.6} color="#ffe6c4" position={[-10, 4, 10]} scale={[10, 4, 1]} />
           <Lightformer intensity={0.5} color="#cfe3ff" position={[10, 4, -10]} scale={[10, 4, 1]} />
         </Environment>
+        )}
         <hemisphereLight args={["#ffffff", "#d6cbb8", amb.ciel]} />
         <directionalLight
           position={[12, 22, 10]}
@@ -215,11 +221,12 @@ export default function Cabinet3D() {
         />
         {formation && etageVue === ETAGE_DIRECTION && pieces.includes("formation") && <Formateur />}
         </Suspense>
-        {etageVue === 0 && <Quartier mois={mois} neige={meteo === "neige"} />}
+        {etageVue === 0 && <Quartier mois={mois} neige={meteo === "neige"} leger={leger} />}
+        <Campus etage={etageVue} />
         {etageVue === 0 && <DecoFetes jour={jourDe(minute)} />}
         <Meteo type={meteo} largeurBatiment={aile ? 22 : 12} />
         {agents.map((a, i) => (
-          <Personnage key={a.id} minute={minute} agent={a} index={i} selectionne={selection === a.id} vitesseJeu={vitesse} onClick={selectionner} piecesOuvertes={piecesListe} etageVue={etageVue} cuisine={cuisine} />
+          <Personnage key={a.id} minute={minute} agent={a} index={i} selectionne={selection === a.id} vitesseJeu={vitesse} onClick={selectionner} piecesOuvertes={piecesListe} etageVue={etageVue} cuisine={cuisine} decontracte={decontracte} />
         ))}
         <Associee etageVue={etageVue} />
         {etageVue === ETAGE_DIRECTION && <BureauDeco />}

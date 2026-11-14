@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useJeu } from "@/lib/store";
-import type { Difficulte, ModeDepart } from "@/lib/types";
+import type { Etat, Difficulte, ModeDepart } from "@/lib/types";
 
 const NIVEAUX: { id: Difficulte; nom: string; texte: string }[] = [
   { id: "facile", nom: "Facile", texte: "40 000 € de trésorerie, peu d'imprévus." },
@@ -20,7 +20,7 @@ export default function NouvellePartie() {
   const [nom, setNom] = useState("Cabinet EZ");
   const [niveau, setNiveau] = useState<Difficulte>("normal");
   const [mode, setMode] = useState<ModeDepart>("creation");
-  const [budget, setBudget] = useState<"normal" | "dix-millions">("normal");
+  const [budget, setBudget] = useState<"normal" | "dix-millions" | "bac">("normal");
 
   return (
     <div className="accueil-jeu">
@@ -54,6 +54,10 @@ export default function NouvellePartie() {
             <strong>10 000 000 €</strong>
             <span>Reprise avec un trésor de guerre : agrandis, recrute et rachète sans compter.</span>
           </button>
+          <button className={`niveau ${budget === "bac" ? "actif" : ""}`} onClick={() => setBudget("bac")}>
+            <strong>Bac à sable</strong>
+            <span>Argent illimité et campus entièrement débloqué : construis le cabinet de tes rêves.</span>
+          </button>
         </div>
         <span className="libelle">Difficulté</span>
         <div className="niveaux">
@@ -64,7 +68,15 @@ export default function NouvellePartie() {
             </button>
           ))}
         </div>
-        <button className="bouton principal-btn" onClick={() => nouvelle(niveau, nom.trim() || "Cabinet EZ", mode, budget === "dix-millions" ? 10_000_000 : undefined)}>
+        <button className="bouton principal-btn" onClick={() => {
+            nouvelle(niveau, nom.trim() || "Cabinet EZ", mode, budget === "dix-millions" ? 10_000_000 : budget === "bac" ? 1_000_000_000 : undefined);
+            if (budget === "bac")
+              useJeu.getState().agir((x: Etat) => {
+                x.compteurs.bacasable = 1;
+                x.niveauLocaux = 8;
+                return null;
+              });
+          }}>
           Ouvrir le cabinet
         </button>
         <p className="note">La partie est sauvegardée dans ce navigateur. 1 seconde réelle = 1 minute au cabinet.</p>

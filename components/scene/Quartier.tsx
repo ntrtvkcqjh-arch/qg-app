@@ -67,7 +67,7 @@ function Passant({ depart, vitesse, couleur, z }: { depart: number; vitesse: num
   );
 }
 
-export default function Quartier({ mois, neige = false }: { mois: number; neige?: boolean }) {
+export default function Quartier({ mois, neige = false, leger = false }: { mois: number; neige?: boolean; leger?: boolean }) {
   const ete = mois >= 6 && mois <= 8;
   const feuillage = mois >= 12 || mois <= 2 ? null : mois >= 9 && mois <= 11 ? "#e07b39" : mois >= 3 && mois <= 4 ? "#f8bbd0" : "#4f8a4b";
   return (
@@ -164,6 +164,8 @@ export default function Quartier({ mois, neige = false }: { mois: number; neige?
             ))}
         </group>
       ))}
+      {!leger && (
+        <>
       <Voiture couleur="#d32f2f" depart={0} vitesse={6} voie={11.6} />
       <Voiture couleur="#1976d2" depart={30} vitesse={5} voie={11.6} />
       <Voiture couleur="#fbc02d" depart={12} vitesse={-7} voie={13.0} />
@@ -177,6 +179,8 @@ export default function Quartier({ mois, neige = false }: { mois: number; neige?
       ].map(([d, v, c]) => (
         <Passant key={String(d)} depart={Number(d)} vitesse={Number(v)} couleur={String(c)} z={Number(v) > 0 ? 14.6 : 15.1} />
       ))}
+        </>
+      )}
     </group>
   );
 }

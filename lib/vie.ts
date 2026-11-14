@@ -29,6 +29,7 @@ import { actionVie3, debutJourneeVie3, quartVie3 } from "@/lib/vie3";
 import { actionVie4, debutJourneeVie4 } from "@/lib/vie4";
 import { chainesDuJour, chainesDuMois, repondreChaine } from "@/lib/chaines";
 import { actionVie5, debutJourneeVie5, quartVie5 } from "@/lib/vie5";
+import { debutJourneeVie6 } from "@/lib/vie6";
 
 const PRENOMS_F = new Set(["Léa", "Sophie", "Inès", "Nadia", "Camille", "Manon", "Chloé", "Emma", "Sarah", "Amina", "Zoé", "Clara", "Lina", "Jade"]);
 const opt = (label: string, code: string, effets: OptionDilemme["effets"] = {}, resultat = "C'est noté."): OptionDilemme => ({ label, cout: 0, effets, resultat, action: "vie", code });
@@ -49,6 +50,7 @@ export function debutJourneeVie(e: Etat, jour: number, premierDuMois: boolean) {
   debutJourneeVie3(e, jour, premierDuMois);
   debutJourneeVie4(e, jour, premierDuMois);
   debutJourneeVie5(e, jour, premierDuMois);
+  debutJourneeVie6(e, jour, premierDuMois);
   if (premierDuMois && jour > 0) chainesDuMois(e);
   chainesDuJour(e, jour);
   if (premierDuMois && jour > 0) {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { COUT_AGENCE, VILLES, classement, ouvrirAgence } from "@/lib/vie3";
 import { LOGICIELS, changerLogiciel, type TypeLogiciel } from "@/lib/vie4";
 import { ouvrirCreche } from "@/lib/vie5";
+import { PARTENAIRES, basculer, risquesCabinet, soignerPartenaire } from "@/lib/vie6";
 import type { Etat } from "@/lib/types";
 import { useJeu } from "@/lib/store";
 import { euros } from "../textes";
@@ -174,7 +175,7 @@ export function ServicesEquipe() {
   const agir = useJeu((s) => s.agir);
   return (
     <div className="services-equipe">
-      <h3 className="titre-section">🧸 Crèche et 🛡️ cybersécurité</h3>
+      <h3 className="titre-section">🧸 Services, coworking et 🛡️ cybersécurité</h3>
       <div className="slot">
         <span>
           <strong>Crèche d&apos;entreprise</strong>
@@ -186,6 +187,9 @@ export function ServicesEquipe() {
           </button>
         )}
       </div>
+      <label className="case-reglage">
+        <input type="checkbox" checked={!!e.compteurs.coworking} onChange={(ev) => agir(basculer, "coworking", ev.target.checked)} /> 🏙️ Espace de coworking en centre-ville pour les rendez-vous clients (2 000 € / mois : rendez-vous plus appréciés et moins fatigants)
+      </label>
       <div className="slot">
         <span>
           <strong>Formation cybersécurité de l&apos;équipe</strong>
@@ -235,6 +239,77 @@ export function AvisSalaries() {
           <li key={a}>{a}</li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/** Partenaires prescripteurs : banque, notaire, avocat. */
+export function Partenaires() {
+  const e = useJeu((s) => s.etat)!;
+  const agir = useJeu((s) => s.agir);
+  return (
+    <div className="partenaires">
+      <h3 className="titre-section">🤝 Partenaires prescripteurs</h3>
+      <p className="aide">Entretiens la relation : au-dessus de 60, ils t&apos;envoient des clients. Sans attention, la relation s&apos;érode chaque mois.</p>
+      {PARTENAIRES.map((p) => {
+        const v = Math.round(e.compteurs[`part_${p.id}`] ?? 30);
+        return (
+          <div key={p.id} className="slot">
+            <span>
+              <strong>
+                {p.emoji} {p.nom}
+              </strong>
+              <small>
+                {p.role} · relation {v}/100
+              </small>
+              <span className="jauge-mini">
+                <span style={{ width: `${v}%`, background: v >= 60 ? "#43a047" : v >= 35 ? "#f2a541" : "#e04a3a" }} />
+              </span>
+            </span>
+            <button className="bouton petit" onClick={() => agir(soignerPartenaire, p.id, "dejeuner")}>
+              🍽️ Déjeuner (150 €)
+            </button>
+            <button className="bouton petit" onClick={() => agir(soignerPartenaire, p.id, "dossier")}>
+              📨 Lui recommander un client
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Cartographie des risques du cabinet. */
+export function Risques() {
+  const e = useJeu((s) => s.etat)!;
+  const agir = useJeu((s) => s.agir);
+  const liste = risquesCabinet(e);
+  return (
+    <div className="risques">
+      <h3 className="titre-section">🧭 Cartographie des risques du cabinet</h3>
+      <ul className="mini-liste">
+        {liste.map((r) => (
+          <li key={r.nom} className={`risque-${r.niveau === "élevé" ? "eleve" : r.niveau}`}>
+            <span>
+              <strong>{r.nom}</strong> · risque {r.niveau}
+            </span>
+            <small>{r.detail}</small>
+          </li>
+        ))}
+      </ul>
+      {!e.compteurs.hommeCle && (
+        <button
+          className="bouton petit"
+          onClick={() =>
+            agir((x: Etat) => {
+              x.compteurs.hommeCle = 1;
+              return null;
+            })
+          }
+        >
+          🛡️ Souscrire une assurance homme-clé (250 € / mois)
+        </button>
+      )}
     </div>
   );
 }

@@ -124,7 +124,7 @@ export function nouvellePartie(difficulte: Difficulte, nomCabinet: string, mode:
     bossActif: null,
     absence: null,
     derniereVisite: Date.now(),
-    compteurs: { forfaitsRevus: 1 },
+    compteurs: { forfaitsRevus: 1, forfaitsRevus2: 1 },
     seq: 0,
     niveauLocaux: creation ? 1 : 3,
     propositions: [],
@@ -718,7 +718,7 @@ function finJournee(e: Etat) {
       }
       e.tresorerie -= penalite;
       e.periode.charges += penalite;
-      e.reputation = clamp(e.reputation - 3 * rates.length * r.penalites);
+      e.reputation = clamp(e.reputation - Math.min(8, 3 * rates.length * r.penalites));
       log(e, `💥 ${ec.nom} : ${rates.length} dossier(s) en retard. Majorations prises en charge par le cabinet : ${penalite.toLocaleString("fr-FR")} €.`, "mal");
       for (const a of e.agents) a.moral = clamp(a.moral - 5);
     }

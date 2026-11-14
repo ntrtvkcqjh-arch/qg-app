@@ -8,7 +8,7 @@ import type { Group } from "three";
 // avec hanches, genoux, épaules et coudes articulés. Le composant parent
 // anime ces articulations (voir `useSquelette` et `animerSquelette`).
 
-export type Coiffure = "courte" | "longue" | "chignon" | "carre" | "rasee";
+export type Coiffure = "courte" | "longue" | "chignon" | "carre" | "rasee" | "voile" | "boucles";
 
 export type Apparence = {
   haut: string;
@@ -17,6 +17,10 @@ export type Apparence = {
   cheveux: string;
   coiffure: Coiffure;
   veste?: boolean;
+  taille?: number; // 0,92 à 1,08
+  carrure?: number; // 0,9 à 1,15
+  lunettes?: boolean;
+  barbe?: boolean;
 };
 
 export type Accessoire = "telephone" | "cafe" | null;
@@ -33,8 +37,20 @@ function h(s: string) {
 export function apparencePour(id: string, prenom: string, haut: string, peau: string, cheveux: string): Apparence {
   const k = h(id + prenom);
   const femme = PRENOMS_F.has(prenom);
-  const coiffure: Coiffure = femme ? (["longue", "chignon", "carre", "longue"] as Coiffure[])[k % 4] : (["courte", "courte", "rasee", "courte"] as Coiffure[])[k % 4];
-  return { haut, bas: BAS[k % BAS.length], peau, cheveux, coiffure, veste: k % 3 === 0 };
+  const coiffure: Coiffure = femme ? (["longue", "chignon", "carre", "longue", "boucles", "voile", "carre", "longue"] as Coiffure[])[k % 8] : (["courte", "courte", "rasee", "courte", "boucles"] as Coiffure[])[k % 5];
+  const k2 = h(prenom + id);
+  return {
+    haut,
+    bas: BAS[k % BAS.length],
+    peau,
+    cheveux,
+    coiffure,
+    veste: k % 3 === 0,
+    taille: (femme ? 0.94 : 1) + ((k2 % 9) - 4) * 0.012,
+    carrure: 0.92 + (k2 % 7) * 0.035,
+    lunettes: k2 % 4 === 0,
+    barbe: !femme && k2 % 3 === 0,
+  };
 }
 
 // ---------- squelette ----------
@@ -49,6 +65,7 @@ export type Squelette = {
   coudeG: RefObject<Group | null>;
   coudeD: RefObject<Group | null>;
   buste: RefObject<Group | null>;
+  tete: RefObject<Group | null>;
 };
 
 export function useSquelette(): Squelette {
@@ -61,7 +78,8 @@ export function useSquelette(): Squelette {
   const coudeG = useRef<Group>(null);
   const coudeD = useRef<Group>(null);
   const buste = useRef<Group>(null);
-  return { hancheG, hancheD, genouG, genouD, epauleG, epauleD, coudeG, coudeD, buste };
+  const tete = useRef<Group>(null);
+  return { hancheG, hancheD, genouG, genouD, epauleG, epauleD, coudeG, coudeD, buste, tete };
 }
 
 /** Pose (angles en radians). */
@@ -78,6 +96,8 @@ export type Posture = {
   coudeD: number;
   inclinaison: number; // buste vers l'avant
   hauteur: number; // décalage vertical du corps
+  teteX?: number; // tête penchée (avant / arrière)
+  teteY?: number; // tête tournée (gauche / droite)
 };
 
 export const DEBOUT: Posture = { hancheG: 0, hancheD: 0, genouG: 0.05, genouD: 0.05, epauleG: 0.05, epauleD: 0.05, epauleGz: -0.08, epauleDz: 0.08, coudeG: -0.15, coudeD: -0.15, inclinaison: 0, hauteur: 0 };
@@ -86,7 +106,7 @@ export const ASSIS: Posture = { hancheG: -1.5, hancheD: -1.5, genouG: 1.5, genou
 /** Rapproche en douceur la pose courante de la cible, puis l'applique au squelette. */
 export function animerSquelette(sq: Squelette, courante: Posture, cible: Posture, dt: number, vitesse = 7) {
   const k = 1 - Math.exp(-Math.min(dt, 0.1) * vitesse);
-  for (const cle of Object.keys(cible) as (keyof Posture)[]) courante[cle] += (cible[cle] - courante[cle]) * k;
+  for (const cle of ["hancheG", "hancheD", "genouG", "genouD", "epauleG", "epauleD", "epauleGz", "epauleDz", "coudeG", "coudeD", "inclinaison", "hauteur", "teteX", "teteY"] as (keyof Posture)[]) courante[cle] = (courante[cle] ?? 0) + ((cible[cle] ?? 0) - (courante[cle] ?? 0)) * k;
   const c = courante;
   if (sq.hancheG.current) sq.hancheG.current.rotation.x = c.hancheG;
   if (sq.hancheD.current) sq.hancheD.current.rotation.x = c.hancheD;
@@ -106,26 +126,43 @@ export function animerSquelette(sq: Squelette, courante: Posture, cible: Posture
     sq.buste.current.rotation.x = c.inclinaison;
     sq.buste.current.position.y = c.hauteur;
   }
+  if (sq.tete.current) {
+    sq.tete.current.rotation.x = c.teteX ?? 0;
+    sq.tete.current.rotation.y = c.teteY ?? 0;
+  }
 }
 
-/** Cycle de marche naturel : hanches, genoux et bras en opposition. */
-export function postureMarche(t: number, cadence = 7.5): Posture {
-  const ph = t * cadence;
+export type StyleMarche = "normal" | "presse" | "fatigue" | "detendu";
+
+/** Cycle de marche naturel : hanches, genoux et bras en opposition, selon l'allure. */
+export function postureMarche(t: number, cadence = 7.5, style: StyleMarche = "normal"): Posture {
+  const st = { normal: { c: 1, j: 0.45, b: 0.4, i: 0.04, tx: 0 }, presse: { c: 1.2, j: 0.55, b: 0.55, i: 0.1, tx: 0.05 }, fatigue: { c: 0.8, j: 0.32, b: 0.18, i: 0.12, tx: 0.22 }, detendu: { c: 0.9, j: 0.38, b: 0.12, i: 0.0, tx: -0.03 } }[style];
+  const ph = t * cadence * st.c;
   const s = Math.sin(ph);
-  return {
-    hancheG: s * 0.45,
-    hancheD: -s * 0.45,
-    genouG: Math.max(0, Math.sin(ph + 1.6)) * 0.75 + 0.05,
-    genouD: Math.max(0, Math.sin(ph + 1.6 + Math.PI)) * 0.75 + 0.05,
-    epauleG: -s * 0.4,
-    epauleD: s * 0.4,
+  const p: Posture = {
+    hancheG: s * st.j,
+    hancheD: -s * st.j,
+    genouG: Math.max(0, Math.sin(ph + 1.6)) * (st.j + 0.3) + 0.05,
+    genouD: Math.max(0, Math.sin(ph + 1.6 + Math.PI)) * (st.j + 0.3) + 0.05,
+    epauleG: -s * st.b,
+    epauleD: s * st.b,
     epauleGz: -0.08,
     epauleDz: 0.08,
-    coudeG: -0.3 - Math.max(0, s) * 0.3,
-    coudeD: -0.3 - Math.max(0, -s) * 0.3,
-    inclinaison: 0.04,
+    coudeG: -0.3 - Math.max(0, s) * st.b * 0.75,
+    coudeD: -0.3 - Math.max(0, -s) * st.b * 0.75,
+    inclinaison: st.i,
     hauteur: Math.abs(Math.cos(ph)) * 0.025 - 0.015,
+    teteX: st.tx,
+    teteY: Math.sin(ph * 0.5) * 0.04,
   };
+  if (style === "detendu") {
+    // mains dans les poches
+    p.epauleG = p.epauleD = 0.1;
+    p.epauleGz = -0.22;
+    p.epauleDz = 0.22;
+    p.coudeG = p.coudeD = -0.55;
+  }
+  return p;
 }
 
 /** Rotation douce vers un angle (chemin le plus court). */
@@ -151,7 +188,10 @@ export type Humeur = "content" | "neutre" | "triste";
 
 export default function Corps({ a, sq, accessoire = null, humeur = "neutre" }: { a: Apparence; sq: Squelette; accessoire?: Accessoire; humeur?: Humeur }) {
   const manche = a.veste ? "#263238" : a.haut;
+  const t = a.taille ?? 1;
+  const c = a.carrure ?? 1;
   return (
+    <group scale={[c, t, Math.min(1.1, c)]}>
     <group ref={sq.buste}>
       {/* jambes : hanche → cuisse → genou → tibia → pied */}
       <Jambe hanche={sq.hancheG} genou={sq.genouG} x={-0.09} c={a.bas} />
@@ -177,6 +217,8 @@ export default function Corps({ a, sq, accessoire = null, humeur = "neutre" }: {
       <Bras epaule={sq.epauleG} coude={sq.coudeG} x={-0.22} manche={manche} avantBras={a.veste ? manche : a.peau} peau={a.peau} accessoire={null} />
       <Bras epaule={sq.epauleD} coude={sq.coudeD} x={0.22} manche={manche} avantBras={a.veste ? manche : a.peau} peau={a.peau} accessoire={accessoire} />
       {/* cou et tête */}
+      <group ref={sq.tete} position={[0, 1.45, 0]}>
+      <group position={[0, -1.45, 0]}>
       <mesh position={[0, 1.45, 0]} castShadow>
         <cylinderGeometry args={[0.045, 0.05, 0.1, 10]} />
         <meshStandardMaterial color={a.peau} />
@@ -204,6 +246,29 @@ export default function Corps({ a, sq, accessoire = null, humeur = "neutre" }: {
         </mesh>
       )}
       <Cheveux a={a} />
+      {a.lunettes && (
+        <group position={[0, 1.6, 0.112]}>
+          {[-0.04, 0.04].map((x) => (
+            <mesh key={x} position={[x, 0, 0]}>
+              <torusGeometry args={[0.024, 0.005, 6, 16]} />
+              <meshStandardMaterial color="#1b1b1b" />
+            </mesh>
+          ))}
+          <mesh>
+            <boxGeometry args={[0.03, 0.006, 0.006]} />
+            <meshStandardMaterial color="#1b1b1b" />
+          </mesh>
+        </group>
+      )}
+      {a.barbe && (
+        <mesh position={[0, 1.52, 0.06]} scale={[1, 0.8, 0.7]} castShadow>
+          <sphereGeometry args={[0.085, 14, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2]} />
+          <meshStandardMaterial color={a.cheveux} roughness={0.95} />
+        </mesh>
+      )}
+      </group>
+      </group>
+    </group>
     </group>
   );
 }
@@ -285,6 +350,38 @@ function Cheveux({ a }: { a: Apparence }) {
             <sphereGeometry args={[0.06, 14, 10]} />
             {mat}
           </mesh>
+        </group>
+      );
+    case "voile":
+      return (
+        <group>
+          <mesh position={[0, 1.6, -0.01]} scale={[1.05, 1.12, 1.05]} castShadow>
+            <sphereGeometry args={[0.125, 24, 18, Math.PI * 0.62, Math.PI * 1.76]} />
+            <meshStandardMaterial color={a.haut === "#ffffff" ? "#5c6bc0" : "#3f4a6b"} roughness={0.8} side={2} />
+          </mesh>
+          <mesh position={[0, 1.45, -0.01]} castShadow>
+            <cylinderGeometry args={[0.09, 0.16, 0.14, 18]} />
+            <meshStandardMaterial color={a.haut === "#ffffff" ? "#5c6bc0" : "#3f4a6b"} roughness={0.8} />
+          </mesh>
+        </group>
+      );
+    case "boucles":
+      return (
+        <group>
+          {calotte}
+          {[
+            [-0.09, 1.66, 0],
+            [0.09, 1.66, 0],
+            [0, 1.71, -0.03],
+            [-0.06, 1.62, -0.09],
+            [0.06, 1.62, -0.09],
+            [0, 1.66, 0.05],
+          ].map(([x, y, z], i) => (
+            <mesh key={i} position={[x, y, z]} castShadow>
+              <sphereGeometry args={[0.055, 10, 8]} />
+              {mat}
+            </mesh>
+          ))}
         </group>
       );
     case "carre":

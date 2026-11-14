@@ -410,14 +410,14 @@ function journeeAgenda(e: Etat, jour: number) {
   for (const b of blocs) {
     if (b.type === "rdv") {
       const c = e.clients.find((x) => x.id === b.ref);
-      if (c) c.satisfaction = clamp(c.satisfaction + 4);
+      if (c) c.satisfaction = clamp(c.satisfaction + (e.compteurs.coworking ? 6 : 4));
     }
     if (b.type === "production") {
       const d = e.dossiers.find((x) => x.id === e.travailToi) ?? e.dossiers.filter((x) => x.phase < 4 && x.echeance < jour + 5).sort((a, b2) => a.echeance - b2.echeance)[0];
       if (d) d.progression = Math.min(100, d.progression + 15);
     }
   }
-  const n = blocs.length;
+  const n = blocs.length - (e.compteurs.coworking ? Math.floor(blocs.filter((b) => b.type === "rdv").length / 2) : 0);
   e.compteurs.formeToi = clamp((e.compteurs.formeToi ?? 100) - Math.max(0, n - 5) * 7 + (n <= 3 ? 4 : 0));
   if (n >= 7) log(e, `📅 Journée surbookée hier (${n} créneaux) : tu finis lessivée.`, "mal");
 }

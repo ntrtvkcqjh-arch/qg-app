@@ -75,3 +75,6 @@ export const LIBELLE_FILIERE: Record<Filiere, string> = {
   associe: "Associé",
   service: "Services du campus",
 };
+
+// Équilibrage : forfaits revalorisés de 20 %.
+for (const c of CLIENTS_INITIAUX) c.forfait = Math.round((c.forfait * 1.2) / 50) * 50;

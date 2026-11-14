@@ -201,6 +201,86 @@ export const CHAINES: Record<string, Def> = {
     fin: finMission("Assistance à un contrôle URSSAF", 3500),
   },
 
+  inventaire: {
+    emoji: "📦",
+    nom: "Inventaire physique chez le client",
+    besoin: "client",
+    honoraires: 2200,
+    etapes: [
+      { titre: "Sur place le 31 décembre", texte: (e, x) => `Tu te rends chez ${nomC(e, x)} pour assister à l'inventaire de fin d'année. Les livraisons continuent pendant le comptage. Que fais-tu ?`, options: [["Organiser le comptage par zones en double équipe, et noter les derniers bons de livraison et de sortie pour la séparation des exercices", 2], ["Laisser le client compter seul et récupérer son tableau", -1], ["Compter toi-même tout le stock", 0]] },
+      { titre: "Écart de stock", texte: () => "Stock compté : 18 400 €. Stock en comptabilité : 21 000 €. Quelle démarche ?", options: [["Analyser l'écart (démarque, erreurs de saisie, livraisons non enregistrées) et retenir le stock physique justifié", 2], ["Garder le chiffre comptable, plus favorable", -2], ["Partager la différence en deux", -1]] },
+      { titre: "Valorisation", texte: () => "Une partie du stock est périmée ou invendable. Comment valoriser ?", options: [["Stock au coût d'achat, et dépréciation des articles dont la valeur nette de réalisation est inférieure", 2], ["Au prix de vente, pour montrer un beau stock", -2], ["Ne rien déprécier, ils finiront par se vendre", -1]] },
+    ],
+    fin: finMission("Inventaire physique", 2200),
+  },
+  chantier: {
+    emoji: "🏗️",
+    nom: "Visite de chantier",
+    besoin: "client",
+    honoraires: 1800,
+    etapes: [
+      { titre: "Sur le chantier", texte: (e, x) => `Tu visites un chantier de ${nomC(e, x)} avec le conducteur de travaux, en casque et chaussures de sécurité. Que vérifies-tu en priorité ?`, options: [["L'avancement réel des travaux, comparé aux situations facturées et au budget", 2], ["La couleur des façades", -1], ["Le nombre de camions sur place", 0]] },
+      { titre: "Facturation", texte: () => "Le chantier est avancé à 40 % mais 70 % du prix est déjà facturé. Conséquence comptable ?", options: [["Constater des produits constatés d'avance pour la part facturée en avance", 2], ["Rien, le client a payé", -2], ["Provisionner une perte", 0]] },
+      { titre: "Sous-traitants", texte: () => "Deux sous-traitants interviennent. Que demandes-tu ?", options: [["Les attestations de vigilance URSSAF et l'acceptation des sous-traitants par le maître d'ouvrage", 2], ["Leur numéro de téléphone", -1], ["Rien, ce n'est pas notre client", -1]] },
+    ],
+    fin: finMission("Visite de chantier", 1800),
+  },
+  paie: {
+    emoji: "💶",
+    nom: "Bulletin de paie à préparer",
+    besoin: "client",
+    honoraires: 900,
+    etapes: [
+      { titre: "Heures supplémentaires", texte: (e, x) => `Un salarié de ${nomC(e, x)} gagne 2 500 € brut pour 151,67 heures et a fait 4 heures supplémentaires cette semaine (aucun accord, majoration légale). Montant des heures sup ?`, options: [["Environ 82 € (taux horaire de 16,48 € × 1,25 × 4 h)", 2], ["Environ 66 € (sans majoration)", -1], ["100 € forfaitaires", -1]] },
+      { titre: "Du brut au net", texte: () => "Sans les heures sup, brut de 2 500 € et environ 22 % de cotisations salariales (non-cadre). Net avant impôt ?", options: [["Environ 1 950 €", 2], ["2 500 €", -2], ["Environ 1 500 €", -1]] },
+      { titre: "Prélèvement à la source", texte: () => "Quel taux de prélèvement à la source appliquer ?", options: [["Le taux personnalisé transmis par l'administration fiscale via la DSN (ou le taux neutre à défaut)", 2], ["Un taux de 10 % pour tout le monde", -1], ["Aucun, c'est au salarié de payer son impôt", -2]] },
+    ],
+    fin: finMission("Préparation de paie", 900),
+  },
+  ag: {
+    emoji: "🗳️",
+    nom: "Assemblée générale d'approbation",
+    besoin: "client",
+    honoraires: 1500,
+    etapes: [
+      { titre: "Convocation", texte: (e, x) => `${nomC(e, x)} (SARL) doit approuver ses comptes. Comment convoques-tu les associés ?`, options: [["Au moins 15 jours avant, avec les comptes, le rapport de gestion et le texte des résolutions", 2], ["La veille, par SMS", -2], ["Pas besoin de convocation entre associés", -1]] },
+      { titre: "Associé mécontent", texte: () => "En séance, un associé minoritaire conteste : « Pourquoi pas de dividende cette année ? » Que réponds-tu ?", options: [["Expliquer le besoin de trésorerie et les investissements prévus, chiffres à l'appui, puis laisser l'assemblée voter", 2], ["Lui dire que ce n'est pas son problème", -2], ["Promettre un dividende l'an prochain sans base", -1]] },
+      { titre: "Le vote", texte: () => "Quelle majorité pour approuver les comptes (première consultation) ?", options: [["Plus de la moitié des parts sociales", 2], ["L'unanimité", -1], ["Les deux tiers", 0]] },
+    ],
+    fin: finMission("Assemblée générale d'approbation", 1500),
+  },
+  contrat: {
+    emoji: "📄",
+    nom: "Contrat de travail sur mesure",
+    besoin: "client",
+    honoraires: 800,
+    etapes: [
+      { titre: "Non-concurrence", texte: (e, x) => `${dir(e, x)} veut une clause de non-concurrence pour son futur commercial. À quelles conditions est-elle valable ?`, options: [["Limitée dans le temps et l'espace, justifiée par l'intérêt de l'entreprise, adaptée au poste et avec une contrepartie financière", 2], ["Il suffit de l'écrire", -2], ["Sans limite de durée pour être tranquille", -1]] },
+      { titre: "Mobilité", texte: () => "Il veut aussi une clause de mobilité « partout dans le monde ». Ton conseil ?", options: [["La limiter à une zone géographique précise, sinon elle est inapplicable", 2], ["La garder telle quelle", -1], ["Ne jamais mettre de clause de mobilité", 0]] },
+      { titre: "Forfait jours", texte: () => "Il propose un forfait annuel en jours à un assistant commercial qui suit des horaires fixes. Possible ?", options: [["Non : le forfait jours suppose un accord collectif et un salarié autonome dans son organisation", 2], ["Oui, pour tous les salariés", -2], ["Oui, si le salarié est d'accord oralement", -1]] },
+    ],
+    fin: finMission("Rédaction de contrat de travail", 800),
+  },
+  trophees: {
+    emoji: "🏆",
+    nom: "Candidature aux trophées",
+    besoin: "rien",
+    etapes: [
+      { titre: "Le dossier", texte: () => "Le cabinet peut concourir au trophée « Employeur de l'année » et au prix de l'innovation de l'Ordre régional. Comment construis-tu le dossier ?", options: [["Chiffres concrets (turnover, formation, satisfaction), témoignages et un projet innovant documenté", 2], ["Un beau texte sans chiffres", -1], ["Copier le dossier d'un autre cabinet", -2]] },
+      { titre: "L'oral", texte: () => "Le jury t'auditionne. Qui emmènes-tu ?", options: [["Un junior et un manager, pour témoigner de la vie du cabinet", 2], ["Personne, tu présentes seule", 0], ["Ton directeur marketing… que tu n'as pas", -1]] },
+      { titre: "La question piège", texte: () => "« Quel est votre point faible ? »", options: [["Reconnaître une faiblesse réelle et présenter le plan d'action en cours", 2], ["« Nous n'en avons pas »", -2], ["Changer de sujet", -1]] },
+    ],
+    fin: (e, r) => {
+      const moral = e.agents.reduce((s, a) => s + a.moral, 0) / Math.max(1, e.agents.length);
+      if (r >= 0.6 && moral >= 60) {
+        e.reputation = clamp(e.reputation + 7);
+        e.compteurs.reseauBoost = (e.compteurs.reseauBoost ?? 0) + 2;
+        log(e, "🏆 Le cabinet remporte le trophée « Employeur de l'année » ! Les candidatures affluent.", "bien");
+        souvenir(e, "🏆", "Trophée Employeur de l'année");
+      } else log(e, `🏆 Pas de trophée cette année${moral < 60 ? " : le jury a noté un moral d'équipe moyen" : ""}.`, "neutre");
+    },
+  },
+
   // ---------- crises du cabinet ----------
   cyber: {
     emoji: "🛡️",
@@ -390,7 +470,9 @@ export function lancerChaine(e: Etat, type: string, ctx: Ctx = {}): string | nul
   if (e.chaines.some((c) => c.type === type)) return "Ce dossier est déjà en cours.";
   if (def.besoin === "client" && !ctx.client) {
     if (!e.clients.length) return "Il faut au moins un client.";
-    ctx.client = pick(e.clients).id;
+    const btp = e.clients.filter((c) => /btp|bâtiment|travaux|installateur/i.test(c.secteur));
+    const paie = e.clients.filter((c) => c.paie);
+    ctx.client = pick(type === "chantier" && btp.length ? btp : type === "paie" && paie.length ? paie : e.clients).id;
   }
   if (def.besoin === "agent" && !ctx.agent) {
     const metiers = e.agents.filter((a) => ["expertise", "fiscal", "social", "juridique", "audit"].includes(a.filiere));
@@ -446,6 +528,12 @@ export function chainesDuMois(e: Etat) {
     ["fraude", 0.05, n >= 6],
     ["international", 0.05, n >= 8],
     ["urssaf", 0.08, n >= 4],
+    ["inventaire", 0.08, n >= 3],
+    ["chantier", 0.05, e.clients.some((c) => /btp|bâtiment|travaux|installateur/i.test(c.secteur))],
+    ["paie", 0.08, e.clients.some((c) => c.paie)],
+    ["ag", 0.08, n >= 4],
+    ["contrat", 0.07, n >= 4],
+    ["trophees", 0.04, e.agents.length >= 15],
     ["demission", 0.06, e.agents.length >= 8],
     ["harcelement", 0.03, e.agents.length >= 15],
     ["etranger", 0.04, e.agents.length >= 10],
@@ -456,9 +544,10 @@ export function chainesDuMois(e: Etat) {
     ["perte_client", 0.015, n >= 10],
   ];
   let lancees = 0;
+  const intense = (e.compteurs.frequence ?? 100) > 100;
   for (const [type, p, ok] of tirages) {
     if (lancees >= 2) break;
-    if (ok && rnd() < p && !lancerChaine(e, type)) lancees++;
+    if (ok && rnd() < p * (intense ? 1.8 : (e.compteurs.frequence ?? 100) / 100) && !lancerChaine(e, type)) lancees++;
   }
 }
 

@@ -78,6 +78,11 @@ export function migrerExt(e: Etat) {
     e.compteurs.forfaitsRevus = 1;
     for (const c of e.clients) c.forfait = Math.round((c.forfait * 1.3) / 50) * 50;
   }
+  // Deuxième revalorisation (+20 %) après les simulations d'équilibrage.
+  if (!e.compteurs.forfaitsRevus2) {
+    e.compteurs.forfaitsRevus2 = 1;
+    for (const c of e.clients) c.forfait = Math.round((c.forfait * 1.2) / 50) * 50;
+  }
 }
 
 // ---------- horaires ----------
@@ -575,6 +580,8 @@ function concurrentsDuMois(e: Etat, jour: number) {
 }
 
 export function messageSpecial(e: Etat, de: string, niveau: 1 | 2 | 3 | 4 | 5, sujet: string, texte: string, dossier: string, payload: Record<string, string | number>, options: OptionDilemme[]) {
+  // Mode calme : une partie des événements secondaires n'arrive pas.
+  if (niveau <= 3 && !sujet.startsWith("✍️") && rnd() > (e.compteurs.frequence ?? 100) / 100) return;
   const jour = jourDe(e.minute);
   e.messages.unshift({
     id: uid(e, "m"),

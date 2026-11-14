@@ -685,20 +685,28 @@ function Decor({ onPiece, onFocus, niveau, achats, mois, fenetre, mood, piles, p
         <Sol key={p.id} piece={p} onClick={onPiece} onDouble={onFocus} verrou={!ouvert(p.id)} />
       ))}
 
-      {/* murs extérieurs avec fenêtres (vue sur la ville) */}
-      <Boite p={[0, H_FOND / 2, -8.1]} s={[24.3, H_FOND, 0.2]} c="#efe9df" />
-      <Boite p={[-12.1, H_FOND / 2, 0]} s={[0.2, H_FOND, 16.4]} c="#e9e2d6" />
-      {[-9, -3, 9].map((x) => (
-        <mesh key={x} position={[x, 1.9, -7.98]}>
-          <planeGeometry args={[3.2, 1.3]} />
-          <meshStandardMaterial map={vue} emissive="#ffffff" emissiveMap={vue} emissiveIntensity={nuit ? 0.9 : 0.45} />
+      {/* façades entièrement vitrées, du sol au plafond (vue sur la ville) */}
+      <Boite p={[0, 0.12, -8.1]} s={[24.3, 0.24, 0.2]} c="#3a3f4b" />
+      <Boite p={[0, H_FOND - 0.1, -8.1]} s={[24.3, 0.2, 0.2]} c="#3a3f4b" />
+      <Boite p={[-12.1, 0.12, 0]} s={[0.2, 0.24, 16.4]} c="#3a3f4b" />
+      <Boite p={[-12.1, H_FOND - 0.1, 0]} s={[0.2, 0.2, 16.4]} c="#3a3f4b" />
+      {[-10.5, -7.5, -4.5, -1.5, 1.5, 7.5, 10.5].map((x) => (
+        <mesh key={x} position={[x, H_FOND / 2, -8.04]}>
+          <planeGeometry args={[2.94, H_FOND - 0.4]} />
+          <meshStandardMaterial map={vue} emissive="#ffffff" emissiveMap={vue} emissiveIntensity={nuit ? 0.9 : 0.5} roughness={0.15} metalness={0.1} />
         </mesh>
       ))}
-      {[-5, 4].map((z) => (
-        <mesh key={z} position={[-11.98, 1.9, z]} rotation={[0, Math.PI / 2, 0]}>
-          <planeGeometry args={[3, 1.3]} />
-          <meshStandardMaterial map={vue} emissive="#ffffff" emissiveMap={vue} emissiveIntensity={nuit ? 0.9 : 0.45} />
+      {[0, 1, 2, 3, 4].map((k) => (
+        <mesh key={k} position={[-12.04, H_FOND / 2, -8 + 1.64 + k * 3.28]} rotation={[0, Math.PI / 2, 0]}>
+          <planeGeometry args={[3.2, H_FOND - 0.4]} />
+          <meshStandardMaterial map={vue} emissive="#ffffff" emissiveMap={vue} emissiveIntensity={nuit ? 0.9 : 0.5} roughness={0.15} metalness={0.1} />
         </mesh>
+      ))}
+      {[-12, -9, -6, -3, 0, 3, 6, 9, 12].map((x) => (
+        <Boite key={`mx${x}`} p={[x, H_FOND / 2, -8.06]} s={[0.07, H_FOND, 0.12]} c="#3a3f4b" />
+      ))}
+      {[0, 1, 2, 3, 4, 5].map((k) => (
+        <Boite key={`mz${k}`} p={[-12.06, H_FOND / 2, -8 + k * 3.28]} s={[0.12, H_FOND, 0.07]} c="#3a3f4b" />
       ))}
       <CloisonX z={8} x0={-12} x1={12} portes={etage === 0 ? [-7.5] : []} h={0.3} />
       <CloisonZ x={12} z0={-8} z1={8} h={0.3} />

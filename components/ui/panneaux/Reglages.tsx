@@ -4,6 +4,7 @@ import { setAvatar, setPolitiqueHeures, setSons, setTeletravail } from "@/lib/ex
 import { useJeu } from "@/lib/store";
 import { useState } from "react";
 import { setAuto } from "@/lib/vie5";
+import { OBJECTIFS, basculer, choisirObjectif, fixerDressCode, progressionObjectif } from "@/lib/vie6";
 import { CHAINES, lancerChaine } from "@/lib/chaines";
 import type { Etat } from "@/lib/types";
 
@@ -81,6 +82,54 @@ export default function Reglages() {
       <button className={`bouton ${e.sons ? "principal-btn" : ""}`} onClick={() => agir(setSons, !e.sons)}>
         {e.sons ? "🔊 Sons activés" : "🔇 Sons désactivés"}
       </button>
+      <h3 className="titre-section">🎯 Objectif de partie</h3>
+      <p className="aide">Choisis un défi au long cours : un écran de victoire t&apos;attend au bout.</p>
+      <div className="scenarios">
+        {OBJECTIFS.map((o, i) => (
+          <button key={o.id} className={`bouton petit ${e.compteurs.objectif === i + 1 ? "principal-btn" : ""}`} onClick={() => agir(choisirObjectif, o.id)} title={o.texte}>
+            {o.nom}
+          </button>
+        ))}
+      </div>
+      {progressionObjectif(e) && <p className="aide">En cours : {progressionObjectif(e)!.texte} ({progressionObjectif(e)!.pct} %)</p>}
+
+      <h3 className="titre-section">🔔 Fréquence des événements</h3>
+      <div className="onglets">
+        {(
+          [
+            [50, "Calme"],
+            [100, "Normal"],
+            [150, "Intense"],
+          ] as const
+        ).map(([v, l]) => (
+          <button key={v} className={(e.compteurs.frequence ?? 100) === v ? "actif" : ""} onClick={() => agir((x: Etat) => { x.compteurs.frequence = v; return null; })}>
+            {l}
+          </button>
+        ))}
+      </div>
+
+      <h3 className="titre-section">🖥️ Graphismes</h3>
+      <div className="onglets">
+        <button className={!e.compteurs.graphismes ? "actif" : ""} onClick={() => agir((x: Etat) => { x.compteurs.graphismes = 0; return null; })}>
+          Qualité maximale
+        </button>
+        <button className={e.compteurs.graphismes ? "actif" : ""} onClick={() => agir((x: Etat) => { x.compteurs.graphismes = 1; return null; })}>
+          Légers (ordinateur moins puissant)
+        </button>
+      </div>
+
+      <h3 className="titre-section">👔 Dress code et mobilité</h3>
+      <div className="onglets">
+        {["Tenue classique", "Vendredi décontracté", "Décontracté toute la semaine"].map((l, i) => (
+          <button key={l} className={(e.compteurs.dresscode ?? 0) === i ? "actif" : ""} onClick={() => agir(fixerDressCode, i)}>
+            {l}
+          </button>
+        ))}
+      </div>
+      <label className="case-reglage">
+        <input type="checkbox" checked={!!e.compteurs.mobilite} onChange={(ev) => agir(basculer, "mobilite", ev.target.checked)} /> 🚲 Forfait mobilités durables (vélos de fonction, covoiturage : 25 € par personne et par mois, moins de retards les jours de grève)
+      </label>
+
       <h3 className="titre-section">🤖 Délégation (mode automatique)</h3>
       <p className="aide">Coche les thèmes que tes associés et managers gèrent pour toi. Pendant tes vacances, tout est délégué. Leurs choix sont prudents, pas toujours optimaux.</p>
       {(

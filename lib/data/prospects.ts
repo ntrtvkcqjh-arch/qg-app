@@ -31,3 +31,6 @@ export const MISSIONS_PONCTUELLES: ModeleMission[] = [
   { titre: "Mise en place d'un tableau de bord mensuel", type: "conseil", honoraires: 1600, delai: 10, description: "Indicateurs de gestion mensuels pour le dirigeant." },
   { titre: "Embauche du premier salarié", type: "paie", honoraires: 900, delai: 6, description: "Contrat, DPAE, mutuelle et première paie." },
 ];
+
+// Équilibrage : forfaits revalorisés de 20 %.
+for (const p of PROSPECTS_NOUVEAUX) p.forfait = Math.round((p.forfait * 1.2) / 50) * 50;

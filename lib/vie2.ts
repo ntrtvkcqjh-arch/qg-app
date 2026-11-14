@@ -231,7 +231,7 @@ function meteo(e: Etat, jour: number) {
   if (!texte) return;
   e.compteurs.meteoMalusJour = jour;
   log(e, texte, "mal");
-  if (texte.includes("Neige") || texte.includes("Grève")) for (const a of e.agents.filter((x) => metier(x) && present(x))) if (rnd() < 0.35) a.activite = "teletravail";
+  if (texte.includes("Neige") || texte.includes("Grève")) for (const a of e.agents.filter((x) => metier(x) && present(x))) if (rnd() < (e.compteurs.mobilite ? 0.12 : 0.35)) a.activite = "teletravail";
 }
 
 /** Coefficient de productivité du jour (neige, canicule, grève). */

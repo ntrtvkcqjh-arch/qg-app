@@ -4,6 +4,7 @@ import { useState } from "react";
 import { JURY, soutenir } from "@/lib/vie3";
 import { useJeu } from "@/lib/store";
 import DecPlan from "./DecPlan";
+import Examen from "./Examen";
 
 // Ton DEC : mémoire étape par étape (avec ton directeur de mémoire), puis
 // soutenance devant le jury.
@@ -43,6 +44,7 @@ export default function Memoire() {
         </button>
       )}
       {jury && <Soutenance fin={() => setJury(false)} />}
+      {!jury && <Examen />}
       {!jury && <DecPlan />}
     </div>
   );

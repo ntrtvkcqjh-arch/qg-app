@@ -9,7 +9,35 @@ export default function JournalPanneau() {
   const e = useJeu((s) => s.etat)!;
   const reinitialiser = useJeu((s) => s.reinitialiser);
   const [confirmer, setConfirmer] = useState(false);
-  const [onglet, setOnglet] = useState<"journal" | "gazettes" | "album">("journal");
+  const [onglet, setOnglet] = useState<"journal" | "gazettes" | "album" | "decisions">("journal");
+  if (onglet === "decisions")
+    return (
+      <div>
+        <div className="onglets">
+          <button onClick={() => setOnglet("journal")}>Journal</button>
+          <button className="actif">⚖️ Décisions</button>
+          <button onClick={() => setOnglet("album")}>📸 Album</button>
+        </div>
+        <ul className="mini-liste">
+          {e.messages
+            .filter((m) => m.statut === "repondu" && m.reponse)
+            .slice(0, 80)
+            .map((m) => (
+              <li key={m.id}>
+                <span>
+                  <strong>{m.sujet}</strong>
+                </span>
+                <span>→ {m.reponse}</span>
+                <small>
+                  {dateCourte(m.jour)} {heure(m.minute)}
+                  {m.dilemme?.options.find((o) => o.label === m.reponse)?.resultat ? ` · ${m.dilemme.options.find((o) => o.label === m.reponse)!.resultat}` : ""}
+                </small>
+              </li>
+            ))}
+          {!e.messages.some((m) => m.statut === "repondu") && <li className="vide">Aucune décision pour l&apos;instant.</li>}
+        </ul>
+      </div>
+    );
   if (onglet === "album")
     return (
       <div>
@@ -50,6 +78,7 @@ export default function JournalPanneau() {
         <button className="actif">Journal</button>
         <button onClick={() => setOnglet("gazettes")}>Gazettes ({e.gazettes.length})</button>
         <button onClick={() => setOnglet("album")}>📸 Album ({e.souvenirs?.length ?? 0})</button>
+        <button onClick={() => setOnglet("decisions")}>⚖️ Décisions</button>
       </div>
       <ul className="journal">
         {e.journal.map((j, i) => (

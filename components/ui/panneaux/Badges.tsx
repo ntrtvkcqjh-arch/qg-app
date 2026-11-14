@@ -2,6 +2,7 @@
 
 import { dateCourte } from "@/lib/calendrier";
 import { BADGES } from "@/lib/data/formation";
+import "@/lib/vie6";
 import { useJeu } from "@/lib/store";
 
 export default function Badges() {
@@ -16,9 +17,9 @@ export default function Badges() {
           const obtenu = e.badges.find((x) => x.id === b.id);
           return (
             <div key={b.id} className={`badge-carte ${obtenu ? "obtenu" : ""}`}>
-              <span className="icone-badge">{b.icone}</span>
-              <strong>{b.nom}</strong>
-              <small>{b.description}</small>
+              <span className="icone-badge">{!obtenu && b.id.startsWith("s_") ? "❔" : b.icone}</span>
+              <strong>{!obtenu && b.id.startsWith("s_") ? "Succès caché" : b.nom}</strong>
+              <small>{!obtenu && b.id.startsWith("s_") ? "À découvrir en jouant…" : b.description}</small>
               {obtenu && <em>{dateCourte(obtenu.jour)}</em>}
             </div>
           );

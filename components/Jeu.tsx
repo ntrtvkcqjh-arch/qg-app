@@ -18,6 +18,8 @@ import Telephone from "./ui/Telephone";
 import Reunion from "./ui/Reunion";
 import BilanAnnee from "./ui/BilanAnnee";
 import Matin from "./ui/Matin";
+import Victoire from "./ui/Victoire";
+import Radio from "./ui/Radio";
 import Tutoriel from "./ui/Tutoriel";
 import Decisions from "./ui/Decisions";
 
@@ -80,6 +82,8 @@ export default function Jeu() {
       <BilanAnnee />
       <Tutoriel />
       <Matin />
+      <Victoire />
+      <Radio />
       <Decisions />
       <Toast />
     </div>
