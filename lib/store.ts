@@ -18,6 +18,8 @@ type Store = {
   selectionPiece: PieceId | null;
   messageOuvert: string | null;
   etageVue: number;
+  reunionOuverte: boolean;
+  setReunion: (v: boolean) => void;
   voirEtage: (n: number) => void;
   toast: string | null;
   nouvelle: (d: Difficulte, nom: string, mode: ModeDepart, tresorerie?: number) => void;
@@ -44,6 +46,8 @@ export const useJeu = create<Store>()(
       selectionPiece: null,
       messageOuvert: null,
       etageVue: 1,
+      reunionOuverte: false,
+      setReunion: (v) => set({ reunionOuverte: v }),
       voirEtage: (n) => set({ etageVue: n }),
       toast: null,
       nouvelle: (d, nom, mode, tresorerie) => set({ etat: M.nouvellePartie(d, nom, mode, tresorerie), panneau: "cabinet" }),

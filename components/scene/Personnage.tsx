@@ -50,6 +50,10 @@ export function pieceAgent(agent: Agent, ouvertes: PieceId[], cuisine = false): 
       else p = sonPoste;
       break;
     case "reunion":
+      if (agent.enComite) {
+        p = ouvert("conseil") ? "conseil" : "reunion"; // réunion live des managers
+        break;
+      }
       if (agent.filiere === "associe" && ouvert("conseil")) {
         p = "conseil"; // comité des associés
         break;

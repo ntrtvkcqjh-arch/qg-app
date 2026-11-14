@@ -123,7 +123,8 @@ export function Detail({ m, retour }: { m: Message; retour?: () => void }) {
       {m.dilemme && m.statut === "attente" && (
         <div className="options-dilemme">
           <h4>Que décides-tu ?</h4>
-          {m.dilemme.options.map((o, i) => (
+          {(e.compteurs.formeToi ?? 100) < 35 && m.dilemme.options.length > 2 && <p className="aide">😴 Tu es épuisée : tu ne vois que les options les plus évidentes. Repose-toi !</p>}
+          {m.dilemme.options.slice(0, (e.compteurs.formeToi ?? 100) < 35 ? 2 : undefined).map((o, i) => (
             <button key={i} className="option" onClick={() => agir(choisirDilemme, m.id, i)}>
               <span>{o.label}</span>
             </button>

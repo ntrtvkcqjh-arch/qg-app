@@ -21,11 +21,13 @@ import { CLIENTS_CREATION, CLIENTS_INITIAUX, CHEVEUX, COULEURS, EQUIPE_INITIALE,
 import { DILEMMES } from "@/lib/data/dilemmes";
 import { BADGES } from "@/lib/data/formation";
 import { MODELES } from "@/lib/data/messages";
+import { facteurMeteo, fatiguerToi } from "@/lib/vie2";
 import { actionVie, debutJourneeVie, nouvelleRecrue, potDeDepart, quartVie, rendezVousClient } from "@/lib/vie";
 import { actionSpeciale, arriveeAssocie, facteurSaison, debutJourneeExt, estTeletravail, facteurCompetence, facturer, finJourneeExt, horairesAgent, initSkills, migrerExt, noterArrivee, noterDepart, progresserSkill, quartAgent } from "@/lib/ext";
 import { ARCS } from "@/lib/data/arcs";
 import { article } from "@/lib/data/boutique";
 import { CAS } from "@/lib/data/cas";
+import { QUESTIONS_DEC, secteurDe } from "@/lib/data/questionsDec";
 import { QCM } from "@/lib/data/formation";
 import { LOCAUX, niveauLocaux } from "@/lib/data/locaux";
 import { BUREAU_ASSOCIE, OPEN_SPACES, POSTES as POSTES_PLAN } from "@/lib/plan";
@@ -433,21 +435,46 @@ const THEMES_MISSION: Record<TypeMission, string[]> = {
   paie: ["Social"],
   bilan: ["PCG", "Immobilisations", "Provisions", "Principes", "Régularisations", "Dépréciations", "Analyse"],
   liasse: ["Fiscal", "IS"],
-  juridique: ["Juridique"],
-  conseil: ["Fiscal", "IS", "Analyse"],
+  juridique: ["Juridique", "Déontologie"],
+  conseil: ["Fiscal", "IS", "Analyse", "Juridique"],
   audit: ["Audit", "Principes", "Déontologie"],
 };
 
-function questionPour(d: Dossier, client: string) {
-  const themes = THEMES_MISSION[d.type];
-  const pool = [...QCM.filter((q) => themes.includes(q.theme)), ...CAS.filter((c) => themes.includes(c.theme)).map((c) => ({ theme: c.theme, question: c.enonce, choix: c.choix, bonne: c.bonne, explication: c.explication }))];
-  const q = pick(pool.length ? pool : QCM);
-  return { theme: q.theme, enonce: q.question.replace(/\{client\}/g, client), choix: q.choix, bonne: q.bonne, explication: q.explication };
+type QuestionPool = { theme: string; question: string; choix: string[]; bonne: number; explication: string; s?: string[] };
+
+/** Choisit une question DEC adaptée au type de mission et au secteur du client, sans répéter les dernières. */
+export function choisirQuestion(e: Etat, themes: string[] | null, clientId: string | null | undefined) {
+  const c = e.clients.find((x) => x.id === clientId);
+  const secteur = secteurDe(c?.secteur);
+  const base: QuestionPool[] = [
+    ...QUESTIONS_DEC,
+    ...QCM,
+    ...CAS.map((x) => ({ theme: x.theme, question: x.enonce, choix: x.choix, bonne: x.bonne, explication: x.explication })),
+  ];
+  const vues = new Set(e.questionsVues ?? []);
+  const cle = (x: QuestionPool) => x.question.slice(0, 60);
+  const neuves = (l: QuestionPool[]) => (l.filter((x) => !vues.has(cle(x))).length ? l.filter((x) => !vues.has(cle(x))) : l);
+  const duTheme = themes ? base.filter((x) => themes.includes(x.theme)) : base;
+  const duSecteur = secteur ? base.filter((x) => x.s?.includes(secteur)) : [];
+  const secteurEtTheme = duSecteur.filter((x) => !themes || themes.includes(x.theme));
+  let pool: QuestionPool[];
+  const r = rnd();
+  if (secteurEtTheme.length && r < 0.6) pool = secteurEtTheme;
+  else if (duSecteur.length && r < 0.8) pool = duSecteur;
+  else pool = duTheme.filter((x) => !x.s || (secteur && x.s.includes(secteur)));
+  if (!pool.length) pool = duTheme.length ? duTheme : base;
+  const q = pick(neuves(pool));
+  e.questionsVues = [...(e.questionsVues ?? []), cle(q)].slice(-60);
+  const nom = c?.nom ?? "le client";
+  return { theme: q.theme, enonce: q.question.replace(/\{client\}/g, nom), choix: q.choix, bonne: q.bonne, explication: q.explication };
+}
+
+function questionPour(e: Etat, d: Dossier) {
+  return choisirQuestion(e, THEMES_MISSION[d.type], d.client);
 }
 
 /** Crée la décision de validation (avec sa question DEC) pour un dossier en fin de révision. */
 export function lancerValidation(e: Etat, d: Dossier, de: string) {
-  const client = nomClient(e, d.client);
   const jour = jourDe(e.minute);
   e.messages.unshift({
     id: uid(e, "m"),
@@ -463,7 +490,7 @@ export function lancerValidation(e: Etat, d: Dossier, de: string) {
     theme: "validation",
     canal: "interne",
     dossier: d.id,
-    cas: questionPour(d, client),
+    cas: questionPour(e, d),
   });
 }
 
@@ -901,7 +928,7 @@ function quart(e: Etat) {
       continue;
     }
     // Avancement du dossier.
-    let v = 2.8 * facteurCompetence(e, a, d) * (1 - a.fatigue / 160) * (1 - Math.max(0, a.stress - 70) / 90) * VITESSE_TYPE[d.type] * r.vitesse / Math.sqrt(d.difficulte);
+    let v = 2.8 * facteurCompetence(e, a, d) * (1 - a.fatigue / 160) * (1 - Math.max(0, a.stress - 70) / 90) * facteurMeteo(e) * VITESSE_TYPE[d.type] * r.vitesse / Math.sqrt(d.difficulte);
     if (rush) v *= 1.8;
     if (possede(e, "babyfoot")) v *= 0.97;
     if (possede(e, "imprimante") && d.phase <= 2) v *= 1.08;
@@ -1098,6 +1125,7 @@ export function choisirDilemme(e: Etat, msgId: string, index: number): string | 
   const m = e.messages.find((x) => x.id === msgId);
   if (!m || !m.dilemme || m.statut !== "attente") return "Ce dilemme n'est plus d'actualité.";
   const opt = m.dilemme.options[index];
+  fatiguerToi(e);
   if (e.pa < opt.cout) return `Il te faut ${opt.cout} PA.`;
   e.pa -= opt.cout;
   appliquerOption(e, m, opt);
@@ -1121,6 +1149,7 @@ export function choisirDilemme(e: Etat, msgId: string, index: number): string | 
 export type Style = "standard" | "ferme" | "pedagogue";
 
 export function repondre(e: Etat, msgId: string, style: Style, texte: string): string | null {
+  fatiguerToi(e);
   const m = e.messages.find((x) => x.id === msgId);
   if (!m || (m.statut !== "attente" && m.statut !== "info")) return "Ce message n'attend plus de réponse.";
   const cout = coutMessage(e, m.niveau);
@@ -1675,7 +1704,8 @@ export function genererPropositions(e: Etat, f: number) {
   const premium = e.niveauLocaux >= 4 ? 1.15 : 1;
   const boost = (e.compteurs.reseauBoost ?? 0) > 0 ? 12 : 1; // contacts du réseau, presse
   const chanceNouveau = boost * (e.mode === "creation" && e.clients.length < 8 ? 0.006 : 0.0025) * (e.reputation > 30 ? 1 : 0.3) * (aService(e, "accueil") ? 1.3 : 1);
-  if (rnd() < chanceNouveau && e.clients.length + e.propositions.length < 18) {
+  const gel = (e.compteurs.gelProspectsJusqua ?? 0) > jour; // gel décidé en réunion
+  if (!gel && rnd() < chanceNouveau && e.clients.length + e.propositions.length < 18) {
     const libres = PROSPECTS_NOUVEAUX.filter((x) => !e.clients.some((c) => c.nom === x.nom) && !e.propositions.some((p) => p.nouveau?.nom === x.nom) && !e.compteurs[`refus:${x.nom}`]);
     if (libres.length) {
       const p = pick(libres);
@@ -1797,7 +1827,7 @@ export function refuserProposition(e: Etat, id: string): string | null {
 // ---------- cas pratiques et carnet ----------
 
 function lancerCas(e: Etat, a: Agent, d: Dossier) {
-  const modele = pick(CAS);
+  const modele = choisirQuestion(e, THEMES_MISSION[d.type], d.client);
   const client = nomClient(e, d.client);
   d.bloque = "Cas pratique à trancher";
   const jour = jourDe(e.minute);
@@ -1814,12 +1844,13 @@ function lancerCas(e: Etat, a: Agent, d: Dossier) {
     expire: ajouterJoursOuvres(jour, 2),
     theme: "cas",
     dossier: d.id,
-    cas: { ...modele, enonce: modele.enonce.replace(/\{client\}/g, client) },
+    cas: modele,
   });
   dire(e, a, "J'ai besoin de toi !", 40);
 }
 
 export function resoudreCas(e: Etat, msgId: string, choix: number): string | null {
+  fatiguerToi(e);
   const m = e.messages.find((x) => x.id === msgId);
   if (!m || !m.cas || m.statut !== "attente") return "Ce cas est déjà réglé.";
   const bon = choix === m.cas.bonne;

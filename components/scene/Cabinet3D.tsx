@@ -10,6 +10,8 @@ import Personnage from "./Personnage";
 import Associee from "./Associee";
 import Visiteurs from "./Visiteurs";
 import Meteo from "./Meteo";
+import DecoFetes from "./DecoFetes";
+import { prendrePhoto } from "@/lib/vie2";
 import Quartier from "./Quartier";
 import { FemmeDeMenage, LampesBureaux } from "./Soiree";
 import { CoucheEtiquettes, Projecteur } from "./Etiquettes";
@@ -112,10 +114,23 @@ export default function Cabinet3D() {
   const etageVue = useJeu((s) => s.etageVue);
   const voirEtage = useJeu((s) => s.voirEtage);
   const cuisine = useJeu((s) => !!s.etat?.agents.some((a) => a.service === "cuisine"));
+  const agir = useJeu((s) => s.agir);
+  const notifier = useJeu((s) => s.notifier);
+
+  function photo() {
+    const canvas = document.querySelector<HTMLCanvasElement>(".scene-3d canvas");
+    if (!canvas) return;
+    const lien = document.createElement("a");
+    lien.href = canvas.toDataURL("image/png");
+    lien.download = `cabinet-ez-${new Date().toISOString().slice(0, 10)}.png`;
+    lien.click();
+    agir(prendrePhoto);
+    notifier("📸 Photo téléchargée et ajoutée à l'album (onglet Journal).");
+  }
 
   return (
     <div className="scene-3d">
-      <Canvas shadows dpr={[1, 2]} onPointerMissed={() => selectionner(null)} onCreated={() => requestAnimationFrame(() => setPret(true))}>
+      <Canvas shadows dpr={[1, 2]} gl={{ preserveDrawingBuffer: true }} onPointerMissed={() => selectionner(null)} onCreated={() => requestAnimationFrame(() => setPret(true))}>
         <color attach="background" args={[amb.fond]} />
         <OrthographicCamera makeDefault position={[22.5, 22, 17.5]} zoom={VUE.zoom} near={-100} far={200} />
         <OrbitControls
@@ -177,6 +192,7 @@ export default function Cabinet3D() {
         {formation && etageVue === ETAGE_DIRECTION && pieces.includes("formation") && <Formateur />}
         </Suspense>
         {etageVue === 0 && <Quartier mois={mois} />}
+        {etageVue === 0 && <DecoFetes jour={jourDe(minute)} />}
         <Meteo type={meteo} largeurBatiment={aile ? 22 : 12} />
         {agents.map((a, i) => (
           <Personnage key={a.id} minute={minute} agent={a} index={i} selectionne={selection === a.id} vitesseJeu={vitesse} onClick={selectionner} piecesOuvertes={piecesListe} etageVue={etageVue} cuisine={cuisine} />
@@ -212,6 +228,9 @@ export default function Cabinet3D() {
         )}
         <button className={visite ? "actif" : ""} onClick={() => setVisite(!visite)} title="La caméra tourne autour du cabinet">
           🎥 {visite ? "Arrêter la visite" : "Visite"}
+        </button>
+        <button onClick={photo} title="Photo du cabinet : téléchargée et ajoutée à l'album">
+          📸 Photo
         </button>
         <span className="astuce">Double-clic sur une pièce pour zoomer</span>
       </div>

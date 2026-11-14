@@ -8,7 +8,7 @@ export default function Toast() {
   const notifier = useJeu((s) => s.notifier);
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => notifier(null), 3200);
+    const t = setTimeout(() => notifier(null), Math.min(10000, 3200 + toast.length * 35));
     return () => clearTimeout(t);
   }, [toast, notifier]);
   if (!toast) return null;

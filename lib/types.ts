@@ -103,6 +103,7 @@ export type Agent = {
   anniversaire?: number; // jour de l'année (0-364)
   service?: TypeService; // personnel des services du campus
   associeDe?: Filiere; // pôle dont l'associé a la charge
+  enComite?: boolean; // en réunion live des managers (salle du conseil)
   essaiJusquau?: number; // fin de la période d'essai (jour)
   remplace?: string; // CDD de remplacement : id de la personne remplacée
   finContrat?: number; // CDD : dernier jour
@@ -387,6 +388,8 @@ export type Etat = {
   sessions: SessionFormation[];
   budgetFormation: number; // budget annuel restant (€)
   statsThemes: Record<string, { ok: number; total: number }>;
+  souvenirs?: { jour: number; emoji: string; titre: string }[]; // album souvenir
+  questionsVues?: string[]; // dernières questions DEC posées (évite les répétitions)
   dateDec: number; // jour de l'épreuve écrite visée
   memoire: Memoire;
   chefsPoles: Partial<Record<Filiere, string>>;

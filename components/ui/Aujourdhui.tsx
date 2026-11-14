@@ -51,6 +51,13 @@ export default function Aujourdhui() {
             </em>
           </div>
         )}
+        <div className="forme-toi" title="Ta forme : chaque décision et chaque soirée tardive te fatiguent ; la nuit et le week-end te rechargent.">
+          <span>🔋 Ta forme</span>
+          <div className="jauge">
+            <div style={{ width: `${e.compteurs.formeToi ?? 100}%`, background: (e.compteurs.formeToi ?? 100) < 35 ? "#e04a3a" : (e.compteurs.formeToi ?? 100) < 60 ? "#f2a541" : "#43a047" }} />
+          </div>
+          <strong>{Math.round(e.compteurs.formeToi ?? 100)}</strong>
+        </div>
         {monDossier && (
           <div className="toi-travaille">
             <span>🧑‍💼 Tu travailles sur</span>
