@@ -4,6 +4,7 @@ import { useState } from "react";
 import { dateCourte, jourDe } from "@/lib/calendrier";
 import { CRENEAUX, JOURS, STYLE_BLOC, ajouterProduction, deplacerBloc, genererAgenda, retirerBloc } from "@/lib/vie4";
 import { useJeu } from "@/lib/store";
+import { enVacances, poserVacances } from "@/lib/vie5";
 
 // Ton agenda de la semaine : glisse-dépose les rendez-vous, ajoute des blocs
 // de production. Plus de 5 créneaux dans une journée te fatiguent.
@@ -38,6 +39,14 @@ export default function Agenda() {
       <p className="aide">
         Semaine du {dateCourte(agenda.semaine)}. Glisse les blocs pour réorganiser ta semaine. Au-delà de 5 créneaux par jour, ta forme baisse ; un bloc de production fait avancer tes dossiers urgents, un rendez-vous tenu fait plaisir au client.
       </p>
+      <div className="vacances-ligne">
+        <span>
+          🏖️ Dernières vacances : {e.compteurs.dernieresVacances !== undefined ? `il y a ${jour - e.compteurs.dernieresVacances} jours` : "jamais"}. Sans vacances depuis plus de 6 mois, ta forme s&apos;use plus vite.
+        </span>
+        <button className="bouton petit" disabled={enVacances(e)} onClick={() => agir(poserVacances)}>
+          {enVacances(e) ? "En vacances" : "Poser une semaine"}
+        </button>
+      </div>
       <div className="palette">
         <span draggable onDragStart={() => setTenu("nouveau")} onClick={() => setTenu(tenu === "nouveau" ? null : "nouveau")} className={`bloc production ${tenu === "nouveau" ? "tenu" : ""}`}>
           🧠 + Bloc de production

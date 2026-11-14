@@ -21,6 +21,9 @@ type Store = {
   reunionOuverte: boolean;
   timelapse: boolean;
   bilanAnnee: boolean;
+  suivi: string | null;
+  suivre: (id: string | null) => void;
+  chargerEtat: (e: Etat) => void;
   setBilanAnnee: (v: boolean) => void;
   setTimelapse: (v: boolean) => void;
   setReunion: (v: boolean) => void;
@@ -53,6 +56,9 @@ export const useJeu = create<Store>()(
       reunionOuverte: false,
       timelapse: false,
       bilanAnnee: false,
+      suivi: null,
+      suivre: (id) => set({ suivi: id }),
+      chargerEtat: (etat) => set({ etat: M.migrer(etat), messageOuvert: null, selectionAgent: null, panneau: "cabinet" }),
       setBilanAnnee: (v) => set({ bilanAnnee: v }),
       setTimelapse: (v) => set({ timelapse: v }),
       setReunion: (v) => set({ reunionOuverte: v }),

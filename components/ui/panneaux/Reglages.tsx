@@ -2,6 +2,10 @@
 
 import { setAvatar, setPolitiqueHeures, setSons, setTeletravail } from "@/lib/ext";
 import { useJeu } from "@/lib/store";
+import { useState } from "react";
+import { setAuto } from "@/lib/vie5";
+import { CHAINES, lancerChaine } from "@/lib/chaines";
+import type { Etat } from "@/lib/types";
 
 const COULEURS_TENUE = ["#121a2e", "#2f5bea", "#d1495b", "#17a398", "#8e44ad", "#f2a541", "#3d405b", "#ffffff"];
 const COULEURS_CHEVEUX = ["#2a1a12", "#111111", "#6b4423", "#c89b5d", "#a0522d", "#d4b483", "#8d8d8d", "#b03a2e"];
@@ -77,6 +81,123 @@ export default function Reglages() {
       <button className={`bouton ${e.sons ? "principal-btn" : ""}`} onClick={() => agir(setSons, !e.sons)}>
         {e.sons ? "🔊 Sons activés" : "🔇 Sons désactivés"}
       </button>
+      <h3 className="titre-section">🤖 Délégation (mode automatique)</h3>
+      <p className="aide">Coche les thèmes que tes associés et managers gèrent pour toi. Pendant tes vacances, tout est délégué. Leurs choix sont prudents, pas toujours optimaux.</p>
+      {(
+        [
+          ["dec", "Contrôles DEC, revues et missions expertes"],
+          ["rh", "Ressources humaines (promotions, alternants, événements)"],
+          ["finances", "Finances (clôture, offres, rachats, lettres de mission)"],
+        ] as const
+      ).map(([k, l]) => (
+        <label key={k} className="case-reglage">
+          <input type="checkbox" checked={!!e.auto?.[k]} onChange={(ev) => agir(setAuto, k, ev.target.checked)} /> {l}
+        </label>
+      ))}
+
+      <h3 className="titre-section">🎬 Lancer un scénario</h3>
+      <p className="aide">Missions expertes et crises en plusieurs étapes. Elles arrivent aussi toutes seules au fil des mois.</p>
+      <div className="scenarios">
+        {Object.entries(CHAINES).map(([id, c]) => (
+          <button key={id} className="bouton petit" onClick={() => agir(lancerChaine, id, {})}>
+            {c.emoji} {c.nom}
+          </button>
+        ))}
+      </div>
+
+      <Sauvegardes />
+
+      <h3 className="titre-section">🎓 Tutoriel</h3>
+      <button className="bouton" onClick={() => agir((x: Etat) => { x.compteurs.tuto = 0; return null; })}>
+        Revoir le tutoriel
+      </button>
+    </div>
+  );
+}
+
+const CLE_SLOT = (n: number) => `cabinet-ez-slot-${n}`;
+
+function lireSlot(n: number): { nom: string; date: string; etat: Etat } | null {
+  try {
+    const t = localStorage.getItem(CLE_SLOT(n));
+    return t ? JSON.parse(t) : null;
+  } catch {
+    return null;
+  }
+}
+
+function Sauvegardes() {
+  const e = useJeu((s) => s.etat)!;
+  const chargerEtat = useJeu((s) => s.chargerEtat);
+  const notifier = useJeu((s) => s.notifier);
+  const [, rafraichir] = useState(0);
+  const sauver = (n: number) => {
+    try {
+      localStorage.setItem(CLE_SLOT(n), JSON.stringify({ nom: e.nomCabinet, date: new Date().toLocaleString("fr-FR"), etat: e }));
+      notifier(`💾 Partie sauvegardée dans l'emplacement ${n}.`);
+      rafraichir((x) => x + 1);
+    } catch {
+      notifier("Sauvegarde impossible (stockage du navigateur plein).");
+    }
+  };
+  const exporter = () => {
+    const lien = document.createElement("a");
+    lien.href = URL.createObjectURL(new Blob([JSON.stringify(e)], { type: "application/json" }));
+    lien.download = `cabinet-ez-${new Date().toISOString().slice(0, 10)}.json`;
+    lien.click();
+  };
+  const importer = (f: File | undefined) => {
+    if (!f) return;
+    f.text().then((t) => {
+      try {
+        const etat = JSON.parse(t) as Etat;
+        if (!etat.agents || !etat.clients) throw new Error();
+        chargerEtat(etat);
+        notifier("📂 Partie importée.");
+      } catch {
+        notifier("Fichier de sauvegarde invalide.");
+      }
+    });
+  };
+  return (
+    <div className="sauvegardes">
+      <h3 className="titre-section">💾 Sauvegardes</h3>
+      <p className="aide">Garde plusieurs parties en parallèle (création à zéro, reprise…). La partie en cours reste sauvegardée automatiquement.</p>
+      {[1, 2, 3].map((n) => {
+        const s = lireSlot(n);
+        return (
+          <div key={n} className="slot">
+            <span>
+              <strong>Emplacement {n}</strong>
+              <small>{s ? `${s.nom} · ${s.date}` : "vide"}</small>
+            </span>
+            <button className="bouton petit" onClick={() => sauver(n)}>
+              Sauver ici
+            </button>
+            <button
+              className="bouton petit"
+              disabled={!s}
+              onClick={() => {
+                if (s) {
+                  chargerEtat(s.etat);
+                  notifier(`📂 Partie « ${s.nom} » chargée.`);
+                }
+              }}
+            >
+              Charger
+            </button>
+          </div>
+        );
+      })}
+      <div className="slot">
+        <button className="bouton petit" onClick={exporter}>
+          ⬇️ Exporter un fichier
+        </button>
+        <label className="bouton petit">
+          ⬆️ Importer un fichier
+          <input type="file" accept="application/json" hidden onChange={(ev) => importer(ev.target.files?.[0])} />
+        </label>
+      </div>
     </div>
   );
 }

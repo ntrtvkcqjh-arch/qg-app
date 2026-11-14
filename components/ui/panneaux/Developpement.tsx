@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { COUT_AGENCE, VILLES, classement, ouvrirAgence } from "@/lib/vie3";
 import { LOGICIELS, changerLogiciel, type TypeLogiciel } from "@/lib/vie4";
+import { ouvrirCreche } from "@/lib/vie5";
+import type { Etat } from "@/lib/types";
 import { useJeu } from "@/lib/store";
 import { euros } from "../textes";
 
@@ -162,6 +164,77 @@ export function Logiciels() {
           </select>
         </label>
       ))}
+    </div>
+  );
+}
+
+/** Services pour l'équipe : crèche d'entreprise et formation cybersécurité. */
+export function ServicesEquipe() {
+  const e = useJeu((s) => s.etat)!;
+  const agir = useJeu((s) => s.agir);
+  return (
+    <div className="services-equipe">
+      <h3 className="titre-section">🧸 Crèche et 🛡️ cybersécurité</h3>
+      <div className="slot">
+        <span>
+          <strong>Crèche d&apos;entreprise</strong>
+          <small>{e.compteurs.creche ? "Ouverte : les enfants passent le mercredi au cabinet." : "40 000 € d'aménagement puis 3 000 € par mois. Moral et marque employeur en hausse."}</small>
+        </span>
+        {!e.compteurs.creche && (
+          <button className="bouton petit" onClick={() => agir(ouvrirCreche)}>
+            Ouvrir
+          </button>
+        )}
+      </div>
+      <div className="slot">
+        <span>
+          <strong>Formation cybersécurité de l&apos;équipe</strong>
+          <small>{(e.compteurs.cyber ?? 0) >= 2 ? "Équipe formée : double authentification et sauvegardes hors ligne en place." : "5 000 € : phishing, mots de passe, sauvegardes. Réduit fortement le risque de cyberattaque."}</small>
+        </span>
+        {(e.compteurs.cyber ?? 0) < 2 && (
+          <button
+            className="bouton petit"
+            onClick={() =>
+              agir((x: Etat) => {
+                if (x.tresorerie < 5000) return "Trésorerie insuffisante.";
+                x.tresorerie -= 5000;
+                x.compteurs.cyber = 2;
+                return null;
+              })
+            }
+          >
+            Former
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Avis des salariés sur un site d'avis fictif, calculés depuis l'ambiance réelle. */
+export function AvisSalaries() {
+  const e = useJeu((s) => s.etat)!;
+  const n = Math.max(1, e.agents.length);
+  const moral = e.agents.reduce((s, a) => s + a.moral, 0) / n;
+  const stress = e.agents.reduce((s, a) => s + a.stress, 0) / n;
+  const note = Math.max(1, Math.min(5, Math.round(((moral - stress * 0.4) / 18 + 1.2) * 10) / 10));
+  const avis = [
+    moral > 70 ? "« Super ambiance, des associés à l'écoute. »" : moral > 50 ? "« Bonne équipe, mais la charge est parfois lourde. »" : "« Ambiance tendue, on ne se sent pas écoutés. »",
+    stress > 60 ? "« La saison fiscale est épuisante, trop de nocturnes. »" : "« Horaires raisonnables, télétravail possible. »",
+    e.compteurs.creche ? "« La crèche d'entreprise, ça change la vie ! »" : (e.promotions?.length ?? 0) > 2 ? "« On évolue vite si on s'investit. »" : "« Peu de perspectives d'évolution. »",
+  ];
+  return (
+    <div className="avis-salaries">
+      <h3 className="titre-section">⭐ Avis des salariés en ligne</h3>
+      <p className="note-avis">
+        {"★".repeat(Math.round(note))}
+        {"☆".repeat(5 - Math.round(note))} <strong>{note.toFixed(1)} / 5</strong> <small>({n * 2} avis)</small>
+      </p>
+      <ul className="mini-liste">
+        {avis.map((a) => (
+          <li key={a}>{a}</li>
+        ))}
+      </ul>
     </div>
   );
 }

@@ -404,7 +404,9 @@ export type Etat = {
   promotions?: { jour: number; prenom: string; nom: string; poste: string; couleur: string }[]; // mur des promotions
   risquesRC?: { jour: number; client: string; montant: number; faute: string }[]; // erreurs non détectées qui ressortiront
   agences?: Agence[];
-  litiges?: { jour: number; client: string; montant: number }[]; // litiges d'honoraires à venir
+  chaines?: { id: string; type: string; etape: number; score: number; prochain: number; ctx: { client?: string; agent?: string; montant?: number } }[]; // cas en plusieurs étapes
+  litiges?: { jour: number; client: string; montant: number }[];
+  auto?: { dec?: boolean; rh?: boolean; finances?: boolean }; // thèmes délégués (gestion automatique) // litiges d'honoraires à venir
   controles?: { id: string; client: string; etape: number; prochain: number; score: number; rappel: number }[]; // contrôles fiscaux de clients
   logiciels?: { production: number; paie: number; pdp: number; migrationJusqua: number };
   agenda?: { semaine: number; blocs: { id: string; jour: number; creneau: number; type: "rdv" | "reunion" | "signature" | "banque" | "production"; titre: string; ref?: string }[] };

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useJeu } from "@/lib/store";
+import { tutorielActif } from "./Tutoriel";
+import { jourDe, minuteDuJour } from "@/lib/calendrier";
 import type { Message } from "@/lib/types";
 import { Detail } from "./panneaux/Messages";
 
@@ -17,7 +19,7 @@ export default function Decisions() {
   const courantId = useJeu((s) => s.messageOuvert);
   const ouvrirMessage = useJeu((s) => s.ouvrirMessage);
   const notifier = useJeu((s) => s.notifier);
-  const reunion = useJeu((s) => s.reunionOuverte || s.timelapse || s.bilanAnnee);
+  const reunion = useJeu((s) => s.reunionOuverte || s.timelapse || s.bilanAnnee || tutorielActif(s.etat) || (!!s.etat && s.etat.compteurs.matinVu !== jourDe(s.etat.minute) && minuteDuJour(s.etat.minute) >= 480 && minuteDuJour(s.etat.minute) <= 720));
   const [masque, setMasque] = useState(false);
   const pauseJusqua = useRef(0);
   const vus = useRef(new Set<string>());

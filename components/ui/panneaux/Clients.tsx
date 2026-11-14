@@ -6,6 +6,7 @@ import { useJeu } from "@/lib/store";
 import { NOMS_PHASES, type Etat } from "@/lib/types";
 import { euros } from "../textes";
 import { controleDe } from "@/lib/vie4";
+import { fixerTarif } from "@/lib/vie5";
 
 // Portefeuille clients : fiche vivante de chaque client (historique,
 // humeur, dossiers, impayés) pour voir venir les départs.
@@ -18,6 +19,7 @@ function factures(e: Etat, clientId: string) {
 
 export default function Clients() {
   const e = useJeu((s) => s.etat)!;
+  const agir = useJeu((s) => s.agir);
   const [ouvert, setOuvert] = useState<string | null>(null);
   const [tri, setTri] = useState<"risque" | "honoraires" | "nom">("risque");
   const c = e.clients.find((x) => x.id === ouvert);
@@ -40,6 +42,15 @@ export default function Clients() {
           <span>Risque de départ</span>
           <strong className={aRisque ? "alerte" : ""}>{aRisque}</strong>
         </div>
+      </div>
+      <div className="tarifs">
+        <label>
+          <span>
+            💶 Tes tarifs : <strong>{e.compteurs.tarif ?? 100} %</strong> du prix du marché
+          </span>
+          <input type="range" min={80} max={130} step={5} value={e.compteurs.tarif ?? 100} onChange={(ev) => agir(fixerTarif, Number(ev.target.value))} />
+        </label>
+        <small>Plus cher : meilleures marges sur les nouveaux clients, mais la satisfaction baisse et tu gagnes moins d&apos;appels d&apos;offres. Moins cher : l&apos;inverse.</small>
       </div>
       <div className="onglets">
         <button className={tri === "risque" ? "actif" : ""} onClick={() => setTri("risque")}>
@@ -85,6 +96,10 @@ function FicheClient({ id, retour }: { id: string; retour: () => void }) {
   const dossiers = e.dossiers.filter((d) => d.client === id).sort((a, b) => (a.phase === 5 ? 1 : 0) - (b.phase === 5 ? 1 : 0) || a.echeance - b.echeance);
   const journal = e.journal.filter((j) => j.texte.includes(c.nom)).slice(0, 8);
   const impayes = factures(e, id);
+  const heures = dossiers.reduce((s, d) => s + (d.heures ?? 0), 0);
+  const debut = dossiers.length ? Math.min(...dossiers.map((d) => d.cree)) : jour;
+  const encaisse = dossiers.filter((d) => d.phase === 5).reduce((s, d) => s + d.honoraires, 0) + c.forfait * Math.max(1, (jour - debut) / 30.4);
+  const rentabilite = heures ? Math.round((encaisse / (heures * 32)) * 100) : null;
   const humeur = c.satisfaction > 75 ? "😄 Ravi" : c.satisfaction > 55 ? "🙂 Satisfait" : c.satisfaction > 40 ? "😐 Mitigé" : "😠 Mécontent";
   return (
     <div className="fiche-client">
@@ -103,6 +118,10 @@ function FicheClient({ id, retour }: { id: string; retour: () => void }) {
         <div className="kpi">
           <span>Forfait</span>
           <strong>{euros(c.forfait)}</strong>
+        </div>
+        <div className="kpi">
+          <span>Rentabilité</span>
+          <strong className={rentabilite !== null && rentabilite < 100 ? "alerte" : ""}>{rentabilite === null ? "—" : `${rentabilite} %`}</strong>
         </div>
         <div className="kpi">
           <span>Impayés</span>

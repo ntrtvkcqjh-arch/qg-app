@@ -3,6 +3,7 @@
 import { dateCourte, jourDe, joursOuvresEntre } from "@/lib/calendrier";
 import { besoins } from "@/lib/moteur";
 import { enSaisonFiscale } from "@/lib/vie3";
+import { enVacances, etatDefi } from "@/lib/vie5";
 import { LIBELLE_FILIERE } from "@/lib/data/equipe";
 import { useJeu } from "@/lib/store";
 import { LIBELLE_ACTIVITE } from "./textes";
@@ -43,6 +44,24 @@ export default function Aujourdhui() {
             <strong className={aValider.length ? "alerte" : ""}>{aValider.length}</strong>
           </button>
         </div>
+        {enVacances(e) && (
+          <div className="saison-fiscale vacances">
+            <span>🏖️ Tu es en vacances</span>
+            <strong>Retour le {new Date(Date.UTC(2026, 2, 2 + (e.compteurs.vacancesJusqua ?? 0))).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</strong>
+            <em>Tes associés et managers gèrent les décisions courantes.</em>
+          </div>
+        )}
+        {(() => {
+          const d = etatDefi(e);
+          if (!d) return null;
+          return (
+            <div className={`defi ${d.reussi ? "ok" : ""}`}>
+              <span>🏁 Défi de la semaine</span>
+              <strong>{d.nom}</strong>
+              <em>{d.reussi ? "✔ Réussi pour l'instant !" : `En cours : ${d.valeur}${d.objectif ? ` / ${d.objectif}` : ""}`}</em>
+            </div>
+          );
+        })()}
         {enSaisonFiscale(e) && (
           <div className="saison-fiscale">
             <span>📆 Saison fiscale</span>

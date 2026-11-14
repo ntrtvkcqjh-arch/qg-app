@@ -35,6 +35,7 @@ function Jauge({ label, v, inverse = false }: { label: string; v: number; invers
 }
 
 function FicheAgent({ id }: { id: string }) {
+  const suivre = useJeu((s) => s.suivre);
   const e = useJeu((s) => s.etat)!;
   const agir = useJeu((s) => s.agir);
   const fermer = useJeu((s) => s.selectionner);
@@ -127,6 +128,9 @@ function FicheAgent({ id }: { id: string }) {
       </div>
       <FicheDeveloppement id={a.id} />
       <div className="actions">
+        <button className="bouton principal-btn" onClick={() => suivre(a.id)}>
+          🎥 Une journée dans sa peau
+        </button>
         <button className="bouton" onClick={() => agir(augmenter, a.id)}>
           +100 € de salaire
         </button>

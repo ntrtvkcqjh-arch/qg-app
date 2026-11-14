@@ -18,6 +18,8 @@ const jourSemaine = (jour: number) => dateDe(jour).getUTCDay();
 // ---------- 1. lettre de mission ----------
 
 export function lettreDeMission(e: Etat, c: Client) {
+  const t = (e.compteurs.tarif ?? 100) / 100;
+  if (t !== 1) c.forfait = Math.round((c.forfait * t) / 50) * 50;
   messageSpecial(e, "cabinet", 3, `✍️ Lettre de mission — ${c.nom}`, `${c.dirigeant} est prêt·e à signer. Comment rédiges-tu la lettre de mission (${euros(c.forfait)} / mois) ?`, `client:${c.id}|agent:`, {}, [
     opt("Lettre sur mesure : périmètre détaillé, répartition des tâches, révision annuelle des honoraires, travaux exceptionnels facturés à part", "lm:complete", {}, "Lettre signée : tout est clair pour les deux parties."),
     opt("Modèle standard du logiciel, sans l'adapter", "lm:standard", {}, "Signée en deux minutes."),

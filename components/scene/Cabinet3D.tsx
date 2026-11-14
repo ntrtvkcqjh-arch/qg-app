@@ -11,6 +11,7 @@ import Associee from "./Associee";
 import Visiteurs from "./Visiteurs";
 import Meteo from "./Meteo";
 import DecoFetes from "./DecoFetes";
+import { BureauDeco, EnfantsCreche, Gateau, PenseesSuivi, Suiveur } from "./Extras";
 import { prendrePhoto } from "@/lib/vie2";
 import Quartier from "./Quartier";
 import { FemmeDeMenage, LampesBureaux } from "./Soiree";
@@ -221,12 +222,18 @@ export default function Cabinet3D() {
           <Personnage key={a.id} minute={minute} agent={a} index={i} selectionne={selection === a.id} vitesseJeu={vitesse} onClick={selectionner} piecesOuvertes={piecesListe} etageVue={etageVue} cuisine={cuisine} />
         ))}
         <Associee etageVue={etageVue} />
+        {etageVue === ETAGE_DIRECTION && <BureauDeco />}
+        {etageVue === 0 && <EnfantsCreche />}
+        {etageVue === 0 && <Gateau />}
+        <Suiveur controles={controles} />
         {postesAllumes && <LampesBureaux postes={postesAllumes.split(",").map(Number)} etage={etageVue} />}
         {m >= 20 * 60 + 30 && m < 22 * 60 + 30 && <FemmeDeMenage key={etageVue} pieces={piecesListe} etage={etageVue} />}
         <Visiteurs visiteurs={visiteurs} reunionOuverte={piecesListe.includes("reunion")} etageVue={etageVue} />
         <Projecteur />
       </Canvas>
       <CoucheEtiquettes />
+      <PenseesSuivi />
+      <SuiviBandeau />
       {!pret && (
         <div className="voile-chargement">
           <span>
@@ -260,6 +267,21 @@ export default function Cabinet3D() {
         </button>
         <span className="astuce">Double-clic sur une pièce pour zoomer</span>
       </div>
+    </div>
+  );
+}
+
+function SuiviBandeau() {
+  const id = useJeu((s) => s.suivi);
+  const suivre = useJeu((s) => s.suivre);
+  const a = useJeu((s) => s.etat?.agents.find((x) => x.id === s.suivi));
+  if (!id || !a) return null;
+  return (
+    <div className="bandeau-suivi">
+      🎥 Une journée dans la peau de <strong>{a.prenom}</strong> ({a.poste})
+      <button className="bouton petit" onClick={() => suivre(null)}>
+        Arrêter
+      </button>
     </div>
   );
 }

@@ -327,7 +327,7 @@ export function actionVie2(e: Etat, code: string, m: Message): boolean {
       const coef = Number(p1);
       if (!coef) return true;
       const o = OFFRES[Number(m.payload?.offre ?? 0)];
-      const chance = (coef === 0.8 ? 0.7 : coef === 1 ? 0.45 : 0.22) * (0.6 + e.reputation / 100);
+      const chance = (coef === 0.8 ? 0.7 : coef === 1 ? 0.45 : 0.22) * (0.6 + e.reputation / 100) * (2 - (e.compteurs.tarif ?? 100) / 100) * (e.compteurs.label ? 1.25 : 1);
       if (rnd() < chance) {
         e.clients.push({ ...o, id: uid(e, "cl"), satisfaction: 70, forfait: Math.round((o.forfait * coef) / 50) * 50 });
         log(e, `🏆 Appel d'offres gagné : ${o.nom} rejoint le cabinet (${euros(o.forfait * coef)} / mois) !`, "bien");
