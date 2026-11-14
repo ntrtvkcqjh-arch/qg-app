@@ -5,6 +5,7 @@ import { useRef } from "react";
 import { minuteDuJour } from "@/lib/calendrier";
 import { useJeu } from "@/lib/store";
 import { POSITIONS } from "./positions";
+import { ETAGE_DIRECTION } from "@/lib/plan";
 import Corps, { ASSIS, animerSquelette, useSquelette, type Posture } from "./Corps";
 
 // Toi, l'associée, assise à ton bureau pendant les heures d'ouverture.
@@ -21,7 +22,7 @@ export default function Associee({ etageVue }: { etageVue: number }) {
   const avatar = useJeu((s) => s.etat?.avatar ?? AVATAR_DEFAUT);
 
   useFrame(({ clock }, dt) => {
-    POSITIONS.set("toi", { x: PLACE.x, y: 1.55, z: PLACE.z, visible: presente && etageVue === 3 });
+    POSITIONS.set("toi", { x: PLACE.x, y: 1.55, z: PLACE.z, visible: presente && etageVue === ETAGE_DIRECTION });
     const t = clock.elapsedTime;
     const f = Math.sin(t * 13) * 0.05;
     // tape au clavier, avec de temps en temps une pause pour réfléchir
@@ -29,7 +30,7 @@ export default function Associee({ etageVue }: { etageVue: number }) {
     animerSquelette(sq, pose.current, { ...ASSIS, coudeG: ASSIS.coudeG + (reflechit ? -0.9 : f), coudeD: ASSIS.coudeD - (reflechit ? 0 : f), epauleG: reflechit ? -0.8 : ASSIS.epauleG }, dt, 4);
   });
 
-  if (!presente || etageVue !== 3) return null;
+  if (!presente || etageVue !== ETAGE_DIRECTION) return null;
   return (
     <group position={[PLACE.x, 0, PLACE.z]}>
       <Corps a={{ haut: avatar.tenue, bas: "#2d3142", peau: avatar.peau, cheveux: avatar.cheveux, coiffure: "longue", veste: true }} sq={sq} />

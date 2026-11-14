@@ -10,6 +10,7 @@ export default function Aujourdhui() {
   const e = useJeu((s) => s.etat)!;
   const selectionner = useJeu((s) => s.selectionner);
   const ouvrir = useJeu((s) => s.ouvrir);
+  const ouvrirMessage = useJeu((s) => s.ouvrirMessage);
   const jour = jourDe(e.minute);
   const presents = e.agents.filter((a) => !["absent", "conge", "malade"].includes(a.activite));
   const actifs = e.dossiers.filter((d) => d.phase < 5);
@@ -32,8 +33,8 @@ export default function Aujourdhui() {
               <small>/{e.agents.length}</small>
             </strong>
           </button>
-          <button className="kpi" onClick={() => ouvrir("messages")}>
-            <span>Messages</span>
+          <button className="kpi" onClick={() => enAttente[0] && ouvrirMessage(enAttente[0].id)}>
+            <span>Décisions</span>
             <strong className={enAttente.length > 4 ? "alerte" : ""}>{enAttente.length}</strong>
           </button>
           <button className="kpi" onClick={() => ouvrir("dossiers")}>

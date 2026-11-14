@@ -1,10 +1,8 @@
 "use client";
 
 import { useJeu } from "@/lib/store";
-import Messages from "./panneaux/Messages";
 import Dossiers from "./panneaux/Dossiers";
 import Equipe from "./panneaux/Equipe";
-import Formation from "./panneaux/Formation";
 import Bilans from "./panneaux/Bilans";
 import Badges from "./panneaux/Badges";
 import JournalPanneau from "./panneaux/Journal";
@@ -13,12 +11,10 @@ import Locaux from "./panneaux/Locaux";
 import Reglages from "./panneaux/Reglages";
 
 const TITRES = {
-  messages: "Boîte mail et appels",
   demandes: "Demandes de prospects et de clients",
   locaux: "Locaux et mobilier",
   dossiers: "Dossiers",
   equipe: "Équipe & RH",
-  formation: "Formation DEC",
   bilans: "Bilans",
   badges: "Badges",
   journal: "Journal du cabinet",
@@ -38,12 +34,10 @@ export default function Tiroir() {
         </button>
       </div>
       <div className="tiroir-corps">
-        {panneau === "messages" && <Messages />}
         {panneau === "dossiers" && <Dossiers />}
         {panneau === "demandes" && <Demandes />}
         {panneau === "locaux" && <Locaux />}
         {panneau === "equipe" && <Equipe />}
-        {panneau === "formation" && <Formation />}
         {panneau === "bilans" && <Bilans />}
         {panneau === "badges" && <Badges />}
         {panneau === "journal" && <JournalPanneau />}

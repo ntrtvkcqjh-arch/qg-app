@@ -1,12 +1,13 @@
 "use client";
 
 import { heure, jourDe } from "@/lib/calendrier";
-import { actionBoss, dossiersEcheance, resteAvantValidation, validerDossier } from "@/lib/moteur";
+import { actionBoss, dossiersEcheance, resteAvantValidation } from "@/lib/moteur";
 import { useJeu } from "@/lib/store";
 
 export default function Boss() {
   const e = useJeu((s) => s.etat)!;
   const agir = useJeu((s) => s.agir);
+  const ouvrirValidation = useJeu((s) => s.ouvrirValidation);
   if (!e.bossActif) return null;
   const ec = e.echeances.find((x) => x.id === e.bossActif);
   if (!ec) return null;
@@ -40,7 +41,7 @@ export default function Boss() {
           💪 Mettre la main à la pâte
         </button>
         {aValider.map((d) => (
-          <button key={d.id} className="bouton principal-btn" onClick={() => agir(validerDossier, d.id)}>
+          <button key={d.id} className="bouton principal-btn" onClick={() => ouvrirValidation(d.id)}>
             ✔ Valider {d.titre.split(" — ")[1] ?? d.titre}
           </button>
         ))}

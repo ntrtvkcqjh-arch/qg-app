@@ -2328,3 +2328,44 @@ td.objectif .niveau-skill {
   gap: 6px;
   font-size: 12px;
 }
+
+.cloche-decisions {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  z-index: 45;
+  background: var(--bleu);
+  color: white;
+  font-weight: 700;
+  border-radius: 24px;
+  padding: 10px 18px;
+  box-shadow: var(--ombre);
+  animation: vibre 2.5s ease-in-out infinite;
+}
+.modale.decision {
+  gap: 10px;
+}
+.entete-decision {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.pastille-decision {
+  background: var(--bleu-clair);
+  color: var(--bleu);
+  font-weight: 700;
+  font-size: 12px;
+  border-radius: 20px;
+  padding: 4px 10px;
+}
+.entete-decision small {
+  color: var(--doux);
+}
+.pied-decision {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid var(--ligne);
+  padding-top: 12px;
+}

@@ -28,6 +28,14 @@ const REVETEMENT: Partial<Record<PieceId, Revetement>> = {
   os_social: "moquette",
   os_juridique: "moquette",
   annexe: "moquette",
+  plateau3: "moquette",
+  ext_expertise: "moquette",
+  ext_fiscal: "moquette",
+  ext_social: "moquette",
+  ext_juridique: "moquette",
+  ext_audit: "moquette",
+  bulle4: "moquette",
+  bulle5: "moquette",
   formation: "moquette",
   rh: "moquette",
   bulle1: "moquette",
@@ -291,6 +299,12 @@ function Mobilier({ p, a, mois, piles, poles, deco, echelle, fane, formation }: 
     case "os_social":
     case "os_juridique":
     case "annexe":
+    case "plateau3":
+    case "ext_expertise":
+    case "ext_fiscal":
+    case "ext_social":
+    case "ext_juridique":
+    case "ext_audit":
       return (
         <group>
           {POSTES.map((po, i) =>
@@ -311,8 +325,8 @@ function Mobilier({ p, a, mois, piles, poles, deco, echelle, fane, formation }: 
               </group>
             ) : null,
           )}
-          <Plante {...P} x={p.x0 + 0.5} z={0.6} grande />
-          <Plante {...P} x={p.x1 - 0.5} z={7.4} />
+          <Plante {...P} x={p.x0 + 0.5} z={p.z0 + 0.6} grande />
+          <Plante {...P} x={p.x1 - 0.5} z={p.z1 - 0.6} />
           {a.has("imprimante") && p.id === "openspace" && <Boite p={[p.x1 - 0.6, 0.5, 0.7]} s={[0.7, 1, 0.6]} c="#607d8b" />}
           {a.has("mur_vegetal") &&
             [0.2, 0.4, 0.6, 0.8].map((f) => (
@@ -342,6 +356,8 @@ function Mobilier({ p, a, mois, piles, poles, deco, echelle, fane, formation }: 
     case "bulle1":
     case "bulle2":
     case "bulle3":
+    case "bulle4":
+    case "bulle5":
       return (
         <group>
           <Meuble nom="tableRound" p={[cx, 0, cz]} largeur={1.3} />

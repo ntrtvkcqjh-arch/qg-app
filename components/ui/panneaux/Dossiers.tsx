@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { dateCourte, jourDe } from "@/lib/calendrier";
-import { reassigner, validerDossier } from "@/lib/moteur";
+import { reassigner } from "@/lib/moteur";
 import { useJeu } from "@/lib/store";
 import { NOMS_PHASES } from "@/lib/types";
 import { euros } from "../textes";
@@ -10,6 +10,7 @@ import { euros } from "../textes";
 export default function Dossiers() {
   const e = useJeu((s) => s.etat)!;
   const agir = useJeu((s) => s.agir);
+  const ouvrirValidation = useJeu((s) => s.ouvrirValidation);
   const [filtre, setFiltre] = useState<"cours" | "valider" | "livres">("cours");
   const jour = jourDe(e.minute);
   const client = (id: string) => e.clients.find((c) => c.id === id);
@@ -32,7 +33,7 @@ export default function Dossiers() {
         </button>
       </div>
       <p className="aide">
-        Les collaborateurs avancent seuls de la Collecte à la Révision. Ta validation (gratuite) fait passer en Validation, puis ils
+        Les collaborateurs avancent seuls de la Collecte à la Révision. Pour valider, tu réponds à une question de contrôle façon DEC ; la validation fait passer en Validation, puis ils
         finalisent et livrent.
       </p>
       {liste.length === 0 && <p className="vide">Aucun dossier ici.</p>}
@@ -78,7 +79,7 @@ export default function Dossiers() {
                     </select>
                   </label>
                   {d.phase === 3 && d.progression >= 100 && (
-                    <button className="bouton principal-btn petit" onClick={() => agir(validerDossier, d.id)}>
+                    <button className="bouton principal-btn petit" onClick={() => ouvrirValidation(d.id)}>
                       ✔ Valider la révision
                     </button>
                   )}

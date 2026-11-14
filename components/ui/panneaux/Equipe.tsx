@@ -6,6 +6,7 @@ import { aUnRH, besoins, capacitePostes, fraisRecrutement, publierAnnonce, recru
 import { useJeu } from "@/lib/store";
 import { LIBELLE_ACTIVITE, euros } from "../textes";
 import EquipePlus from "./EquipePlus";
+import FormationEquipe from "./FormationEquipe";
 
 export default function Equipe() {
   const e = useJeu((s) => s.etat)!;
@@ -134,6 +135,8 @@ export default function Equipe() {
         </>
       )}
       <EquipePlus />
+      <h3 className="titre-section">🎓 Formations de l&apos;équipe</h3>
+      <FormationEquipe />
     </div>
   );
 }

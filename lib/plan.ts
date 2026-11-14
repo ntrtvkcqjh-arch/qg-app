@@ -20,7 +20,15 @@ export type Piece = {
 
 export const COULOIR_Z = -1;
 export const ASCENSEUR = { x: 5, z: -3.2, porte: 5 };
-export const ETAGES = ["Rez-de-chaussée", "1er étage : Expertise & Fiscal", "2e étage : Social, Juridique & Audit", "3e étage : Direction"];
+export const ETAGES = [
+  "Rez-de-chaussée",
+  "1er étage : Expertise & Fiscal",
+  "2e étage : Social, Juridique & Audit",
+  "3e étage : Extensions Expertise & Fiscal",
+  "4e étage : Extensions Social, Juridique & Audit",
+  "5e étage : Direction",
+];
+export const ETAGE_DIRECTION = 5;
 
 export const PIECES: Piece[] = [
   // Rez-de-chaussée : accueil et services
@@ -47,13 +55,23 @@ export const PIECES: Piece[] = [
   { id: "os_social", nom: "Pôle Social / Paie", etage: 2, x0: -12, x1: -4, z0: 0, z1: 8, sol: "#a8dccf", porte: -8, description: "Paie, DSN, contrats." },
   { id: "os_juridique", nom: "Pôle Juridique", etage: 2, x0: -4, x1: 4, z0: 0, z1: 8, sol: "#cdb8e0", porte: 0, description: "AG, statuts, formalités." },
   { id: "annexe", nom: "Pôle Audit", etage: 2, x0: 4, x1: 12, z0: 0, z1: 8, sol: "#e8b0b0", porte: 8, description: "Missions d'audit et de commissariat aux comptes." },
-  // 3e étage : direction
-  { id: "associee", nom: "Ton bureau", etage: 3, x0: -12, x1: -5, z0: -8, z1: -2, sol: "#b98b5e", porte: -8.5, description: "Messagerie, validations, décisions." },
-  { id: "conseil", nom: "Salle du conseil", etage: 3, x0: -5, x1: 4, z0: -8, z1: -2, sol: "#8d6e63", porte: -0.5, description: "Comités d'associés et grandes décisions." },
-  { id: "it", nom: "Salle IT", etage: 3, x0: 6, x1: 9, z0: -8, z1: -2, sol: "#b0bec5", porte: 7.5, description: "Serveurs et cybersécurité." },
-  { id: "rh", nom: "Bureau RH", etage: 3, x0: 9, x1: 12, z0: -8, z1: -2, sol: "#e1bee7", porte: 10.5, description: "Recrutements et suivi du personnel." },
-  { id: "formation", nom: "Salle de formation", etage: 3, x0: -12, x1: -2, z0: 0, z1: 8, sol: "#c9d6e3", porte: -7, description: "Formations des équipes, QCM et oral blanc." },
-  { id: "terrasse", nom: "Terrasse & micro-cuisine", etage: 3, x0: -2, x1: 12, z0: 0, z1: 8, sol: "#b08d63", porte: 5, description: "Rooftop : transats, plantes et micro-cuisine." },
+  // 3e étage : extensions Expertise & Fiscal
+  { id: "plateau3", nom: "Plateau partagé", etage: 3, x0: -12, x1: 4, z0: -8, z1: -2, sol: "#b7c7e0", porte: -4, description: "Open space partagé entre Expertise et Fiscal." },
+  { id: "bulle4", nom: "Bulle de réunion", etage: 3, x0: 6, x1: 12, z0: -8, z1: -2, sol: "#d7e3f4", porte: 9, description: "Points rapides à 2 ou 4.", vitre: true },
+  { id: "ext_expertise", nom: "Pôle Expertise (extension)", etage: 3, x0: -12, x1: 0, z0: 0, z1: 8, sol: "#9fb4d8", porte: -6, description: "Deuxième plateau du pôle Expertise." },
+  { id: "ext_fiscal", nom: "Pôle Fiscal (extension)", etage: 3, x0: 0, x1: 12, z0: 0, z1: 8, sol: "#e8c99b", porte: 6, description: "Deuxième plateau du pôle Fiscal." },
+  // 4e étage : extensions Social, Juridique & Audit
+  { id: "ext_social", nom: "Pôle Social (extension)", etage: 4, x0: -12, x1: 4, z0: -8, z1: -2, sol: "#a8dccf", porte: -4, description: "Deuxième plateau du pôle Social / Paie." },
+  { id: "bulle5", nom: "Bulle de réunion", etage: 4, x0: 6, x1: 12, z0: -8, z1: -2, sol: "#d7e3f4", porte: 9, description: "Points rapides à 2 ou 4.", vitre: true },
+  { id: "ext_juridique", nom: "Pôle Juridique (extension)", etage: 4, x0: -12, x1: 0, z0: 0, z1: 8, sol: "#cdb8e0", porte: -6, description: "Deuxième plateau du pôle Juridique." },
+  { id: "ext_audit", nom: "Pôle Audit (extension)", etage: 4, x0: 0, x1: 12, z0: 0, z1: 8, sol: "#e8b0b0", porte: 6, description: "Deuxième plateau du pôle Audit." },
+  // 5e étage : direction
+  { id: "associee", nom: "Ton bureau", etage: 5, x0: -12, x1: -5, z0: -8, z1: -2, sol: "#b98b5e", porte: -8.5, description: "Messagerie, validations, décisions." },
+  { id: "conseil", nom: "Salle du conseil", etage: 5, x0: -5, x1: 4, z0: -8, z1: -2, sol: "#8d6e63", porte: -0.5, description: "Comités d'associés et grandes décisions." },
+  { id: "it", nom: "Salle IT", etage: 5, x0: 6, x1: 9, z0: -8, z1: -2, sol: "#b0bec5", porte: 7.5, description: "Serveurs et cybersécurité." },
+  { id: "rh", nom: "Bureau RH", etage: 5, x0: 9, x1: 12, z0: -8, z1: -2, sol: "#e1bee7", porte: 10.5, description: "Recrutements et suivi du personnel." },
+  { id: "formation", nom: "Salle de formation", etage: 5, x0: -12, x1: -2, z0: 0, z1: 8, sol: "#c9d6e3", porte: -7, description: "Formations des équipes, QCM et oral blanc." },
+  { id: "terrasse", nom: "Terrasse & micro-cuisine", etage: 5, x0: -2, x1: 12, z0: 0, z1: 8, sol: "#b08d63", porte: 5, description: "Rooftop : transats, plantes et micro-cuisine." },
 ];
 
 export const pieceParId = (id: PieceId) => PIECES.find((p) => p.id === id);
@@ -67,6 +85,16 @@ export const OPEN_SPACE: Partial<Record<Filiere, PieceId>> = {
   juridique: "os_juridique",
   audit: "annexe",
 };
+/** Tous les plateaux de chaque pôle (le premier est le principal). */
+export const OPEN_SPACES: Partial<Record<Filiere, PieceId[]>> = {
+  expertise: ["openspace", "ext_expertise", "plateau3"],
+  fiscal: ["os_fiscal", "ext_fiscal", "plateau3"],
+  social: ["os_social", "ext_social"],
+  juridique: ["os_juridique", "ext_juridique"],
+  audit: ["annexe", "ext_audit"],
+};
+export const EST_OPEN_SPACE = new Set<PieceId>(["openspace", "os_fiscal", "os_social", "os_juridique", "annexe", "plateau3", "ext_expertise", "ext_fiscal", "ext_social", "ext_juridique", "ext_audit"]);
+
 /** Bureau de l'associé de chaque pôle. */
 export const BUREAU_ASSOCIE: Partial<Record<Filiere, PieceId>> = {
   expertise: "bur_expertise",
@@ -82,6 +110,12 @@ export const BULLE_DE: Partial<Record<PieceId, PieceId>> = {
   os_social: "bulle3",
   os_juridique: "bulle3",
   annexe: "reunion2",
+  plateau3: "bulle4",
+  ext_expertise: "bulle4",
+  ext_fiscal: "bulle4",
+  ext_social: "bulle5",
+  ext_juridique: "bulle5",
+  ext_audit: "bulle5",
 };
 
 export type Poste = { x: number; z: number; rot: number; piece: PieceId };
@@ -89,15 +123,16 @@ export type Poste = { x: number; z: number; rot: number; piece: PieceId };
 /** Postes de travail : deux rangées de bureaux face à face dans chaque open space. */
 export const POSTES: Poste[] = (() => {
   const res: Poste[] = [];
-  for (const id of ["openspace", "os_fiscal", "os_social", "os_juridique", "annexe"] as PieceId[]) {
+  for (const id of ["openspace", "os_fiscal", "os_social", "os_juridique", "annexe", "plateau3", "ext_expertise", "ext_fiscal", "ext_social", "ext_juridique", "ext_audit"] as PieceId[]) {
     const p = pieceParId(id)!;
     const largeur = p.x1 - p.x0;
     const colonnes = Math.max(2, Math.floor((largeur - 1) / 2.1));
     const pas = (largeur - 1) / colonnes;
     for (let c = 0; c < colonnes; c++) {
       const x = p.x0 + 0.5 + pas * (c + 0.5);
-      res.push({ x, z: 3.0, rot: 0, piece: id });
-      res.push({ x, z: 5.0, rot: Math.PI, piece: id });
+      const zc = (p.z0 + p.z1) / 2;
+      res.push({ x, z: zc - 1, rot: 0, piece: id });
+      res.push({ x, z: zc + 1, rot: Math.PI, piece: id });
     }
   }
   return res;

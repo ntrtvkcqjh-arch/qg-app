@@ -27,7 +27,7 @@ import { article } from "@/lib/data/boutique";
 import { CAS } from "@/lib/data/cas";
 import { QCM } from "@/lib/data/formation";
 import { LOCAUX, niveauLocaux } from "@/lib/data/locaux";
-import { BUREAU_ASSOCIE, OPEN_SPACE, POSTES as POSTES_PLAN } from "@/lib/plan";
+import { BUREAU_ASSOCIE, OPEN_SPACES, POSTES as POSTES_PLAN } from "@/lib/plan";
 import { MISSIONS_PONCTUELLES, PROSPECTS_NOUVEAUX } from "@/lib/data/prospects";
 import type { Agent, BilanPeriode, Candidat, Client, Difficulte, Dossier, Effets, Etat, Filiere, Gazette, Journal, Message, ModeDepart, NoteCarnet, Niveau, OptionDilemme, PieceId, ResultatControle, TypeMission } from "@/lib/types";
 
@@ -250,7 +250,9 @@ export function genererCandidats(e: Etat): Candidat[] {
 function genererCandidatsBase(e: Etat): Candidat[] {
   // On propose en priorité les métiers qui manquent au regard des dossiers.
   const manques = besoins(e).filter((b) => b.ratio > 1).map((b) => b.filiere);
-  const n = aUnRH(e) ? 5 : 3;
+  // Plus il y a de postes libres, plus les candidatures affluent.
+  const libres = Math.max(0, capacitePostes(e) - e.agents.filter((a) => a.bureau < SANS_POSTE).length);
+  const n = Math.min(12, (aUnRH(e) ? 5 : 3) + Math.floor(libres / 8));
   return Array.from({ length: n }, (_, i) => {
     const cible = manques[i] ? POSTES_RH.filter((p) => p.filiere === manques[i]) : [];
     return candidatPour(e, cible.length ? pick(cible) : pick(POSTES_RH));
@@ -417,12 +419,59 @@ function finDePhase(e: Etat, d: Dossier) {
       d.progression = 0;
       return;
     }
-    if (!messageEnAttente(e, "revision", undefined, d.id) && ag) {
-      envoyer(e, "revision", ag.id, { dossier: d.titre, client: nomClient(e, d.client) }, { dossier: d.id });
-    }
+    if (!messageEnAttente(e, "validation", undefined, d.id) && ag) lancerValidation(e, d, ag.id);
   } else if (d.phase === 4) {
     livrer(e, d);
   }
+}
+
+// ---------- validation des missions : questionnaire façon DEC ----------
+
+const THEMES_MISSION: Record<TypeMission, string[]> = {
+  tva: ["TVA"],
+  paie: ["Social"],
+  bilan: ["PCG", "Immobilisations", "Provisions", "Principes", "Régularisations", "Dépréciations", "Analyse"],
+  liasse: ["Fiscal", "IS"],
+  juridique: ["Juridique"],
+  conseil: ["Fiscal", "IS", "Analyse"],
+  audit: ["Audit", "Principes", "Déontologie"],
+};
+
+function questionPour(d: Dossier, client: string) {
+  const themes = THEMES_MISSION[d.type];
+  const pool = [...QCM.filter((q) => themes.includes(q.theme)), ...CAS.filter((c) => themes.includes(c.theme)).map((c) => ({ theme: c.theme, question: c.enonce, choix: c.choix, bonne: c.bonne, explication: c.explication }))];
+  const q = pick(pool.length ? pool : QCM);
+  return { theme: q.theme, enonce: q.question.replace(/\{client\}/g, client), choix: q.choix, bonne: q.bonne, explication: q.explication };
+}
+
+/** Crée la décision de validation (avec sa question DEC) pour un dossier en fin de révision. */
+export function lancerValidation(e: Etat, d: Dossier, de: string) {
+  const client = nomClient(e, d.client);
+  const jour = jourDe(e.minute);
+  e.messages.unshift({
+    id: uid(e, "m"),
+    de,
+    niveau: 3,
+    sujet: `Valider la révision — ${d.titre}`,
+    texte: `La révision de ${d.titre} est terminée. Pour valider, réponds à la question de contrôle comme au DEC.`,
+    jour,
+    minute: e.minute,
+    lu: false,
+    statut: "attente",
+    expire: ajouterJoursOuvres(jour, 3),
+    theme: "validation",
+    canal: "interne",
+    dossier: d.id,
+    cas: questionPour(d, client),
+  });
+}
+
+/** Ouvre (ou recrée) la décision de validation d'un dossier ; renvoie l'id du message. */
+export function demanderValidation(e: Etat, dossierId: string): string | null {
+  const d = e.dossiers.find((x) => x.id === dossierId);
+  if (!d || d.phase !== 3 || d.progression < 100) return "Ce dossier n'est pas prêt à valider.";
+  if (!messageEnAttente(e, "validation", undefined, d.id)) lancerValidation(e, d, d.agent && d.agent !== "toi" ? d.agent : "cabinet");
+  return null;
 }
 
 export function validerDossier(e: Etat, id: string): boolean {
@@ -697,6 +746,12 @@ function ignorer(e: Etat, m: Message) {
     case "conge":
       if (a) a.moral = clamp(a.moral - 10);
       break;
+    case "validation": {
+      // la question revient : le dossier ne peut pas être livré sans validation
+      const d = e.dossiers.find((x) => x.id === m.dossier);
+      if (d && d.phase === 3 && d.progression >= 100) lancerValidation(e, d, m.de);
+      break;
+    }
     case "special":
     case "anniversaire": {
       const opts = m.dilemme?.options ?? [];
@@ -1467,6 +1522,11 @@ export function migrer(e: Etat): Etat {
   if (e.controleJour <= jourDe(e.minute)) e.controleJour = ouvreOuApres(e.controleJour + 365);
   migrerExt(e);
   e.pa = e.paMax = SANS_LIMITE;
+  if (!e.compteurs.validationsDec) {
+    e.compteurs.validationsDec = 1;
+    for (const m of e.messages) if (m.theme === "revision" && m.statut === "attente") m.statut = "repondu";
+    for (const d of e.dossiers) if (d.phase === 3 && d.progression >= 100 && d.agent && d.agent !== "toi") lancerValidation(e, d, d.agent);
+  }
   if (!e.compteurs.campus) {
     e.compteurs.campus = 1;
     for (const a of e.agents) if (a.filiere === "associe" && !a.associeDe) a.associeDe = "expertise";
@@ -1485,8 +1545,11 @@ export const postesOuverts = (e: Etat) => POSTES_PLAN.map((p, i) => (pieceOuvert
 export function bureauPour(e: Etat, filiere: Filiere, sauf?: string): number {
   const occupes = new Set(e.agents.filter((a) => a.id !== sauf).map((a) => a.bureau));
   const libres = POSTES_PLAN.map((p, i) => ({ p, i })).filter(({ p, i }) => pieceOuverte(e, p.piece) && !occupes.has(i));
-  const pole = OPEN_SPACE[filiere];
-  return (libres.find(({ p }) => p.piece === pole) ?? libres[0])?.i ?? -1;
+  for (const piece of OPEN_SPACES[filiere] ?? []) {
+    const l = libres.find(({ p }) => p.piece === piece);
+    if (l) return l.i;
+  }
+  return libres[0]?.i ?? -1;
 }
 
 /** Réattribue les postes (pôles) : à la migration vers le campus et après un agrandissement. */
@@ -1741,6 +1804,23 @@ export function resoudreCas(e: Etat, msgId: string, choix: number): string | nul
   m.reponse = m.cas.choix[choix];
   const d = e.dossiers.find((x) => x.id === m.dossier);
   const a = e.agents.find((x) => x.id === m.de);
+  if (m.theme === "validation") {
+    if (!d) return null;
+    if (bon) {
+      validerDossier(e, d.id);
+      e.niveauDec = clamp(e.niveauDec + 2);
+      if (a) a.confiance = clamp(a.confiance + 3);
+      inc(e, "cas_ok");
+      log(e, `✔ Révision validée (${m.cas.theme}) : ${d.titre} part en finalisation.`, "bien");
+    } else {
+      d.progression = 60; // la révision repart
+      e.niveauDec = clamp(e.niveauDec - 1);
+      if (a) dire(e, a, "Je reprends la révision…", 40);
+      ajouterCarnet(e, [{ theme: m.cas.theme, question: m.cas.enonce, explication: m.cas.explication, jour: jourDe(e.minute) }]);
+      log(e, `✘ Contrôle raté (${m.cas.theme}) : la révision de ${d.titre} repart. Notion ajoutée à ton carnet.`, "mal");
+    }
+    return null;
+  }
   if (d) d.bloque = null;
   if (bon) {
     if (d) avancerDossier(e, d, 40);

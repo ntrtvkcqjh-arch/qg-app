@@ -140,10 +140,10 @@ function FicheAgent({ id }: { id: string }) {
 }
 
 const RACCOURCIS: Record<string, { label: string; panneau: Panneau }> = {
-  associee: { label: "Ouvrir la messagerie", panneau: "messages" },
-  formation: { label: "Aller en formation DEC", panneau: "formation" },
+  associee: { label: "Voir les dossiers à valider", panneau: "dossiers" },
+  formation: { label: "Planifier une formation d'équipe", panneau: "equipe" },
   archives: { label: "Voir les dossiers", panneau: "dossiers" },
-  reunion: { label: "Voir les dilemmes et messages", panneau: "messages" },
+  reunion: { label: "Voir les demandes", panneau: "demandes" },
   cafe: { label: "Lire le journal du cabinet", panneau: "journal" },
   accueil: { label: "Recruter / voir l'équipe", panneau: "equipe" },
   openspace: { label: "Voir les dossiers", panneau: "dossiers" },

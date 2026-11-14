@@ -5,7 +5,7 @@ import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import type { Group } from "three";
 import { ETAGES_AGENTS, POSITIONS } from "./positions";
 import Corps, { ASSIS, DEBOUT, animerSquelette, apparencePour, postureMarche, tournerVers, useSquelette, type Accessoire, type Posture } from "./Corps";
-import { BULLE_DE, BUREAU_ASSOCIE, POSTES, chemin, etageDe, pieceParId, placeDans, type Point } from "@/lib/plan";
+import { BULLE_DE, BUREAU_ASSOCIE, EST_OPEN_SPACE, POSTES, chemin, etageDe, pieceParId, placeDans, type Point } from "@/lib/plan";
 import type { Agent, PieceId } from "@/lib/types";
 
 type Props = {
@@ -147,7 +147,7 @@ export default function Personnage({ minute, agent, index, selectionne, vitesseJ
     } else s.vitesse = 0;
     g.position.set(s.x, 0, s.z);
 
-    const auPoste = !marche && agent.activite === "travaille" && (piece === "openspace" || piece === "annexe");
+    const auPoste = !marche && agent.activite === "travaille" && EST_OPEN_SPACE.has(piece);
     const assis = !marche && (agent.activite === "travaille" || agent.activite === "formation" || agent.activite === "reunion");
     if (auPoste) lacetVoulu = POSTES[agent.bureau % POSTES.length].rot === 0 ? 0 : Math.PI;
     else if (!marche && centre && (agent.activite === "reunion" || agent.activite === "pause" || agent.activite === "formation")) lacetVoulu = Math.atan2(centre.x - s.x, centre.z - s.z);

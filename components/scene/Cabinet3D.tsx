@@ -15,7 +15,7 @@ import { CoucheEtiquettes, Projecteur } from "./Etiquettes";
 import { jourDe, minuteDuJour, moisDe } from "@/lib/calendrier";
 import { POLES } from "@/lib/data/developpement";
 import { niveauLocaux } from "@/lib/data/locaux";
-import { ETAGES, pieceParId } from "@/lib/plan";
+import { ETAGES, ETAGE_DIRECTION, pieceParId } from "@/lib/plan";
 import { Formateur } from "./Soiree";
 import { useJeu } from "@/lib/store";
 import type { PieceId } from "@/lib/types";
@@ -173,7 +173,7 @@ export default function Cabinet3D() {
           etage={etageVue}
           formation={formation}
         />
-        {formation && etageVue === 3 && pieces.includes("formation") && <Formateur />}
+        {formation && etageVue === ETAGE_DIRECTION && pieces.includes("formation") && <Formateur />}
         </Suspense>
         <Meteo type={meteo} largeurBatiment={aile ? 22 : 12} />
         {agents.map((a, i) => (
@@ -195,7 +195,7 @@ export default function Cabinet3D() {
         </div>
       )}
       <div className="selecteur-etage" role="group" aria-label="Étages du campus">
-        {[3, 2, 1, 0].map((n) => (
+        {[5, 4, 3, 2, 1, 0].map((n) => (
           <button key={n} className={etageVue === n ? "actif" : ""} onClick={() => voirEtage(n)} title={ETAGES[n]}>
             <strong>{n === 0 ? "RDC" : `${n}`}</strong>
             <span>{ETAGES[n].replace(/^[^:]*: /, "")}</span>

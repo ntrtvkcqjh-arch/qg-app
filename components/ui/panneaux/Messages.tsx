@@ -81,7 +81,7 @@ export default function Messages() {
   );
 }
 
-function Detail({ m, retour }: { m: Message; retour: () => void }) {
+export function Detail({ m, retour }: { m: Message; retour?: () => void }) {
   const e = useJeu((s) => s.etat)!;
   const agir = useJeu((s) => s.agir);
   const [brouillon, setBrouillon] = useState("");
@@ -92,9 +92,11 @@ function Detail({ m, retour }: { m: Message; retour: () => void }) {
 
   return (
     <div className="detail-message">
-      <button className="lien" onClick={retour}>
-        ← Retour
-      </button>
+      {retour && (
+        <button className="lien" onClick={retour}>
+          ← Retour
+        </button>
+      )}
       <div className="entete-message">
         <span className="avatar" style={{ background: ex.couleur }}>
           {ex.initiales}

@@ -30,6 +30,14 @@ export type PieceId =
   | "pressing"
   | "sport"
   | "terrasse"
+  | "plateau3"
+  | "ext_expertise"
+  | "ext_fiscal"
+  | "ext_social"
+  | "ext_juridique"
+  | "ext_audit"
+  | "bulle4"
+  | "bulle5"
   | "dehors";
 
 export type Filiere = "expertise" | "fiscal" | "social" | "juridique" | "rh" | "audit" | "associe" | "service";

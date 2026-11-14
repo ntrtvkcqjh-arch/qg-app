@@ -9,7 +9,7 @@ import type { Difficulte, Etat, ModeDepart, PieceId } from "@/lib/types";
 // Le store garde l'état du jeu (sauvegardé dans le navigateur) et l'état
 // d'interface (sélection, panneau ouvert), qui, lui, n'est pas sauvegardé.
 
-export type Panneau = "cabinet" | "messages" | "demandes" | "dossiers" | "equipe" | "locaux" | "formation" | "bilans" | "badges" | "journal" | "reglages";
+export type Panneau = "cabinet" | "demandes" | "dossiers" | "equipe" | "locaux" | "bilans" | "badges" | "journal" | "reglages";
 
 type Store = {
   etat: Etat | null;
@@ -30,6 +30,7 @@ type Store = {
   selectionner: (agent: string | null) => void;
   selectionnerPiece: (p: PieceId | null) => void;
   ouvrirMessage: (id: string | null) => void;
+  ouvrirValidation: (dossierId: string) => void;
   fermerAbsence: () => void;
   notifier: (t: string | null) => void;
 };
@@ -94,8 +95,13 @@ export const useJeu = create<Store>()(
           const c = structuredClone(e);
           const m = c.messages.find((x) => x.id === id);
           if (m) m.lu = true;
-          set({ etat: c, messageOuvert: id, panneau: "messages" });
+          set({ etat: c, messageOuvert: id });
         } else set({ messageOuvert: id });
+      },
+      ouvrirValidation: (dossierId) => {
+        get().agir(M.demanderValidation, dossierId);
+        const m = get().etat?.messages.find((x) => x.theme === "validation" && x.dossier === dossierId && x.statut === "attente");
+        if (m) get().ouvrirMessage(m.id);
       },
       fermerAbsence: () => {
         const e = get().etat;

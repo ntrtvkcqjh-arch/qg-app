@@ -43,6 +43,21 @@ export const QCM: QuestionQcm[] = [
   { theme: "Déontologie", question: "Un expert-comptable soupçonne un blanchiment chez {client}. À qui adresse-t-il sa déclaration de soupçon ?", choix: ["Au procureur", "À Tracfin", "Au client", "À l'administration fiscale"], bonne: 1, explication: "La déclaration de soupçon est adressée à Tracfin, et il est interdit d'en informer le client." },
 ];
 
+
+// Questions supplémentaires (social, juridique, audit) pour les validations de missions.
+QCM.push(
+  { theme: "Social", question: "Quelle est la durée légale du travail hebdomadaire d'un salarié à temps plein chez {client} ?", choix: ["35 heures", "39 heures", "40 heures", "48 heures"], bonne: 0, explication: "La durée légale est de 35 heures par semaine ; au-delà, ce sont des heures supplémentaires. 48 h est la durée maximale absolue." },
+  { theme: "Social", question: "Combien de jours ouvrables de congés payés un salarié de {client} acquiert-il par mois de travail effectif ?", choix: ["2 jours", "2,5 jours", "3 jours", "1,5 jour"], bonne: 1, explication: "2,5 jours ouvrables par mois, soit 30 jours ouvrables (5 semaines) par an." },
+  { theme: "Social", question: "{client} embauche un salarié. Quand faut-il faire la DPAE ?", choix: ["Dans le mois qui suit l'embauche", "Avant l'embauche, au plus tôt 8 jours avant", "À la fin de la période d'essai", "Avec la première DSN seulement"], bonne: 1, explication: "La déclaration préalable à l'embauche se fait avant l'embauche, au plus tôt 8 jours avant la prise de poste." },
+  { theme: "Social", question: "Durée maximale de la période d'essai initiale d'un cadre en CDI (hors accord plus court) ?", choix: ["2 mois", "3 mois", "4 mois", "6 mois"], bonne: 2, explication: "Code du travail : 2 mois pour les employés, 3 mois pour les agents de maîtrise et techniciens, 4 mois pour les cadres." },
+  { theme: "Juridique", question: "Quel est le capital social minimum pour créer la SAS de {client} ?", choix: ["1 €", "37 000 €", "7 500 €", "15 000 €"], bonne: 0, explication: "Le capital d'une SAS est librement fixé par les statuts (1 € suffit). 37 000 € est le minimum d'une SA." },
+  { theme: "Juridique", question: "Combien d'associés une SARL peut-elle compter au maximum ?", choix: ["50", "100", "Illimité", "7"], bonne: 1, explication: "Une SARL compte au plus 100 associés." },
+  { theme: "Juridique", question: "Chez {client} (SARL), qui approuve les comptes annuels ?", choix: ["Le gérant seul", "L'expert-comptable", "L'assemblée des associés", "Le greffe"], bonne: 2, explication: "Les comptes sont arrêtés par le gérant puis approuvés par les associés en assemblée." },
+  { theme: "Audit", question: "Quel niveau d'assurance le commissaire aux comptes de {client} exprime-t-il dans son rapport sur les comptes ?", choix: ["Une assurance absolue", "Une assurance raisonnable", "Aucune assurance", "Une assurance limitée au seul bilan"], bonne: 1, explication: "L'audit légal conduit à une assurance raisonnable (élevée mais non absolue) que les comptes ne comportent pas d'anomalies significatives." },
+  { theme: "Audit", question: "Durée du mandat d'un commissaire aux comptes ?", choix: ["3 exercices", "6 exercices", "10 exercices", "1 exercice renouvelable"], bonne: 1, explication: "Le commissaire aux comptes est nommé pour six exercices." },
+  { theme: "Audit", question: "À quoi sert le seuil de signification dans la mission d'audit de {client} ?", choix: ["À fixer les honoraires", "À apprécier le caractère significatif des anomalies", "À calculer l'impôt", "À choisir les associés"], bonne: 1, explication: "Le seuil de signification est le montant au-delà duquel une anomalie est jugée significative pour l'utilisateur des comptes ; il oriente l'étendue des travaux." },
+);
+
 export type QuestionOral = { question: string; attendus: string[] };
 
 export const ORAL: QuestionOral[] = [
