@@ -354,7 +354,7 @@ export function inscrireDiplome(e: Etat, agentId: string): string | null {
   const a = e.agents.find((x) => x.id === agentId);
   if (!a) return "Introuvable.";
   if (a.diplome) return `${a.prenom} prépare déjà le ${a.diplome.nom}.`;
-  const dec = /Collaborat|Chef/.test(a.poste);
+  const dec = /Collaborat|Chef|Senior|Manager|Confirm/i.test(a.poste);
   if (!dec && !/Stagiaire|Assistant/.test(a.poste)) return "Parcours réservé aux stagiaires, assistants et collaborateurs.";
   const prix = dec ? 3000 : 1500;
   if (e.tresorerie < prix) return "Trésorerie insuffisante.";

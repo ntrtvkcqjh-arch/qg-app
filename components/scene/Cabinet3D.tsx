@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment, Lightformer, OrbitControls, OrthographicCamera } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -116,6 +116,25 @@ export default function Cabinet3D() {
   const cuisine = useJeu((s) => !!s.etat?.agents.some((a) => a.service === "cuisine"));
   const agir = useJeu((s) => s.agir);
   const notifier = useJeu((s) => s.notifier);
+  const timelapse = useJeu((s) => s.timelapse);
+  const setTimelapse = useJeu((s) => s.setTimelapse);
+
+  // Timelapse : la journée défile à 1 heure par seconde jusqu'à 23h30,
+  // caméra en rotation lente.
+  useEffect(() => {
+    if (!timelapse) return;
+    const t = setInterval(() => {
+      const s = useJeu.getState();
+      const e = s.etat;
+      if (!e || e.minute % 1440 >= 23 * 60 + 30) {
+        s.setTimelapse(false);
+        return;
+      }
+      if (e.vitesse === 0) s.setVitesse(1);
+      s.tic(12);
+    }, 200);
+    return () => clearInterval(t);
+  }, [timelapse]);
 
   function photo() {
     const canvas = document.querySelector<HTMLCanvasElement>(".scene-3d canvas");
@@ -142,7 +161,7 @@ export default function Cabinet3D() {
           minPolarAngle={0.45}
           maxPolarAngle={1.15}
           screenSpacePanning
-          autoRotate={visite}
+          autoRotate={visite || timelapse}
           autoRotateSpeed={0.6}
         />
         <Pilote controles={controles} focus={focus} aile={aile} />
@@ -228,6 +247,9 @@ export default function Cabinet3D() {
         )}
         <button className={visite ? "actif" : ""} onClick={() => setVisite(!visite)} title="La caméra tourne autour du cabinet">
           🎥 {visite ? "Arrêter la visite" : "Visite"}
+        </button>
+        <button className={timelapse ? "actif" : ""} onClick={() => setTimelapse(!timelapse)} title="La journée défile en accéléré jusqu'à 23h30">
+          ⏩ {timelapse ? "Arrêter le timelapse" : "Timelapse"}
         </button>
         <button onClick={photo} title="Photo du cabinet : téléchargée et ajoutée à l'album">
           📸 Photo

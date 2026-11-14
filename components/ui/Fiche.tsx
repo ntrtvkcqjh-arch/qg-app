@@ -10,6 +10,7 @@ import { NOMS_PHASES } from "@/lib/types";
 import { LIBELLE_ACTIVITE, euros } from "./textes";
 import { LIBELLE_DOMAINE } from "@/lib/data/developpement";
 import { DOMAINES, designerTuteur, inscrireDiplome } from "@/lib/ext";
+import { NOMS_GRADES, gradeDe } from "@/lib/vie3";
 
 export default function Fiche() {
   const id = useJeu((s) => s.selectionAgent);
@@ -66,6 +67,22 @@ function FicheAgent({ id }: { id: string }) {
         </button>
       </div>
       {a.bulle && <p className="citation">« {a.bulle} »</p>}
+      {["expertise", "fiscal", "social", "juridique", "audit"].includes(a.filiere) && (
+        <div className="carriere">
+          {NOMS_GRADES.map((g, i) => (
+            <span key={g} className={i < gradeDe(a) ? "fait" : i === gradeDe(a) ? "courant" : ""}>
+              {g}
+            </span>
+          ))}
+        </div>
+      )}
+      {(a.ecole || a.miTempsJusquau || a.burnout) && (
+        <p className="aide">
+          {a.ecole && <>🎒 Alternance : {a.ecole}{a.parrain ? ` · tuteur ${e.agents.find((x) => x.id === a.parrain)?.prenom ?? "?"}` : ""}. </>}
+          {a.burnout === "arret" && <>🩺 En arrêt pour épuisement. </>}
+          {a.miTempsJusquau && a.miTempsJusquau > Math.floor(e.minute / 1440) && <>🕐 Mi-temps thérapeutique en cours. </>}
+        </p>
+      )}
       <div className="tags">
         <span>{LIBELLE_FILIERE[a.filiere]}</span>
         <span>{LIBELLE_PERSO[a.personnalite]}</span>

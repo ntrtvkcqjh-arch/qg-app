@@ -22,6 +22,7 @@ import { DILEMMES } from "@/lib/data/dilemmes";
 import { BADGES } from "@/lib/data/formation";
 import { MODELES } from "@/lib/data/messages";
 import { facteurMeteo, fatiguerToi } from "@/lib/vie2";
+import { facteurAgent, genererRevue, migrerCarriere } from "@/lib/vie3";
 import { actionVie, debutJourneeVie, nouvelleRecrue, potDeDepart, quartVie, rendezVousClient } from "@/lib/vie";
 import { actionSpeciale, arriveeAssocie, facteurSaison, debutJourneeExt, estTeletravail, facteurCompetence, facturer, finJourneeExt, horairesAgent, initSkills, migrerExt, noterArrivee, noterDepart, progresserSkill, quartAgent } from "@/lib/ext";
 import { ARCS } from "@/lib/data/arcs";
@@ -476,12 +477,13 @@ function questionPour(e: Etat, d: Dossier) {
 /** Crée la décision de validation (avec sa question DEC) pour un dossier en fin de révision. */
 export function lancerValidation(e: Etat, d: Dossier, de: string) {
   const jour = jourDe(e.minute);
+  const revue = (d.type === "bilan" || d.type === "liasse") && rnd() < 0.45 ? genererRevue(d) : null;
   e.messages.unshift({
     id: uid(e, "m"),
     de,
     niveau: 3,
     sujet: `Valider la révision — ${d.titre}`,
-    texte: `La révision de ${d.titre} est terminée. Pour valider, réponds à la question de contrôle comme au DEC.`,
+    texte: revue ? `La révision de ${d.titre} est terminée. Voici la feuille de révision : coche les lignes anormales avant de signer, comme en revue de dossier.` : `La révision de ${d.titre} est terminée. Pour valider, réponds à la question de contrôle comme au DEC.`,
     jour,
     minute: e.minute,
     lu: false,
@@ -490,7 +492,7 @@ export function lancerValidation(e: Etat, d: Dossier, de: string) {
     theme: "validation",
     canal: "interne",
     dossier: d.id,
-    cas: questionPour(e, d),
+    ...(revue ? { revue } : { cas: questionPour(e, d) }),
   });
 }
 
@@ -928,7 +930,7 @@ function quart(e: Etat) {
       continue;
     }
     // Avancement du dossier.
-    let v = 2.8 * facteurCompetence(e, a, d) * (1 - a.fatigue / 160) * (1 - Math.max(0, a.stress - 70) / 90) * facteurMeteo(e) * VITESSE_TYPE[d.type] * r.vitesse / Math.sqrt(d.difficulte);
+    let v = 2.8 * facteurCompetence(e, a, d) * (1 - a.fatigue / 160) * (1 - Math.max(0, a.stress - 70) / 90) * facteurMeteo(e) * facteurAgent(e, a) * VITESSE_TYPE[d.type] * r.vitesse / Math.sqrt(d.difficulte);
     if (rush) v *= 1.8;
     if (possede(e, "babyfoot")) v *= 0.97;
     if (possede(e, "imprimante") && d.phase <= 2) v *= 1.08;
@@ -1543,6 +1545,7 @@ export function rattraper(e: Etat, maintenant: number) {
 
 /** Complète une ancienne sauvegarde avec les champs ajoutés depuis. */
 export function migrer(e: Etat): Etat {
+  migrerCarriere(e);
   e.niveauLocaux ??= e.mode === "creation" ? 1 : 3;
   e.propositions ??= [];
   e.achats ??= [];

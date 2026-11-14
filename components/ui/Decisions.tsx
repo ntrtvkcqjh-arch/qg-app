@@ -17,7 +17,7 @@ export default function Decisions() {
   const courantId = useJeu((s) => s.messageOuvert);
   const ouvrirMessage = useJeu((s) => s.ouvrirMessage);
   const notifier = useJeu((s) => s.notifier);
-  const reunion = useJeu((s) => s.reunionOuverte);
+  const reunion = useJeu((s) => s.reunionOuverte || s.timelapse);
   const [masque, setMasque] = useState(false);
   const pauseJusqua = useRef(0);
   const vus = useRef(new Set<string>());
@@ -46,6 +46,8 @@ export default function Decisions() {
     if (courant.cas) {
       const bon = courant.reponse === courant.cas.choix[courant.cas.bonne];
       texte = `${bon ? "✔ Bonne réponse" : `✘ Raté — la bonne réponse : ${courant.cas.choix[courant.cas.bonne]}`}. ${courant.cas.explication}`;
+    } else if (courant.revue) {
+      texte = courant.reponse ?? texte;
     } else if (courant.dilemme) {
       const opt = courant.dilemme.options.find((o) => o.label === courant.reponse);
       if (opt?.resultat) texte = `✔ ${opt.resultat}`;
@@ -57,6 +59,8 @@ export default function Decisions() {
 
   if (!messages || reunion) return null;
   const reste = file.filter((m) => m.id !== courant?.id);
+  const ici = file.findIndex((m) => m.id === courant?.id);
+  const suivante = (ici >= 0 ? file[ici + 1] : null) ?? reste[0] ?? null;
 
   if (!courant) {
     if (!file.length) return null;
@@ -78,7 +82,7 @@ export default function Decisions() {
     <div className="voile">
       <div className="modale large decision">
         <div className="entete-decision">
-          <span className="pastille-decision">{courant.theme === "validation" ? "🎓 Contrôle DEC" : courant.dilemme ? "⚖️ Décision" : courant.canal === "appel" ? "📞 Appel" : courant.statut === "info" ? "ℹ️ Information" : "💬 Demande"}</span>
+          <span className="pastille-decision">{courant.revue ? "🔎 Revue de dossier" : courant.theme === "validation" ? "🎓 Contrôle DEC" : courant.dilemme ? "⚖️ Décision" : courant.canal === "appel" ? "📞 Appel" : courant.statut === "info" ? "ℹ️ Information" : "💬 Demande"}</span>
           <small>{reste.length ? `encore ${reste.length} après celle-ci` : "dernière décision"}</small>
         </div>
         <Detail key={courant.id} m={courant} />
@@ -92,7 +96,7 @@ export default function Decisions() {
           >
             Plus tard
           </button>
-          <button className={`bouton ${traite ? "principal-btn" : ""}`} onClick={() => ouvrirMessage(reste[0]?.id ?? null)}>
+          <button className={`bouton ${traite ? "principal-btn" : ""}`} onClick={() => ouvrirMessage(suivante?.id ?? null)}>
             {reste.length ? "Décision suivante →" : "Fermer"}
           </button>
         </div>

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { dateCourte, heure } from "@/lib/calendrier";
 import { choisirDilemme, repondre, resoudreCas, versionsGhostWriter, type Style } from "@/lib/moteur";
+import { resoudreRevue } from "@/lib/vie3";
 import { useJeu } from "@/lib/store";
 import type { Etat, Message } from "@/lib/types";
 
@@ -134,8 +135,9 @@ export function Detail({ m, retour }: { m: Message; retour?: () => void }) {
       )}
 
       {m.cas && <Cas m={m} />}
+      {m.revue && <Revue m={m} />}
 
-      {!m.dilemme && !m.cas && peutRepondre && (
+      {!m.dilemme && !m.cas && !m.revue && peutRepondre && (
         <div className="ghost-writer">
           <h4>✍️ Ghost Writer</h4>
           <textarea
@@ -200,6 +202,50 @@ function Cas({ m }: { m: Message }) {
         </div>
       )}
       {!montre && <p className="aide">Bonne réponse : le dossier avance et ton collaborateur progresse.</p>}
+    </div>
+  );
+}
+
+function Revue({ m }: { m: Message }) {
+  const agir = useJeu((s) => s.agir);
+  const [coches, setCoches] = useState<number[]>([]);
+  const lignes = m.revue!.lignes;
+  const fini = m.statut !== "attente";
+  const basculer = (i: number) => setCoches((c) => (c.includes(i) ? c.filter((x) => x !== i) : [...c, i]));
+  return (
+    <div className="revue">
+      <h4>🔎 Feuille de révision — coche les lignes qui posent problème</h4>
+      <table>
+        <thead>
+          <tr>
+            <th />
+            <th>Compte</th>
+            <th>Libellé</th>
+            <th className="num">Montant</th>
+          </tr>
+        </thead>
+        <tbody>
+          {lignes.map((l, i) => (
+            <tr key={i} className={`${coches.includes(i) ? "cochee" : ""} ${fini && l.anomalie ? "anomalie" : ""}`} onClick={() => !fini && basculer(i)}>
+              <td>
+                <input type="checkbox" checked={coches.includes(i)} readOnly disabled={fini} />
+              </td>
+              <td className="compte">{l.compte}</td>
+              <td>
+                {l.libelle}
+                {fini && l.anomalie && <small className="faute">{l.anomalie}</small>}
+              </td>
+              <td className="num">{l.montant.toLocaleString("fr-FR")} €</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {!fini && (
+        <button className="bouton principal-btn" onClick={() => agir(resoudreRevue, m.id, coches)}>
+          Signer la revue ({coches.length} anomalie{coches.length > 1 ? "s" : ""} relevée{coches.length > 1 ? "s" : ""})
+        </button>
+      )}
+      <p className="aide">Une anomalie ratée peut ressortir des mois plus tard en mise en cause de ta responsabilité (RC Pro). Trop de fausses alertes font perdre du temps à l&apos;équipe.</p>
     </div>
   );
 }

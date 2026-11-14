@@ -2,6 +2,7 @@
 
 import { dateCourte, jourDe, joursOuvresEntre } from "@/lib/calendrier";
 import { besoins } from "@/lib/moteur";
+import { enSaisonFiscale } from "@/lib/vie3";
 import { LIBELLE_FILIERE } from "@/lib/data/equipe";
 import { useJeu } from "@/lib/store";
 import { LIBELLE_ACTIVITE } from "./textes";
@@ -42,6 +43,15 @@ export default function Aujourdhui() {
             <strong className={aValider.length ? "alerte" : ""}>{aValider.length}</strong>
           </button>
         </div>
+        {enSaisonFiscale(e) && (
+          <div className="saison-fiscale">
+            <span>📆 Saison fiscale</span>
+            <strong>Liasses, IS et AG d&apos;approbation</strong>
+            <em>
+              {actifs.filter((d) => d.type === "liasse" || d.type === "bilan").length} bilans et liasses en cours · nocturnes et pizzas au bureau
+            </em>
+          </div>
+        )}
         {prochaine && (
           <div className="prochaine">
             <span>⚔️ Prochain boss</span>

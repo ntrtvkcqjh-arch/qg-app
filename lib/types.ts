@@ -72,7 +72,7 @@ export type Agent = {
   id: string;
   prenom: string;
   nom: string;
-  poste: string; // intitulé (Stagiaire, Chef de mission…)
+  poste: string; // intitulé (Stagiaire, Assistant, Confirmé, Senior, Manager…)
   filiere: Filiere;
   personnalite: Personnalite;
   couleur: string; // couleur de tenue
@@ -108,6 +108,9 @@ export type Agent = {
   remplace?: string; // CDD de remplacement : id de la personne remplacée
   finContrat?: number; // CDD : dernier jour
   parrain?: string;
+  ecole?: string; // alternant : école et diplôme préparé
+  burnout?: "arret" | "repris";
+  miTempsJusquau?: number; // mi-temps thérapeutique : jour de fin
 };
 
 export type Domaine = "tva" | "is" | "paie" | "juridique" | "revision" | "audit" | "outils";
@@ -160,6 +163,10 @@ export type SessionFormation = { id: string; formation: string; jour: number; pa
 
 export type Memoire = { sujet: string | null; etape: number; qualite: number; soutenu: boolean };
 
+export type Agence = { id: string; ville: string; ouverture: number; associe: string | null; clients: number; effectif: number; caMois: number };
+
+export type LigneRevue = { compte: string; libelle: string; montant: number; anomalie?: string };
+
 export type Client = {
   id: string;
   nom: string;
@@ -170,6 +177,8 @@ export type Client = {
   forfait: number; // honoraires mensuels récurrents (€)
   tvaMensuelle: boolean;
   paie: boolean;
+  taille?: number; // 1 TPE, 2 PME, 3 ETI (le client grandit)
+  historique?: { jour: number; texte: string }[];
 };
 
 export type Niveau = 1 | 2 | 3 | 4 | 5;
@@ -232,6 +241,7 @@ export type Message = {
   dossier?: string;
   dilemme?: { titre: string; options: OptionDilemme[] };
   cas?: CasPratique; // cas pratique à résoudre toi-même
+  revue?: { lignes: LigneRevue[] }; // feuille de révision : trouver les anomalies
   arc?: { id: string; etape: number }; // étape d'un arc narratif
   payload?: Record<string, string | number>; // données d'un événement spécial
   canal?: "mail" | "appel" | "interne"; // e-mail, appel téléphonique ou message interne
@@ -389,6 +399,9 @@ export type Etat = {
   budgetFormation: number; // budget annuel restant (€)
   statsThemes: Record<string, { ok: number; total: number }>;
   souvenirs?: { jour: number; emoji: string; titre: string }[]; // album souvenir
+  promotions?: { jour: number; prenom: string; nom: string; poste: string; couleur: string }[]; // mur des promotions
+  risquesRC?: { jour: number; client: string; montant: number; faute: string }[]; // erreurs non détectées qui ressortiront
+  agences?: Agence[];
   questionsVues?: string[]; // dernières questions DEC posées (évite les répétitions)
   dateDec: number; // jour de l'épreuve écrite visée
   memoire: Memoire;

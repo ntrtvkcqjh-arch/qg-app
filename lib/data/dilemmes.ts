@@ -80,7 +80,7 @@ export const DILEMMES: ModeleDilemme[] = [
   },
   {
     titre: "La promotion",
-    texte: "Un poste de chef·fe de mission se libère. {agent} le veut, mais sa rivalité avec un collègue risque d'exploser.",
+    texte: "Un poste de senior se libère. {agent} le veut, mais sa rivalité avec un collègue risque d'exploser.",
     options: [
       { label: "Promouvoir {agent} avec une augmentation", cout: 1, effets: { confianceAgent: 15, tresorerie: -1200, stressEquipe: 4 }, differe: { delai: 8, effets: { moralEquipe: -4 }, texte: "La promotion de {agent} a créé des jalousies." }, resultat: "{agent} est ravi·e." },
       { label: "Ouvrir un entretien pour tout le monde", cout: 2, effets: { moralEquipe: 5 }, differe: { delai: 9, effets: { moralEquipe: 4 }, texte: "Le processus transparent de promotion a rassuré l'équipe." }, resultat: "Processus équitable, plus long." },

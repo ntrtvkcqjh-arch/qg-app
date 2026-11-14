@@ -109,7 +109,7 @@ function debauchage(e: Etat) {
     a.id,
     4,
     `🎯 ${a.prenom} a une offre de ${rival}`,
-    `${a.prenom} t'annonce avoir reçu une offre de ${rival} : +15 % de salaire et un poste de ${a.poste.includes("Chef") ? "manager" : "chef de mission"}. « Je t'en parle avant de répondre. »`,
+    `${a.prenom} t'annonce avoir reçu une offre de ${rival} : +15 % de salaire et un poste de ${/senior/i.test(a.poste) ? "manager" : "senior"}. « Je t'en parle avant de répondre. »`,
     `client:|agent:${a.id}`,
     {},
     [
@@ -190,7 +190,7 @@ function appelOffres(e: Etat, jour: number) {
   if (e.reputation < 35 || e.clients.length < 5 || rnd() > 0.4) return;
   const o = OFFRES[hash(String(jour)) % OFFRES.length];
   if (e.clients.some((c) => c.nom === o.nom)) return;
-  messageSpecial(e, "cabinet", 4, `📑 Appel d'offres : ${o.nom}`, `${o.nom} met trois cabinets en concurrence (dont Corvane International). Honoraires visés : environ ${euros(o.forfait)} par an. Ils jugeront le prix, l'équipe proposée et le planning. Quelle offre déposes-tu ?`, "client:|agent:", { offre: OFFRES.indexOf(o) }, [
+  messageSpecial(e, "cabinet", 4, `📑 Appel d'offres : ${o.nom}`, `${o.nom} met trois cabinets en concurrence (dont Corvane International). Honoraires visés : environ ${euros(o.forfait)} par mois. Ils jugeront le prix, l'équipe proposée et le planning. Quelle offre déposes-tu ?`, "client:|agent:", { offre: OFFRES.indexOf(o) }, [
     opt(`Prix agressif (−20 %) : ${euros(o.forfait * 0.8)}`, "offre:0.8", {}, "Offre déposée."),
     opt(`Prix juste : ${euros(o.forfait)}`, "offre:1", {}, "Offre déposée."),
     opt(`Offre premium avec associé dédié : ${euros(o.forfait * 1.25)}`, "offre:1.25", {}, "Offre déposée."),
@@ -201,11 +201,11 @@ function appelOffres(e: Etat, jour: number) {
 // ---------- 7. rachat d'un cabinet ----------
 
 function rachatCabinet(e: Etat, jour: number) {
-  if (e.tresorerie < 60000 || rnd() > 0.15 || e.compteurs.rachatJour && jour - e.compteurs.rachatJour < 120) return;
+  if (e.tresorerie < 120000 || rnd() > 0.15 || e.compteurs.rachatJour && jour - e.compteurs.rachatJour < 120) return;
   e.compteurs.rachatJour = jour;
   const nb = 3 + (hash(String(jour)) % 4);
-  const honoraires = nb * 2600;
-  const prix = Math.round(honoraires * 0.9 / 1000) * 1000;
+  const honoraires = nb * 2600 * 12;
+  const prix = Math.round((honoraires * 0.9) / 1000) * 1000;
   messageSpecial(e, "cabinet", 4, "🏢 Un confrère part à la retraite", `Maître Dufresne, expert-comptable depuis 38 ans, te propose de racheter sa clientèle : ${nb} clients, environ ${euros(honoraires)} d'honoraires annuels récurrents. Il en demande ${euros(prix)} (≈ 0,9 an d'honoraires, avec une clause de garantie de chiffre d'affaires).`, "client:|agent:", { nb, prix }, [
     opt(`Accepter à ${euros(prix)}`, "rachat:1", {}, "Protocole signé !"),
     opt(`Négocier à ${euros(prix * 0.8)}`, "rachat:0.8", {}, "Tu fais une contre-proposition."),
@@ -330,7 +330,7 @@ export function actionVie2(e: Etat, code: string, m: Message): boolean {
       const chance = (coef === 0.8 ? 0.7 : coef === 1 ? 0.45 : 0.22) * (0.6 + e.reputation / 100);
       if (rnd() < chance) {
         e.clients.push({ ...o, id: uid(e, "cl"), satisfaction: 70, forfait: Math.round((o.forfait * coef) / 50) * 50 });
-        log(e, `🏆 Appel d'offres gagné : ${o.nom} rejoint le cabinet (${euros(o.forfait * coef)} / an) !`, "bien");
+        log(e, `🏆 Appel d'offres gagné : ${o.nom} rejoint le cabinet (${euros(o.forfait * coef)} / mois) !`, "bien");
         souvenir(e, "🏆", `Appel d'offres gagné : ${o.nom}`);
         e.reputation = clamp(e.reputation + 3);
       } else log(e, `📑 Appel d'offres perdu : ${o.nom} a choisi un autre cabinet.`, "mal");

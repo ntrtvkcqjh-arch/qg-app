@@ -4,6 +4,7 @@ import { dateCourte } from "@/lib/calendrier";
 import { useJeu } from "@/lib/store";
 import { euros } from "../textes";
 import Finances from "./Finances";
+import { Classement } from "./Developpement";
 import { useState } from "react";
 
 export default function Bilans() {
@@ -116,6 +117,7 @@ export default function Bilans() {
           </div>
         ))}
       </div>
+      <Classement />
     </div>
   );
 }

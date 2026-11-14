@@ -3,7 +3,7 @@ import type { Agent, Client, Filiere, Personnalite, Relation } from "@/lib/types
 type Base = Omit<Agent, "stress" | "fatigue" | "moral" | "activite" | "activiteJusqua" | "absentJusquau" | "embauche" | "bulle" | "bulleJusqua">;
 
 export const EQUIPE_INITIALE: Base[] = [
-  { id: "lea", prenom: "Léa", nom: "Marchand", poste: "Cheffe de mission", filiere: "expertise", personnalite: "perfectionniste", couleur: "#2f5bea", cheveux: "#3b2416", peau: "#f1c7a5", bureau: 0, competence: 78, confiance: 62, salaire: 3600, clan: "Les Anciens" },
+  { id: "lea", prenom: "Léa", nom: "Marchand", poste: "Senior", filiere: "expertise", personnalite: "perfectionniste", couleur: "#2f5bea", cheveux: "#3b2416", peau: "#f1c7a5", bureau: 0, competence: 78, confiance: 62, salaire: 3600, clan: "Les Anciens" },
   { id: "karim", prenom: "Karim", nom: "Benali", poste: "Collaborateur confirmé", filiere: "fiscal", personnalite: "ambitieux", couleur: "#e4572e", cheveux: "#111111", peau: "#c68b5e", bureau: 1, competence: 70, confiance: 55, salaire: 3100, clan: "Les Jeunes Loups" },
   { id: "sophie", prenom: "Sophie", nom: "Garnier", poste: "Gestionnaire de paie", filiere: "social", personnalite: "anxieux", couleur: "#17a398", cheveux: "#c89b5d", peau: "#f6d3b8", bureau: 2, competence: 66, confiance: 58, salaire: 2700, clan: "Les Anciens" },
   { id: "hugo", prenom: "Hugo", nom: "Perrin", poste: "Assistant comptable", filiere: "expertise", personnalite: "nonchalant", couleur: "#f2a541", cheveux: "#6b4423", peau: "#f3cfb3", bureau: 3, competence: 48, confiance: 50, salaire: 2200, clan: null },
@@ -43,7 +43,7 @@ export const POSTES: { poste: string; filiere: Filiere; comp: [number, number]; 
   { poste: "Collaborateur confirmé", filiere: "fiscal", comp: [60, 75], salaire: [2900, 3300] },
   { poste: "Gestionnaire de paie", filiere: "social", comp: [55, 72], salaire: [2500, 2900] },
   { poste: "Juriste", filiere: "juridique", comp: [58, 75], salaire: [2800, 3200] },
-  { poste: "Chef de mission", filiere: "expertise", comp: [72, 85], salaire: [3500, 4000] },
+  { poste: "Senior", filiere: "expertise", comp: [72, 85], salaire: [3500, 4000] },
   { poste: "Responsable RH", filiere: "rh", comp: [55, 75], salaire: [2800, 3300] },
   { poste: "Auditeur", filiere: "audit", comp: [55, 78], salaire: [2900, 3500] },
 ];

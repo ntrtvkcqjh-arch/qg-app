@@ -2389,7 +2389,7 @@ td.objectif .niveau-skill {
 /* ---------- Réunion live des managers ---------- */
 .bouton-reunion {
   position: fixed;
-  left: 200px;
+  right: 380px;
   bottom: 18px;
   z-index: 30;
   background: #fff;
@@ -2467,3 +2467,57 @@ td.objectif .niveau-skill {
 .souvenir:nth-child(even) { transform: rotate(0.7deg); }
 .souvenir span { font-size: 26px; }
 .souvenir small { color: #6b7385; }
+
+/* Feuille de révision */
+.revue table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0 12px; }
+.revue th { text-align: left; font-size: 11px; color: #6b7385; text-transform: uppercase; padding: 4px 6px; border-bottom: 1px solid #e6e9f0; }
+.revue td { padding: 7px 6px; border-bottom: 1px solid #f0f2f6; vertical-align: top; }
+.revue tr { cursor: pointer; }
+.revue tr:hover td { background: #f7f9fd; }
+.revue tr.cochee td { background: #fff4e5; }
+.revue tr.anomalie td { background: #fdecea; }
+.revue .compte { font-family: ui-monospace, monospace; color: #3d405b; }
+.revue .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.revue .faute { display: block; color: #b3261e; margin-top: 3px; }
+
+/* Carrière, clients, DEC, classement, agences */
+.carriere { display: flex; gap: 4px; margin: 8px 0; }
+.carriere span { flex: 1; text-align: center; font-size: 10px; padding: 4px 2px; border-radius: 6px; background: #eef0f5; color: #8a94a8; }
+.carriere span.fait { background: #dce7ff; color: #2f5bea; }
+.carriere span.courant { background: #2f5bea; color: #fff; font-weight: 700; }
+.saison-fiscale { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: #fff3e0; display: flex; flex-direction: column; gap: 2px; }
+.saison-fiscale span { font-size: 12px; color: #e65100; font-weight: 700; }
+.saison-fiscale em { font-size: 12px; color: #6b7385; font-style: normal; }
+.kpis.petits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.liste-clients { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.liste-clients button { width: 100%; display: grid; grid-template-columns: 1.6fr 1fr auto; gap: 10px; align-items: center; text-align: left; background: #fff; border: 1px solid #e6e9f0; border-radius: 12px; padding: 10px 12px; cursor: pointer; font: inherit; }
+.liste-clients button:hover { border-color: #2f5bea; }
+.liste-clients .nom { display: flex; flex-direction: column; }
+.liste-clients small { color: #6b7385; }
+.liste-clients .sat { display: flex; flex-direction: column; gap: 3px; }
+.liste-clients .sat .jauge { display: block; height: 6px; background: #eef0f5; border-radius: 99px; overflow: hidden; }
+.liste-clients .sat .jauge span { display: block; height: 100%; }
+.liste-clients em { font-size: 11px; color: #e04a3a; font-style: normal; }
+.liste-clients .forfait { font-weight: 700; white-space: nowrap; }
+.actions-client { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.mini-liste { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-direction: column; gap: 6px; }
+.mini-liste li { display: flex; flex-direction: column; padding: 8px 10px; background: #f7f8fb; border-radius: 10px; font-size: 13px; }
+.mini-liste small { color: #6b7385; }
+.directeur, .diplome { display: flex; gap: 12px; align-items: flex-start; background: #f5f7fb; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+.directeur p { margin: 0; font-size: 13px; line-height: 1.5; }
+.diplome span { font-size: 34px; }
+.diplome div { display: flex; flex-direction: column; }
+.bouton.large { width: 100%; margin-bottom: 12px; }
+.soutenance { background: #fff; border: 1px solid #e6e9f0; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.soutenance h3 { margin: 0 0 4px; font-size: 16px; }
+.classement table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.classement th { text-align: left; font-size: 11px; color: #6b7385; padding: 4px 6px; border-bottom: 1px solid #e6e9f0; }
+.classement td { padding: 7px 6px; border-bottom: 1px solid #f0f2f6; }
+.classement .num { text-align: right; white-space: nowrap; }
+.classement tr.moi td { background: #e6edff; font-weight: 700; }
+.carte-france svg { width: 100%; max-width: 360px; display: block; margin: 0 auto 10px; }
+.ouvrir-agence { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.ouvrir-agence select { padding: 7px; border-radius: 8px; border: 1px solid #dfe3ec; }
+.mur-promos .cadres { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; margin-bottom: 14px; }
+.mur-promos .cadre { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; background: #fff; border: 3px solid #e8d9b5; border-radius: 6px; text-align: center; font-size: 12px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06); }
+.mur-promos .cadre small { color: #6b7385; font-size: 10px; }

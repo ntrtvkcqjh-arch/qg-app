@@ -9,11 +9,15 @@ import JournalPanneau from "./panneaux/Journal";
 import Demandes from "./panneaux/Demandes";
 import Locaux from "./panneaux/Locaux";
 import Reglages from "./panneaux/Reglages";
+import Clients from "./panneaux/Clients";
+import Memoire from "./panneaux/Memoire";
 
 const TITRES = {
   demandes: "Demandes de prospects et de clients",
   locaux: "Locaux et mobilier",
   dossiers: "Dossiers",
+  clients: "Portefeuille clients",
+  memoire: "Mon DEC : mémoire et soutenance",
   equipe: "Équipe & RH",
   bilans: "Bilans",
   badges: "Badges",
@@ -36,6 +40,8 @@ export default function Tiroir() {
       <div className="tiroir-corps">
         {panneau === "dossiers" && <Dossiers />}
         {panneau === "demandes" && <Demandes />}
+        {panneau === "clients" && <Clients />}
+        {panneau === "memoire" && <Memoire />}
         {panneau === "locaux" && <Locaux />}
         {panneau === "equipe" && <Equipe />}
         {panneau === "bilans" && <Bilans />}

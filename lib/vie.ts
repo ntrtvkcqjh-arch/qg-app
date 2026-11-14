@@ -25,6 +25,7 @@ import {
 } from "@/lib/moteur";
 import type { Agent, Client, Etat, Message, OptionDilemme } from "@/lib/types";
 import { actionVie2, debutJourneeVie2, quartVie2, souvenir } from "@/lib/vie2";
+import { actionVie3, debutJourneeVie3, quartVie3 } from "@/lib/vie3";
 
 const PRENOMS_F = new Set(["Léa", "Sophie", "Inès", "Nadia", "Camille", "Manon", "Chloé", "Emma", "Sarah", "Amina", "Zoé", "Clara", "Lina", "Jade"]);
 const opt = (label: string, code: string, effets: OptionDilemme["effets"] = {}, resultat = "C'est noté."): OptionDilemme => ({ label, cout: 0, effets, resultat, action: "vie", code });
@@ -42,6 +43,7 @@ export function debutJourneeVie(e: Etat, jour: number, premierDuMois: boolean) {
   planifierEvacuation(e, jour);
   livraisons(e);
   debutJourneeVie2(e, jour, premierDuMois);
+  debutJourneeVie3(e, jour, premierDuMois);
   if (premierDuMois && jour > 0) {
     presse(e, jour);
     reseau(e, jour);
@@ -54,6 +56,7 @@ export function debutJourneeVie(e: Etat, jour: number, premierDuMois: boolean) {
 /** Chaque quart d'heure : évacuation en cours, humeurs visibles. */
 export function quartVie(e: Etat) {
   quartVie2(e);
+  quartVie3(e);
   const jour = jourDe(e.minute);
   const m = minuteDuJour(e.minute);
   if (e.compteurs.evacuationJour === jour && m === e.compteurs.evacuationMinute) {
@@ -421,7 +424,7 @@ function comiteAssocies(e: Etat, jour: number) {
 // ---------- effets des décisions ----------
 
 export function actionVie(e: Etat, code: string, m: Message) {
-  if (actionVie2(e, code, m)) return;
+  if (actionVie2(e, code, m) || actionVie3(e, code, m)) return;
   const [type, p1, p2] = code.split(":");
   const agentId = (m.dossier ?? "").split("|")[1]?.replace("agent:", "");
   const a = e.agents.find((x) => x.id === agentId);

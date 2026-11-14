@@ -8,6 +8,7 @@ import { LIBELLE_ACTIVITE, euros } from "../textes";
 import EquipePlus from "./EquipePlus";
 import FormationEquipe from "./FormationEquipe";
 import CarteRelations from "./CarteRelations";
+import { MurPromotions } from "./Developpement";
 
 export default function Equipe() {
   const e = useJeu((s) => s.etat)!;
@@ -135,6 +136,7 @@ export default function Equipe() {
           ))}
         </>
       )}
+      <MurPromotions />
       <h3 className="titre-section">💞 Carte des relations</h3>
       <CarteRelations />
       <EquipePlus />
