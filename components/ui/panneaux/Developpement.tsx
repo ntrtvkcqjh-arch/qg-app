@@ -4,7 +4,7 @@ import { useState } from "react";
 import { COUT_AGENCE, VILLES, classement, ouvrirAgence } from "@/lib/vie3";
 import { LOGICIELS, changerLogiciel, type TypeLogiciel } from "@/lib/vie4";
 import { ouvrirCreche } from "@/lib/vie5";
-import { MISSIONS_CONSEIL, capacitePortefeuille, chanceVente, changerManager, partConseil, pointIndividuel, proposerMission, repartitionTemps, responsables } from "@/lib/associe2080";
+import { ABONNEMENTS, MISSIONS_CONSEIL, chanceAbonnement, proposerAbonnement, capacitePortefeuille, chanceVente, changerManager, partConseil, pointIndividuel, proposerMission, repartitionTemps, responsables } from "@/lib/associe2080";
 import { PARTENAIRES, basculer, risquesCabinet, soignerPartenaire } from "@/lib/vie6";
 import type { Etat } from "@/lib/types";
 import { useJeu } from "@/lib/store";
@@ -316,11 +316,18 @@ export function Risques() {
 }
 
 /** Barre 20/80 : répartition de ton temps entre production, conseil et management. */
-export function Barre2080({ semaineDerniere = false }: { semaineDerniere?: boolean }) {
+export function Barre2080({ semaineDerniere = false, avecCa = false }: { semaineDerniere?: boolean; avecCa?: boolean }) {
   const e = useJeu((s) => s.etat)!;
   const r = repartitionTemps(e, semaineDerniere);
+  const ca = partConseil(e);
+  const abonnes = e.clients.filter((c) => c.abonnement).length;
   return (
     <div className="barre-2080">
+      {avecCa && (
+        <small>
+          💼 Conseil : <b>{ca.pct} %</b> du CA le mois dernier · {abonnes} client{abonnes > 1 ? "s" : ""} abonné{abonnes > 1 ? "s" : ""} au conseil
+        </small>
+      )}
       <div className="barre">
         <span style={{ width: `${r.prod}%`, background: "#e04a3a" }} title="Production" />
         <span style={{ width: `${r.conseil}%`, background: "#2f5bea" }} title="Conseil" />
@@ -454,6 +461,17 @@ export function ConseilClient({ id }: { id: string }) {
         </button>
       </div>
       <small className="aide">{m.chaine ? "Mission experte : elle se déroule en plusieurs étapes, dans tes décisions." : "Mission réalisée par ton équipe une fois signée."}</small>
+      <h4>📈 Abonnement de conseil {c.abonnement ? `: ${ABONNEMENTS[c.abonnement - 1].nom} (${ABONNEMENTS[c.abonnement - 1].prix.toLocaleString("fr-FR")} € / mois)` : ""}</h4>
+      <div className="abonnements">
+        {ABONNEMENTS.map((a, i) => (
+          <button key={a.nom} className={`abonnement ${c.abonnement === i + 1 ? "actif" : ""}`} disabled={(c.abonnement ?? 0) >= i + 1} onClick={() => agir(proposerAbonnement, c.id, i)} title={a.detail}>
+            <strong>{a.nom}</strong>
+            <small>{a.prix.toLocaleString("fr-FR")} € / mois</small>
+            <em>{(c.abonnement ?? 0) >= i + 1 ? "Souscrit" : `${Math.round(chanceAbonnement(e, c, i) * 100)} % de chances`}</em>
+          </button>
+        ))}
+      </div>
+      <small className="aide">Les abonnés « Stratégie » et « Direction financière » te sollicitent pour des comités stratégiques : tes recommandations font leur satisfaction… et leur bouche-à-oreille.</small>
     </div>
   );
 }

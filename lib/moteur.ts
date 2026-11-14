@@ -1830,7 +1830,7 @@ export function genererPropositions(e: Etat, f: number) {
     const attendu = Math.min(objectif, Math.floor(((m - 9 * 60) / (8 * 60)) * objectif) + 1);
     if ((e.compteurs.prospectsCrees ?? 0) < attendu && e.propositions.filter((p) => p.nouveau).length < 25 && nouveauProspect(e)) e.compteurs.prospectsCrees = (e.compteurs.prospectsCrees ?? 0) + 1;
   }
-  if (rnd() < 0.0016 * f && e.clients.length) {
+  if (rnd() < 0.004 * f && e.clients.length) {
     const c = pick(e.clients);
     const mi = pick(MISSIONS_PONCTUELLES);
     if (!e.propositions.some((p) => p.clientId === c.id)) {

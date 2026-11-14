@@ -31,7 +31,7 @@ import { chainesDuJour, chainesDuMois, repondreChaine } from "@/lib/chaines";
 import { actionVie5, debutJourneeVie5, quartVie5 } from "@/lib/vie5";
 import { debutJourneeVie6 } from "@/lib/vie6";
 import { etapeFilRouge, repondreFilRouge } from "@/lib/filRouge";
-import { actionOpportunite, debutJournee2080, quart2080, temps } from "@/lib/associe2080";
+import { actionComite, actionOpportunite, debutJournee2080, quart2080, temps } from "@/lib/associe2080";
 
 const PRENOMS_F = new Set(["Léa", "Sophie", "Inès", "Nadia", "Camille", "Manon", "Chloé", "Emma", "Sarah", "Amina", "Zoé", "Clara", "Lina", "Jade"]);
 const opt = (label: string, code: string, effets: OptionDilemme["effets"] = {}, resultat = "C'est noté."): OptionDilemme => ({ label, cout: 0, effets, resultat, action: "vie", code });
@@ -444,7 +444,7 @@ export function actionVie(e: Etat, code: string, m: Message) {
     repondreFilRouge(e, Number(et), Number(i));
     return;
   }
-  if (actionOpportunite(e, code)) return;
+  if (actionOpportunite(e, code) || actionComite(e, code)) return;
   if (code.startsWith("ch:")) {
     const [, id, i] = code.split(":");
     const type = (e.chaines ?? []).find((k) => k.id === id)?.type ?? "";

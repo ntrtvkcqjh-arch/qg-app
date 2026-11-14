@@ -19,6 +19,7 @@ export const OBJECTIFS = [
   { id: "n1", nom: "N°1 de la région", texte: "Prendre la tête du classement régional en moins de 5 ans.", delai: 5 * 365 },
   { id: "ca", nom: "10 millions de chiffre d'affaires", texte: "Atteindre 10 M€ de chiffre d'affaires annuel.", delai: 8 * 365 },
   { id: "dec", nom: "Experte-comptable", texte: "Réussir la soutenance de ton mémoire en moins de 3 ans.", delai: 3 * 365 },
+  { id: "conseil", nom: "Cabinet de conseil", texte: "Faire du conseil 40 % de ton chiffre d'affaires mensuel.", delai: 4 * 365 },
   { id: "equipe", nom: "Le campus des 200", texte: "Réunir 200 personnes (siège et agences) avec un moral moyen au-dessus de 65.", delai: 6 * 365 },
 ] as const;
 
@@ -49,6 +50,12 @@ export function progressionObjectif(e: Etat) {
   } else if (o.id === "dec") {
     pct = e.compteurs.diplomee ? 100 : e.memoire.soutenu ? 80 : (e.memoire.etape / 6) * 70;
     detail = e.compteurs.diplomee ? "Diplômée !" : `Mémoire : étape ${e.memoire.etape}`;
+  } else if (o.id === "conseil") {
+    const c = e.compteurs.caConseilDernier ?? 0;
+    const p = e.compteurs.caProdDernier ?? 0;
+    const part = c + p ? (c / (c + p)) * 100 : 0;
+    pct = Math.min(100, (part / 40) * 100);
+    detail = `${Math.round(part)} % du CA en conseil`;
   } else {
     const n = e.agents.length + (e.agences ?? []).reduce((s, a) => s + a.effectif, 0);
     const moral = e.agents.reduce((s, a) => s + a.moral, 0) / Math.max(1, e.agents.length);
@@ -106,6 +113,9 @@ export const SUCCES: Succes[] = [
   { id: "s_tarif", nom: "Haut de gamme", icone: "💎", description: "Garder des tarifs à 120 % et une satisfaction moyenne de 70", test: (e) => nb(e, "tarif") >= 120 && e.clients.length >= 5 && e.clients.reduce((s, c) => s + c.satisfaction, 0) / e.clients.length >= 70 },
   { id: "s_examen", nom: "Prête pour le DEC", icone: "📝", description: "Obtenir 16/20 à l'examen blanc", test: (e) => nb(e, "examenMeilleur") >= 16 },
   { id: "s_mentor", nom: "Transmission", icone: "🎗️", description: "Élire un mentor de l'année", test: (e) => nb(e, "mentorAnnee") > 0 },
+  { id: "s_conseil20", nom: "Conseil de confiance", icone: "💼", description: "Le conseil dépasse 20 % du chiffre d'affaires d'un mois", test: (e) => { const c = e.compteurs.caConseilDernier ?? 0; const p = e.compteurs.caProdDernier ?? 0; return c + p > 0 && c / (c + p) >= 0.2; } },
+  { id: "s_abonnes10", nom: "Partenaire des dirigeants", icone: "📈", description: "10 clients abonnés au conseil", test: (e) => e.clients.filter((c) => c.abonnement).length >= 10 },
+  { id: "s_daf", nom: "DAF externalisée", icone: "🏦", description: "Signer une direction financière externalisée", test: (e) => e.clients.some((c) => c.abonnement === 3) },
   { id: "s_victoire", nom: "Mission accomplie", icone: "👑", description: "Atteindre un objectif de partie", test: (e) => !!e.compteurs.victoire },
 ];
 for (const s of SUCCES) if (!BADGES.some((b) => b.id === s.id)) BADGES.push({ id: s.id, nom: s.nom, description: s.description, icone: s.icone });

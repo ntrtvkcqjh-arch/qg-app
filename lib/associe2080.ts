@@ -175,15 +175,111 @@ export function pointIndividuel(e: Etat, agentId: string): string | null {
 // ---------- 4. vente de conseil ----------
 
 export const MISSIONS_CONSEIL = [
-  { nom: "Prévisionnel et dossier bancaire", honoraires: 2400, chaine: null },
-  { nom: "Optimisation de la rémunération du dirigeant", honoraires: 1800, chaine: null },
-  { nom: "Tableau de bord mensuel", honoraires: 2000, chaine: null },
-  { nom: "Évaluation de l'entreprise", honoraires: 6000, chaine: "evaluation" },
-  { nom: "Montage d'une holding", honoraires: 5000, chaine: "holding" },
-  { nom: "Préparation de la transmission", honoraires: 7000, chaine: "transmission" },
-  { nom: "Implantation à l'international", honoraires: 6500, chaine: "international" },
-  { nom: "Audit social et contrats de travail", honoraires: 1500, chaine: "contrat" },
+  { nom: "Prévisionnel et dossier bancaire", honoraires: 4500, chaine: null },
+  { nom: "Optimisation de la rémunération du dirigeant", honoraires: 3500, chaine: null },
+  { nom: "Mise en place du contrôle de gestion", honoraires: 6000, chaine: null },
+  { nom: "Évaluation de l'entreprise", honoraires: 12000, chaine: "evaluation" },
+  { nom: "Montage d'une holding", honoraires: 9000, chaine: "holding" },
+  { nom: "Préparation de la transmission", honoraires: 15000, chaine: "transmission" },
+  { nom: "Implantation à l'international", honoraires: 12000, chaine: "international" },
+  { nom: "Audit social et contrats de travail", honoraires: 3000, chaine: "contrat" },
+  { nom: "Stratégie de prix et de marges", honoraires: 5000, chaine: null },
+  { nom: "Accompagnement à la levée de fonds", honoraires: 18000, chaine: null },
+  { nom: "Restructuration financière", honoraires: 14000, chaine: "procedure" },
+  { nom: "Diagnostic RSE et préparation au reporting de durabilité", honoraires: 8000, chaine: null },
+  { nom: "Pacte d'associés et gouvernance", honoraires: 4000, chaine: null },
 ] as const;
+
+/** Abonnements de conseil : honoraires récurrents, en plus du forfait de production. */
+export const ABONNEMENTS = [
+  { nom: "Pilotage", prix: 700, detail: "Tableau de bord mensuel et point trimestriel avec le dirigeant." },
+  { nom: "Stratégie", prix: 1800, detail: "Pilotage + prévisionnel annuel + comité stratégique trimestriel." },
+  { nom: "Direction financière externalisée", prix: 4000, detail: "Directeur financier à temps partagé : trésorerie, banques, reporting, investisseurs." },
+] as const;
+
+export function chanceAbonnement(e: Etat, c: Client, idx: number) {
+  const tarif = (e.compteurs.tarif ?? 100) / 100;
+  const taille = c.taille ?? 1;
+  return clamp(0.2 + c.satisfaction / 200 + (taille - 1) * 0.12 + (c.manager ? 0.05 : 0) - idx * 0.12 + (idx === 2 && taille < 2 ? -0.2 : 0) - (tarif - 1) * 0.5, 0.05, 0.85);
+}
+
+export function proposerAbonnement(e: Etat, clientId: string, idx: number): string | null {
+  const c = e.clients.find((x) => x.id === clientId);
+  const a = ABONNEMENTS[idx];
+  if (!c || !a) return null;
+  const jour = jourDe(e.minute);
+  if ((c.abonnement ?? 0) > idx) return `${c.nom} a déjà un abonnement de niveau supérieur.`;
+  if ((e.compteurs[`abo:${c.id}`] ?? -99) > jour - 30) return `${c.nom} a déjà reçu une proposition d'abonnement ce mois-ci.`;
+  e.compteurs[`abo:${c.id}`] = jour;
+  temps(e, "conseil", 1);
+  if (rnd() < chanceAbonnement(e, c, idx)) {
+    c.abonnement = idx + 1;
+    c.satisfaction = clamp(c.satisfaction + 5);
+    c.historique = [{ jour, texte: `Abonnement de conseil « ${a.nom} » signé (${euros(a.prix)} par mois).` }, ...(c.historique ?? [])].slice(0, 30);
+    log(e, `📈 ${c.dirigeant} souscrit l'abonnement de conseil « ${a.nom} » : ${euros(a.prix)} de plus chaque mois.`, "bien");
+  } else log(e, `📈 ${c.dirigeant} n'est pas prêt·e pour l'abonnement « ${a.nom} ».`, "neutre");
+  return null;
+}
+
+function moisAbonnements(e: Etat) {
+  let total = 0;
+  for (const c of e.clients) {
+    if (!c.abonnement) continue;
+    if (c.satisfaction < 30 && rnd() < 0.35) {
+      log(e, `📉 ${c.nom} résilie son abonnement de conseil : satisfaction trop basse.`, "mal");
+      c.abonnement = 0;
+      continue;
+    }
+    const prix = ABONNEMENTS[c.abonnement - 1].prix;
+    total += prix;
+    c.satisfaction = clamp(c.satisfaction + 1.5);
+    temps(e, "conseil", 0.25 * c.abonnement);
+  }
+  if (total) {
+    e.tresorerie += total;
+    e.periode.ca += total;
+    e.compteurs.caConseilMois = (e.compteurs.caConseilMois ?? 0) + total;
+  }
+}
+
+// ---------- comités stratégiques ----------
+
+const SITUATIONS: { titre: string; texte: string; options: [string, number][] }[] = [
+  { titre: "Trésorerie tendue", texte: "Le dirigeant s'inquiète : trésorerie au plus bas alors que l'activité progresse. Le BFR a explosé (clients à 75 jours).", options: [["Réduire le BFR : relances systématiques, acomptes à la commande, affacturage sur les gros clients", 2], ["Souscrire un prêt de 5 ans pour combler le trou", 0], ["Baisser les prix pour vendre plus", -1]] },
+  { titre: "Croissance rapide", texte: "Le chiffre d'affaires double, mais la marge baisse et l'équipe est débordée.", options: [["Prévisionnel à 18 mois, plan de recrutement financé et suivi mensuel de la marge par activité", 2], ["Accepter toutes les commandes sans rien changer", -1], ["Geler la croissance", 0]] },
+  { titre: "Marges en baisse", texte: "Les matières premières ont augmenté de 12 % et les prix de vente n'ont pas bougé.", options: [["Analyser la marge par produit, revaloriser les prix ciblés et renégocier les achats", 2], ["Augmenter tous les prix de 12 % d'un coup", 0], ["Ne rien faire, ça va passer", -2]] },
+  { titre: "Investissement", texte: "Le dirigeant veut acheter une machine de 300 000 € qui doit faire gagner 20 % de productivité.", options: [["Étudier la rentabilité (VAN, délai de récupération), comparer crédit-bail et emprunt, vérifier les aides", 2], ["L'acheter comptant sur la trésorerie", -1], ["Attendre deux ans", 0]] },
+  { titre: "Dépendance client", texte: "Un seul client représente 45 % du chiffre d'affaires.", options: [["Plan commercial de diversification avec un objectif de 25 % maximum par client en 2 ans", 2], ["Signer un contrat d'exclusivité avec ce client", -1], ["Ignorer, tant qu'il paie", -1]] },
+  { titre: "Rémunération du dirigeant", texte: "Le dirigeant se verse un petit salaire et beaucoup de dividendes ; il n'a presque pas de droits à la retraite.", options: [["Simulation globale salaire / dividendes / épargne retraite selon son statut et ses objectifs", 2], ["Tout en dividendes, c'est moins taxé", -1], ["Tout en salaire", 0]] },
+  { titre: "Succession", texte: "Le dirigeant a 60 ans et aucun successeur identifié.", options: [["Démarrer maintenant : diagnostic de transmissibilité, évaluation, pistes familiale, interne et externe", 2], ["On verra à 65 ans", -1], ["Vendre au premier acheteur", -1]] },
+  { titre: "Levée de fonds", texte: "Une start-up cliente veut lever 2 M€ auprès d'investisseurs.", options: [["Business plan solide, data room prête, valorisation argumentée et pacte d'associés préparé", 2], ["Envoyer le bilan à des investisseurs au hasard", -1], ["Accepter la première offre", -1]] },
+];
+
+function comitesStrategiques(e: Etat) {
+  const abonnes = e.clients.filter((c) => (c.abonnement ?? 0) >= 2);
+  for (const c of abonnes.sort(() => rnd() - 0.5).slice(0, 2)) {
+    const s = pick(SITUATIONS);
+    const ordre = s.options.map((_, i) => i).sort(() => rnd() - 0.5);
+    messageSpecial(e, c.manager ?? "cabinet", 3, `📈 Comité stratégique avec ${c.dirigeant} (${c.nom}) — ${s.titre}`, `${s.texte} Quelle recommandation portes-tu ?`, `client:${c.id}|agent:`, {}, ordre.map((i) => ({ label: s.options[i][0], cout: 0, effets: {}, resultat: "Recommandation présentée.", action: "vie", code: `comite:${c.id}:${s.options[i][1]}` }) as OptionDilemme));
+  }
+}
+
+export function actionComite(e: Etat, code: string): boolean {
+  const [type, cid, score] = code.split(":");
+  if (type !== "comite") return false;
+  const c = e.clients.find((x) => x.id === cid);
+  const n = Number(score);
+  temps(e, "conseil", 1.5);
+  if (c) {
+    c.satisfaction = clamp(c.satisfaction + (n >= 2 ? 8 : n >= 0 ? 1 : -6));
+    if (n >= 2 && rnd() < 0.35) {
+      e.compteurs.reseauBoost = (e.compteurs.reseauBoost ?? 0) + 1;
+      log(e, `🗣️ Ravi de ta recommandation, ${c.dirigeant} recommande le cabinet à deux chefs d'entreprise de son réseau.`, "bien");
+    }
+    if (n >= 2) e.niveauDec = clamp(e.niveauDec + 1);
+  }
+  return true;
+}
 
 export function chanceVente(e: Etat, c: Client, premium: boolean) {
   const tarif = (e.compteurs.tarif ?? 100) / 100;
@@ -200,8 +296,8 @@ export function proposerMission(e: Etat, clientId: string, idx: number, premium:
   temps(e, "conseil", 1);
   const honoraires = Math.round((m.honoraires * (premium ? 1.3 : 1)) / 50) * 50;
   if (rnd() < chanceVente(e, c, premium)) {
-    if (m.chaine && !lancerChaine(e, m.chaine, { client: c.id })) {
-      // mission experte en étapes : honoraires réglés à la fin du cas
+    if (m.chaine && !lancerChaine(e, m.chaine, { client: c.id, montant: honoraires })) {
+      // Mission experte en étapes : les honoraires sont versés à la fin du cas.
     } else {
       const d = creerDossier(e, c, "conseil", jour + 15, jour, `${m.nom} — ${c.nom}`);
       d.honoraires = honoraires;
@@ -220,12 +316,12 @@ export function proposerMission(e: Etat, clientId: string, idx: number, premium:
 /** Chaque mois, tes managers repèrent des opportunités de conseil. */
 function opportunites(e: Etat) {
   const cibles = e.clients.filter((c) => c.satisfaction > 55 && (e.compteurs[`vente:${c.id}`] ?? -99) < jourDe(e.minute) - 30);
-  for (let k = 0; k < 2 && cibles.length; k++) {
+  for (let k = 0; k < 4 && cibles.length; k++) {
     const c = cibles.splice(Math.floor(rnd() * cibles.length), 1)[0];
-    const idx = (c.taille ?? 1) >= 2 ? pick([3, 4, 5, 6]) : pick([0, 1, 2, 7]);
+    const idx = (c.taille ?? 1) >= 2 ? pick([3, 4, 5, 6, 9, 10, 11]) : pick([0, 1, 2, 7, 8, 12]);
     const m = MISSIONS_CONSEIL[idx];
     const resp = e.agents.find((a) => a.id === c.manager);
-    const raisons = [`${c.nom} veut investir et doit convaincre sa banque`, `${c.dirigeant} se paie mal et paie trop d'impôts`, `${c.nom} pilote à l'aveugle, sans indicateurs mensuels`, `${c.nom} a beaucoup grandi`, `${c.dirigeant} réfléchit à sa stratégie patrimoniale`, `${c.dirigeant} pense à sa retraite`, `${c.nom} a des clients à l'étranger`, `${c.nom} embauche beaucoup`];
+    const raisons = [`${c.nom} veut investir et doit convaincre sa banque`, `${c.dirigeant} se paie mal et paie trop d'impôts`, `${c.nom} pilote à l'aveugle, sans contrôle de gestion`, `${c.nom} a beaucoup grandi`, `${c.dirigeant} réfléchit à sa stratégie patrimoniale`, `${c.dirigeant} pense à sa retraite`, `${c.nom} a des clients à l'étranger`, `${c.nom} embauche beaucoup`, `les marges de ${c.nom} fondent`, `${c.nom} cherche des investisseurs`, `${c.nom} accumule les dettes`, `les clients de ${c.nom} demandent sa démarche RSE`, `les associés de ${c.nom} ne sont pas d'accord sur la stratégie`];
     messageSpecial(e, resp?.id ?? "cabinet", 3, `💡 Opportunité de conseil : ${c.nom}`, `${resp ? `${resp.prenom}, qui suit ce client : ` : ""}« ${raisons[idx]}. On pourrait lui proposer : ${m.nom} (environ ${euros(m.honoraires)}). » Chance de signature estimée : ${Math.round(chanceVente(e, c, false) * 100)} %.`, `client:${c.id}|agent:${resp?.id ?? ""}`, {}, [
       { label: `Proposer la mission (${euros(m.honoraires)})`, cout: 0, effets: {}, resultat: "Proposition envoyée.", action: "vie", code: `opp:${c.id}:${idx}:0` } as OptionDilemme,
       { label: `Proposer une version premium (${euros(m.honoraires * 1.3)}, plus risqué)`, cout: 0, effets: {}, resultat: "Proposition envoyée.", action: "vie", code: `opp:${c.id}:${idx}:1` } as OptionDilemme,
@@ -237,8 +333,16 @@ function opportunites(e: Etat) {
 // ---------- 5. chiffre d'affaires : conseil ou production ----------
 
 export function noterCa(e: Etat, d: Dossier) {
-  const cle = ["conseil", "juridique", "audit"].includes(d.type) ? "caConseilMois" : "caProdMois";
+  const conseil = ["conseil", "juridique", "audit"].includes(d.type);
+  const cle = conseil ? "caConseilMois" : "caProdMois";
   e.compteurs[cle] = (e.compteurs[cle] ?? 0) + d.honoraires;
+  if (d.type === "conseil") {
+    const c = e.clients.find((x) => x.id === d.client);
+    if (c && c.satisfaction > 65 && rnd() < 0.3) {
+      e.compteurs.reseauBoost = (e.compteurs.reseauBoost ?? 0) + 1;
+      log(e, `🗣️ Bouche-à-oreille : ${c.dirigeant} parle de votre mission de conseil autour de lui.`, "bien");
+    }
+  }
 }
 
 export function partConseil(e: Etat, moisDernier = true) {
@@ -264,7 +368,9 @@ export function debutJournee2080(e: Etat, jour: number, premierDuMois: boolean) 
   if (premierDuMois && jour > 0) {
     moisPortefeuilles(e);
     moisCa(e);
+    moisAbonnements(e);
     opportunites(e);
+    comitesStrategiques(e);
   }
 }
 

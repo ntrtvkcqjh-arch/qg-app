@@ -27,9 +27,10 @@ const prenom = (e: Etat, x: Ctx) => ag(e, x)?.prenom ?? "ton collaborateur";
 function finMission(nom: string, honoraires: number): Fin {
   return (e, r, x) => {
     const c = cl(e, x);
-    const h = Math.round((honoraires * (0.6 + r * 0.6)) / 50) * 50;
+    const h = Math.round(((x.montant ?? honoraires) * (0.6 + r * 0.6)) / 50) * 50;
     e.tresorerie += h;
     e.periode.ca += h;
+    e.compteurs.caConseilMois = (e.compteurs.caConseilMois ?? 0) + h;
     e.niveauDec = clamp(e.niveauDec + r * 4);
     if (c) {
       c.satisfaction = clamp(c.satisfaction + (r >= 0.8 ? 15 : r >= 0.5 ? 5 : -12));
@@ -90,6 +91,7 @@ export const CHAINES: Record<string, Def> = {
       const h = Math.round(18000 * (0.6 + r * 0.6));
       e.tresorerie += h;
       e.periode.ca += h;
+      e.compteurs.caConseilMois = (e.compteurs.caConseilMois ?? 0) + h;
       e.reputation = clamp(e.reputation + r * 6);
       e.niveauDec = clamp(e.niveauDec + r * 4);
       log(e, `🔬 Due diligence remise au fonds Altis Capital : ${r >= 0.8 ? "rapport salué, le fonds renégocie le prix de 2,4 M€ grâce à toi" : r >= 0.5 ? "rapport correct" : "le fonds juge le rapport superficiel"}. ${euros(h)} d'honoraires.`, r >= 0.5 ? "bien" : "mal");

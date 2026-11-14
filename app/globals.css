@@ -2678,3 +2678,9 @@ td.objectif .niveau-skill {
 .conseil-client .vente { display: flex; flex-direction: column; gap: 6px; }
 .conseil-client select { padding: 7px; border-radius: 8px; border: 1px solid #dfe3ec; }
 .bilan-2080 h4 { margin: 10px 0 4px; font-size: 13px; }
+.abonnements { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 6px; }
+.abonnement { display: flex; flex-direction: column; gap: 2px; padding: 8px; border: 1px solid #dfe3ec; border-radius: 10px; background: #fff; cursor: pointer; font: inherit; text-align: left; }
+.abonnement:hover:not(:disabled) { border-color: #2f5bea; }
+.abonnement.actif { background: #e6edff; border-color: #2f5bea; }
+.abonnement small { color: #6b7385; }
+.abonnement em { font-style: normal; font-size: 11px; color: #2f5bea; font-weight: 700; }

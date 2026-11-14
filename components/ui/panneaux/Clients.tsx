@@ -73,6 +73,7 @@ export default function Clients() {
                 <strong>{x.nom}</strong>
                 <small>
                   {x.secteur} · {TAILLE[x.taille ?? 1]}
+                  {x.abonnement ? " · 📈 abonné conseil" : ""}
                 </small>
               </span>
               <span className="sat">

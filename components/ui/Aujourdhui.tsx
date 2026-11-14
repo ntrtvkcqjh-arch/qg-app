@@ -48,7 +48,7 @@ export default function Aujourdhui() {
         </div>
         <div className="carte-2080">
           <span>⚖️ Ton temps cette semaine (objectif : production ≤ 20 %)</span>
-          <Barre2080 />
+          <Barre2080 avecCa />
         </div>
         <div className="conjoncture" title={CONJONCTURES[e.compteurs.conjoncture ?? 0].texte}>
           {CONJONCTURES[e.compteurs.conjoncture ?? 0].emoji} {CONJONCTURES[e.compteurs.conjoncture ?? 0].nom}

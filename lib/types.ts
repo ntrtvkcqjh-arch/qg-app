@@ -179,6 +179,7 @@ export type Client = {
   paie: boolean;
   taille?: number; // 1 TPE, 2 PME, 3 ETI (le client grandit)
   manager?: string; // senior, manager ou associé qui suit le client (portefeuille)
+  abonnement?: number; // abonnement de conseil : 1 Pilotage, 2 Stratégie, 3 Direction financière externalisée
   historique?: { jour: number; texte: string }[];
 };
 

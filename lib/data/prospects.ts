@@ -34,3 +34,6 @@ export const MISSIONS_PONCTUELLES: ModeleMission[] = [
 
 // Équilibrage : forfaits revalorisés de 20 %.
 for (const p of PROSPECTS_NOUVEAUX) p.forfait = Math.round((p.forfait * 1.2) / 50) * 50;
+
+// Le conseil est mis en avant : missions ponctuelles de conseil mieux valorisées.
+for (const m of MISSIONS_PONCTUELLES) if (m.type === "conseil") m.honoraires = Math.round((m.honoraires * 2.2) / 50) * 50;
