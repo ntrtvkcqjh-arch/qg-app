@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import type { Group } from "three";
 import { ETAGES_AGENTS, POSITIONS } from "./positions";
@@ -9,7 +9,7 @@ import { BULLE_DE, BUREAU_ASSOCIE, EST_OPEN_SPACE, POSTES, chemin, etageDe, piec
 import type { Agent, PieceId } from "@/lib/types";
 
 type Props = {
-  minute: number;
+  tranche: number; // tranche de 40 minutes de jeu (gestes)
   agent: Agent;
   index: number;
   selectionne: boolean;
@@ -92,7 +92,7 @@ export function pieceAgent(agent: Agent, ouvertes: PieceId[], cuisine = false): 
   return p;
 }
 
-export default function Personnage({ minute, agent, index, selectionne, vitesseJeu, onClick, piecesOuvertes, etageVue, cuisine, decontracte = false }: Props) {
+function Personnage({ tranche, agent, index, selectionne, vitesseJeu, onClick, piecesOuvertes, etageVue, cuisine, decontracte = false }: Props) {
   const groupe = useRef<Group>(null);
   const sq = useSquelette();
   const pose = useRef<Posture>({ ...DEBOUT });
@@ -108,7 +108,6 @@ export default function Personnage({ minute, agent, index, selectionne, vitesseJ
   const cible = evacue ? { x: -11 + (index % 22) * 1.05, z: 10.2 + Math.floor(index / 22) * 0.7 } : placeDans(piece, index, agent.bureau);
 
   // Gestes : téléphone par moments, café en pause, tête dans les mains si très stressé.
-  const tranche = Math.floor(minute / 40);
   const auTelephone = agent.activite === "travaille" && hachage(agent.id + tranche) % 6 === 0;
   const stresse = agent.activite === "travaille" && agent.stress > 75 && hachage(agent.id + tranche + "s") % 3 === 0;
   const accessoire: Accessoire = agent.activite === "pause" ? "cafe" : auTelephone ? "telephone" : null;
@@ -308,3 +307,38 @@ export default function Personnage({ minute, agent, index, selectionne, vitesseJ
     </group>
   );
 }
+
+/** Ne redessine un personnage que si ce qui se voit a changé (sinon 110 rendus par seconde). */
+function egal(a: Props, b: Props) {
+  const x = a.agent;
+  const y = b.agent;
+  return (
+    a.tranche === b.tranche &&
+    a.index === b.index &&
+    a.selectionne === b.selectionne &&
+    a.vitesseJeu === b.vitesseJeu &&
+    a.onClick === b.onClick &&
+    a.piecesOuvertes === b.piecesOuvertes &&
+    a.etageVue === b.etageVue &&
+    a.cuisine === b.cuisine &&
+    a.decontracte === b.decontracte &&
+    x.id === y.id &&
+    x.prenom === y.prenom &&
+    x.couleur === y.couleur &&
+    x.peau === y.peau &&
+    x.cheveux === y.cheveux &&
+    x.activite === y.activite &&
+    x.bureau === y.bureau &&
+    x.filiere === y.filiere &&
+    x.service === y.service &&
+    x.associeDe === y.associeDe &&
+    x.enComite === y.enComite &&
+    x.bulle === y.bulle &&
+    x.fatigue > 70 === y.fatigue > 70 &&
+    x.stress > 70 === y.stress > 70 &&
+    x.stress > 75 === y.stress > 75 &&
+    (x.moral > 65 ? 1 : x.moral < 35 ? -1 : 0) === (y.moral > 65 ? 1 : y.moral < 35 ? -1 : 0)
+  );
+}
+
+export default memo(Personnage, egal);

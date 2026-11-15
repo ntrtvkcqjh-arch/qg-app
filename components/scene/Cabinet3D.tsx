@@ -205,7 +205,7 @@ export default function Cabinet3D() {
         <Suspense fallback={null}>
         <Decor
           onPiece={selectionnerPiece}
-          onFocus={(p) => setFocus(p)}
+          onFocus={setFocus}
           niveau={niveau}
           achats={achats}
           mois={mois}
@@ -226,7 +226,7 @@ export default function Cabinet3D() {
         {etageVue === 0 && <DecoFetes jour={jourDe(minute)} />}
         <Meteo type={meteo} largeurBatiment={aile ? 22 : 12} />
         {agents.map((a, i) => (
-          <Personnage key={a.id} minute={minute} agent={a} index={i} selectionne={selection === a.id} vitesseJeu={vitesse} onClick={selectionner} piecesOuvertes={piecesListe} etageVue={etageVue} cuisine={cuisine} decontracte={decontracte} />
+          <Personnage key={a.id} tranche={Math.floor(minute / 40)} agent={a} index={i} selectionne={selection === a.id} vitesseJeu={vitesse} onClick={selectionner} piecesOuvertes={piecesListe} etageVue={etageVue} cuisine={cuisine} decontracte={decontracte} />
         ))}
         <Associee etageVue={etageVue} />
         {etageVue === ETAGE_DIRECTION && <BureauDeco />}

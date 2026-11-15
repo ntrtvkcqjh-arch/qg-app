@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, memo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { BufferAttribute, BufferGeometry, type Points } from "three";
 
@@ -33,7 +33,7 @@ function construire(n: number, largeurBatiment: number) {
   return g;
 }
 
-export default function Meteo({
+function Meteo({
   type,
   largeurBatiment,
 }: {
@@ -74,3 +74,5 @@ export default function Meteo({
     </points>
   );
 }
+
+export default memo(Meteo);

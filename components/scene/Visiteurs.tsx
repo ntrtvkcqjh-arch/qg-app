@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, memo } from "react";
 import Corps, { ASSIS, DEBOUT, animerSquelette, apparencePour, postureMarche, tournerVers, useSquelette, type Posture } from "./Corps";
 import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
@@ -68,7 +68,7 @@ function Silhouette({ v, index, reunionOuverte, etageVue }: { v: Visiteur; index
   );
 }
 
-export default function Visiteurs({ visiteurs, reunionOuverte, etageVue }: { visiteurs: Visiteur[]; reunionOuverte: boolean; etageVue: number }) {
+function Visiteurs({ visiteurs, reunionOuverte, etageVue }: { visiteurs: Visiteur[]; reunionOuverte: boolean; etageVue: number }) {
   return (
     <>
       {visiteurs.map((v, i) => (
@@ -77,3 +77,7 @@ export default function Visiteurs({ visiteurs, reunionOuverte, etageVue }: { vis
     </>
   );
 }
+
+type PropsV = { visiteurs: Visiteur[]; reunionOuverte: boolean; etageVue: number };
+const cleV = (p: PropsV) => p.visiteurs.map((v) => `${v.id}:${v.etat}`).join(",");
+export default memo(Visiteurs, (a: PropsV, b: PropsV) => a.reunionOuverte === b.reunionOuverte && a.etageVue === b.etageVue && cleV(a) === cleV(b));

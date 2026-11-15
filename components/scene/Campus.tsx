@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import { CanvasTexture, SRGBColorSpace } from "three";
 import { niveauLocaux } from "@/lib/data/locaux";
 import { POLES } from "@/lib/data/developpement";
@@ -347,7 +347,7 @@ function Potager() {
   );
 }
 
-export default function Campus({ etage }: { etage: number }) {
+function Campus({ etage }: { etage: number }) {
   const niveau = useJeu((s) => s.etat?.niveauLocaux ?? 1);
   const leger = useJeu((s) => !!s.etat?.compteurs.graphismes);
   const ouvertes = niveauLocaux(niveau).pieces;
@@ -378,3 +378,5 @@ export default function Campus({ etage }: { etage: number }) {
     </group>
   );
 }
+
+export default memo(Campus);

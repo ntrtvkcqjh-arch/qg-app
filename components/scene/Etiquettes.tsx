@@ -1,4 +1,5 @@
 "use client";
+import { memo, useMemo } from "react";
 
 import { useFrame, useThree } from "@react-three/fiber";
 import { Vector3 } from "three";
@@ -101,29 +102,22 @@ export function CoucheEtiquettes() {
         );
       })}
       {agents.map((a) => (
-        <div
-          key={a.id}
-          ref={enregistrer(`a:${a.id}`)}
-          className="etiquette pos"
-          onClick={() => selectionner(a.id)}
-        >
-          {a.bulle && <div className="bulle">{a.bulle}</div>}
-          <div className={`nom ${selection === a.id ? "actif" : ""}`}>
-            <span
-              className="pastille"
-              style={{
-                background:
-                  a.stress > 70
-                    ? "#e4572e"
-                    : a.stress > 45
-                      ? "#f2a541"
-                      : "#43aa8b",
-              }}
-            />
-            {a.prenom}
-          </div>
-        </div>
+        <EtiquetteAgent key={a.id} id={a.id} prenom={a.prenom} bulle={a.bulle} pastille={a.stress > 70 ? "#e4572e" : a.stress > 45 ? "#f2a541" : "#43aa8b"} actif={selection === a.id} selectionner={selectionner} />
       ))}
     </div>
   );
 }
+
+/** Étiquette d'un collaborateur : redessinée seulement si son nom, sa bulle ou son stress change. */
+const EtiquetteAgent = memo(function EtiquetteAgent({ id, prenom, bulle, pastille, actif, selectionner }: { id: string; prenom: string; bulle?: string | null; pastille: string; actif: boolean; selectionner: (id: string) => void }) {
+  const ref = useMemo(() => enregistrer(`a:${id}`), [id]);
+  return (
+    <div ref={ref} className="etiquette pos" onClick={() => selectionner(id)}>
+      {bulle && <div className="bulle">{bulle}</div>}
+      <div className={`nom ${actif ? "actif" : ""}`}>
+        <span className="pastille" style={{ background: pastille }} />
+        {prenom}
+      </div>
+    </div>
+  );
+});

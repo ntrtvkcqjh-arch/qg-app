@@ -1,4 +1,5 @@
 "use client";
+import { memo } from "react";
 
 import { jourDuMois, moisDe } from "@/lib/calendrier";
 
@@ -63,7 +64,7 @@ function Citrouilles() {
   );
 }
 
-export default function DecoFetes({ jour }: { jour: number }) {
+function DecoFetes({ jour }: { jour: number }) {
   const m = moisDe(jour);
   const d = jourDuMois(jour);
   return (
@@ -73,3 +74,5 @@ export default function DecoFetes({ jour }: { jour: number }) {
     </group>
   );
 }
+
+export default memo(DecoFetes);

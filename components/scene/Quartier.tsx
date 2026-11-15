@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, memo } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
 import Corps, { DEBOUT, animerSquelette, postureMarche, useSquelette, type Posture } from "./Corps";
@@ -67,7 +67,7 @@ function Passant({ depart, vitesse, couleur, z }: { depart: number; vitesse: num
   );
 }
 
-export default function Quartier({ mois, neige = false, leger = false }: { mois: number; neige?: boolean; leger?: boolean }) {
+function Quartier({ mois, neige = false, leger = false }: { mois: number; neige?: boolean; leger?: boolean }) {
   const ete = mois >= 6 && mois <= 8;
   const feuillage = mois >= 12 || mois <= 2 ? null : mois >= 9 && mois <= 11 ? "#e07b39" : mois >= 3 && mois <= 4 ? "#f8bbd0" : "#4f8a4b";
   return (
@@ -184,3 +184,5 @@ export default function Quartier({ mois, neige = false, leger = false }: { mois:
     </group>
   );
 }
+
+export default memo(Quartier);
